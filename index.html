@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -171,6 +170,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 .f4-body{display:none;background:var(--bg);border-top:1px solid var(--bd);}
 .f4-body.open{display:block;}
 
+
+/* DIE LIFE */
+.die-status-running{background:#DCFCE7;color:#0E6E3A;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;}
+.die-status-complete{background:var(--sll);color:var(--sld);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;}
+/* DEPT SCORE */
+.sc-dot{width:14px;height:14px;border-radius:2px;display:inline-block;}
+.sc-gn{background:var(--gn);}.sc-grey{background:#E5E7EB;}.sc-am{background:#F59E0B;}
+
 /* LOADING */
 #lov{display:flex;position:fixed;inset:0;background:rgba(242,244,247,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
 #err-bar{display:none;background:var(--rdb);border-top:2px solid #FCA5A5;padding:10px 20px;align-items:center;gap:10px;font-size:12px;color:var(--rd);}
@@ -234,6 +241,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="tab" onclick="showTab('f4',this)">57F4</div>
   <div class="tab" onclick="showTab('elec',this)">Electricity</div>
   <div class="tab" onclick="showTab('alerts',this)">&#9888; Alerts</div>
+  <div class="tab" onclick="showTab('dielife',this)">Die Life</div>
+  <div class="tab" onclick="showTab('dscore',this)">Dept Score</div>
   <div class="tab" id="mbtn" onclick="showMargins()">&#9679; Margins</div>
   <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
 </div>
@@ -927,6 +936,8 @@ function render(data){
   renderDeptSummary(t, yest);
   renderMaterial(sc.rows||[], steel.grades||[]);
   renderAlerts();
+  renderDieLife();
+  renderDeptScore();
 
   document.getElementById('wip-cut-pcs').textContent=fmtN(ws.cutWIPPcs||0);
   document.getElementById('wip-cut-sub').textContent=(ws.cutWIPVFs||0)+' VFs';
@@ -935,6 +946,7 @@ function render(data){
   document.getElementById('wip-jwk-pcs').textContent=fmtN(ws.jwkWIPPcs||0);
   document.getElementById('wip-jwk-sub').textContent='Laxmi + Kalyani';
   var totalWip=(ws.cutWIPPcs||0)+(ws.fgWIPPcs||0)+(ws.jwkWIPPcs||0);
+  var vendorWip=ws.vendorWIPPcs||0;
   document.getElementById('wip-total-badge').textContent=fmtN(totalWip)+' pcs total';
 
   document.getElementById('m-tov').textContent=fmtCurr(mtd.turnoverL*100000);
@@ -1033,10 +1045,12 @@ function render(data){
     scH+='<td>'+fmtN(r.dispatchedMTD||0)+'</td>';
     scH+='<td class="'+(r.balProduce>0?'am fw6':'gn')+'">'+fmtN(r.balProduce||0)+'</td>';
     scH+='<td class="mo">'+(r.rmRequired>0?(r.rmRequired/1000).toFixed(2)+'T':'&mdash;')+'</td>';
+    var stk=r.hasStock;
+    scH+='<td><span class="badge '+(stk?'b-gn':'b-rd')+'">'+(stk?'IN STOCK':'NO STOCK')+'</span></td>';
     scH+='<td>'+(r.schedPct||0)+'%</td>';
     scH+='</tr>';
   });
-  document.getElementById('tb-sched').innerHTML=scH||'<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:16px;">No schedule data</td></tr>';
+  document.getElementById('tb-sched').innerHTML=scH||'<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:16px;">No schedule data</td></tr>';
 
   document.getElementById('out-od').textContent=fmtCurr(out.totalOverdue||0);
   document.getElementById('out-od-s').textContent=(out.customers||[]).filter(function(c){return c.overdue>0;}).length+' customers overdue';
@@ -1090,7 +1104,7 @@ function render(data){
     f4H+='<div class="f4-vendor"><div class="f4-hdr" onclick="this.nextElementSibling.classList.toggle(\'open\')">';
     f4H+='<div class="f4-dot" style="background:'+col+'"></div>';
     f4H+='<div class="f4-name">'+v.vendor+'</div>';
-    f4H+='<div class="f4-total" style="color:'+col+'">'+fmtN(v.pendingPcs)+' pcs pending</div>';
+    f4H+='<div class="f4-total" style="color:'+col+'">'+fmtN(v.pendingPcs)+' pcs pending'+(v.rejectedPcs>0?' | <span style="color:var(--rd)">'+fmtN(v.rejectedPcs)+' rejected</span>':'')+'</div>';
     f4H+='<span style="font-size:16px;color:var(--tx3);margin-left:8px;">&#9660;</span>';
     f4H+='</div><div class="f4-body"><table class="tbl" style="margin:0;"><thead><tr><th>VF No</th><th>Customer</th><th>Sent</th><th>Returned</th><th>Pending</th></tr></thead><tbody>';
     (v.parts||[]).sort(function(a,b){return Math.abs(b.pendingPcs)-Math.abs(a.pendingPcs);}).forEach(function(p){
@@ -1201,6 +1215,52 @@ function renderMargins(){
   document.getElementById('tb-margin').innerHTML=mgH||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:16px;">No margin data</td></tr>';
 }
 
+
+// ═══ DIE LIFE ═══
+function renderDieLife(){
+  var dl=D.die_life||{};
+  var running=dl.running||[];
+  var complete=dl.complete||[];
+  document.getElementById('die-kpis').innerHTML=
+    '<div class="kc gn"><div class="kl">Active Runs</div><div class="kv">'+running.length+'</div></div>'+
+    '<div class="kc sl"><div class="kl">Completed</div><div class="kv">'+complete.length+'</div></div>'+
+    '<div class="kc or"><div class="kl">Machines</div><div class="kv">'+new Set([].concat(running,complete).map(function(r){return r.machine;})).size+'</div></div>';
+  document.getElementById('die-running-cnt').textContent=running.length+' active';
+  var h='';
+  running.forEach(function(r){h+='<tr><td style="font-weight:600">'+r.machine+'</td><td class="mo">'+r.vf+'</td><td style="font-size:10px">'+(r.customer||'').substring(0,25)+'</td><td class="mo">'+fmtDate(r.runStart)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo" style="font-weight:700">'+fmtN(r.totalPcs)+'</td><td><span class="die-status-running">RUNNING</span></td></tr>';});
+  document.getElementById('die-running-body').innerHTML=h||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:12px;">No active dies</td></tr>';
+  document.getElementById('die-hist-cnt').textContent=complete.length+' records';
+  var hh='';
+  complete.slice(0,50).forEach(function(r){hh+='<tr><td style="font-weight:600">'+r.machine+'</td><td class="mo">'+r.vf+'</td><td style="font-size:10px">'+(r.customer||'').substring(0,25)+'</td><td class="mo">'+fmtDate(r.runStart)+'</td><td class="mo">'+fmtDate(r.runEnd)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo" style="font-weight:700">'+fmtN(r.totalPcs)+'</td></tr>';});
+  document.getElementById('die-hist-body').innerHTML=hh||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);">No history</td></tr>';
+}
+
+function fmtDate(d){if(!d||d==='—')return'—';var s=d.toString();if(s.length>10)s=s.substring(0,10);var p=s.split('-');return p.length===3?p[2]+'-'+['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(p[1])]:s;}
+
+// ═══ DEPT SCORE ═══
+function renderDeptScore(){
+  var ds=D.dept_score||{};
+  var scores=ds.scores||[];
+  var overall=ds.overallPct||0;
+  var best=scores.length>0?scores[0]:{dept:'—',pct:0};
+  var worst=scores.length>0?scores[scores.length-1]:{dept:'—',pct:0};
+  document.getElementById('dscore-kpis').innerHTML=
+    '<div class="kc gn"><div class="kl">Best Dept</div><div class="kv" style="font-size:14px">'+best.dept+'</div><div class="ks">'+best.pct+'%</div></div>'+
+    '<div class="kc rd"><div class="kl">Needs Attention</div><div class="kv" style="font-size:14px">'+worst.dept+'</div><div class="ks">'+worst.pct+'%</div></div>'+
+    '<div class="kc sl"><div class="kl">Overall</div><div class="kv">'+overall+'%</div><div class="ks">'+ds.workingDays+' days</div></div>'+
+    '<div class="kc or"><div class="kl">Departments</div><div class="kv">'+scores.length+'</div><div class="ks">tracked</div></div>';
+  var h='';
+  scores.forEach(function(s){
+    var dots='';
+    (s.datesWithData||[]).forEach(function(){dots+='<span class="sc-dot sc-gn" style="margin-right:1px;"></span>';});
+    var missing=s.expected-s.count;
+    for(var i=0;i<missing;i++)dots+='<span class="sc-dot sc-grey" style="margin-right:1px;"></span>';
+    var gc=s.pct>=85?'b-gn':s.pct>=65?'b-am':'b-rd';
+    h+='<tr><td style="text-align:left;font-weight:500">'+s.dept+'</td><td>'+dots+'</td><td class="mo">'+s.expected+'</td><td class="mo" style="font-weight:700">'+s.pct+'%</td><td><span class="badge '+gc+'">'+s.grade+'</span></td></tr>';
+  });
+  document.getElementById('dscore-body').innerHTML=h||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);">No data</td></tr>';
+}
+
 // ═══ DATA LOAD ═══
 function loadData(){
   document.getElementById('lov').style.display='flex';
@@ -1229,3 +1289,33 @@ setInterval(function(){
 </script>
 </body>
 </html>
+<!-- ══════════════ DIE LIFE ══════════════ -->
+<div id="tab-dielife" class="main">
+  <div class="kgrid k3" id="die-kpis" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div class="ch"><div class="ct">Current Runs — Active Dies</div><div class="badge b-gn" id="die-running-cnt">—</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Machine</th><th>VF</th><th>Customer</th><th>Run Start</th><th>Days</th><th>Shifts</th><th>Pcs This Run</th><th>Status</th></tr></thead>
+      <tbody id="die-running-body"></tbody>
+    </table></div>
+  </div>
+  <div class="card" style="margin-top:10px">
+    <div class="ch"><div class="ct">Complete Run History</div><div class="badge b-sl" id="die-hist-cnt">—</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Machine</th><th>VF</th><th>Customer</th><th>Run Start</th><th>Run End</th><th>Days</th><th>Shifts</th><th>Total Pcs</th></tr></thead>
+      <tbody id="die-hist-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══════════════ DEPT SCORE ══════════════ -->
+<div id="tab-dscore" class="main">
+  <div class="kgrid k4" id="dscore-kpis" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div class="ch"><div class="ct">Department Data Entry Compliance — April MTD</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th style="text-align:left">Department</th><th>Days with Data</th><th>Expected</th><th>Score</th><th>Grade</th></tr></thead>
+      <tbody id="dscore-body"></tbody>
+    </table></div>
+  </div>
+</div>
