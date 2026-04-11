@@ -726,6 +726,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 // ═══════════════════════════════════════════════════════
 var WEB_APP = 'https://script.google.com/macros/s/AKfycbxK-_HBrq1I2Glo4m8maHT5upAQUX8qZyOixoFwwJ7vus-pT1LP2MF3fQGtHCHD6p4lbw/exec';
 var OWNER_PIN = '1234'; // change this
+var D = {};
+var PW = {}; // part weights {VF1050:{iw:3.52,fw:2.7},...} — populated in render()
 var D = {}; // global data store
 
 // ═══ MACHINE CODE MAPS (locked) ═══
@@ -953,6 +955,7 @@ function renderMaterial(schedRows, steelGrades){
 // ═══ MAIN RENDER ═══
 function render(data){
   D=data;
+  PW=data.partWeights||{}; // MUST be first — used throughout render
   var t=data.today||{}, wip=data.wip||{}, sc=data.schedule||{};
   var out=data.outstanding||{}, steel=data.steel||{};
   var f4=data.f4||{}, elec=data.elec||{}, mg=data.margins||{};
