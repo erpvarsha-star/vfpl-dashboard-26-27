@@ -732,5 +732,378 @@ function loadData(){
 document.addEventListener('DOMContentLoaded',loadData);
 setInterval(function(){fetch(WEB_APP+'?v='+Date.now()).then(function(r){return r.json();}).then(function(d){if(!d.error)render(d);}).catch(function(){});},600000);
 </script>
+  <script>
+// ═══ COMPLETE RENDER — Part 2 (paste before </body>) ═══
+// This overwrites the incomplete ren() from Part 1
+
+ren = function(){
+  var t=D.today||{},y=t.yesterday||{},m=D.mtd||{},w=D.wip||{},ws=w.summary||{},sc=D.schedule||{},ss=sc.summary||{},ou=D.outstanding||{},st=D.steel||{},f4=D.f4||{},el=D.elec||{},dl=D.die_life||{},al=D.alerts||[],ds=D.dept_score||{},mg=D.margins||{},fy=D.fy_monthly||[],ob=D.oil_balance||{},tr=D.transport||{};
+  var h='',mp=t.manpower||{},ymp=(y.manpower||{}),ed=t.elecByDept||{},yed=(y.elecByDept||{});
+  var ELEC_RATE=9.6;
+  var totalFinT=(m.ownForgedTons||0)+(m.jwkForgedTons||0)+(m.pressTons||0);
+
+  // ═══════════ TODAY TAB ═══════════
+  if(CUR==='today'){
+    var cp=0,fp=0,pp=0,mp2=0;
+    (t.cutting||[]).forEach(function(r){Object.values(r.entries||{}).forEach(function(q){cp+=q})});
+    (t.forging||[]).forEach(function(r){Object.values(r.entries||{}).forEach(function(q){fp+=q})});
+    (t.pressing||[]).forEach(function(r){Object.values(r.entries||{}).forEach(function(q){pp+=q})});
+    (t.machine||[]).forEach(function(r){Object.values(r.entries||{}).forEach(function(q){mp2+=q})});
+
+    h+='<div class="kg k5">';
+    h+='<div class="kc bl"><div class="kl">Balance to Produce</div><div class="kv">'+fN(ss.totalBalProduce)+'</div><div class="kt">'+fT(ss.totalRMRequired/1000)+'</div><div class="ks">this month</div></div>';
+    h+='<div class="kc or"><div class="kl">Cut Today</div><div class="kv">'+fN(cp)+'</div><div class="kt">'+fT(m.cutTons*(cp/(m.cutQty||1)))+'</div><div class="ks">'+t.date+'</div></div>';
+    h+='<div class="kc gn"><div class="kl">Forged Today</div><div class="kv">'+fN(fp)+'</div><div class="kt">'+fT(m.ownForgedTons*(fp/(m.ownForgedPcs||1)))+'</div><div class="ks">Inhouse + JWK</div></div>';
+    h+='<div class="kc am"><div class="kl">Pressed Today</div><div class="kv">'+fN(pp)+'</div><div class="kt">'+fT(m.pressTons*(pp/(m.pressPcs||1)))+'</div><div class="ks">'+t.date+'</div></div>';
+    h+='<div class="kc sl"><div class="kl">Dispatched MTD</div><div class="kv">'+fN(m.dispQty)+'</div><div class="kt">'+(m.turnoverFmt||fC((m.turnoverL||0)*1e5))+'</div><div class="ks">'+fN(m.dispYest)+' pcs yesterday</div></div>';
+    h+='</div>';
+    if(t.isLastAvail)h+='<div style="background:#FEF08A;border:2px solid #EAB308;border-radius:6px;padding:10px 16px;margin-bottom:10px;font-size:12px;font-weight:600;color:#713F12">⚠ Showing last available data ('+t.date+') — no cutting entries for today</div>';
+
+    // Production grids
+    h+=bpt('Cutting Shop',MCUT,CSRC,t.cutting,t.date,true).html;
+    h+=bpt('Cutting Shop',MCUT,CSRC,y.cutting,t.prevDate,false).html;
+    h+=bpt('Forge Shop',MFRG,FSRC,t.forging,t.date,true).html;
+    h+=bpt('Forge Shop',MFRG,FSRC,y.forging,t.prevDate,false).html;
+    h+=bpt('Press Shop',MPRS,PSRC,t.pressing,t.date,true).html;
+    h+=bpt('Press Shop',MPRS,PSRC,y.pressing,t.prevDate,false).html;
+    h+=bpt('Machine Shop',MMCH,MSRC,t.machine,t.date,true).html;
+    h+=bpt('Machine Shop',MMCH,MSRC,y.machine,t.prevDate,false).html;
+
+    // Dept Manpower & Electricity summary
+    h+='<div class="sl2">Department Summary — Manpower & Electricity</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Today vs Yesterday — Staff / Contract / Cost / Electricity kWh</div></div><div class="sx"><table class="tbl"><thead><tr><th style="text-align:left">Department</th><th>Staff</th><th>Contract</th><th>Cost ₹</th><th>Elec kWh</th><th style="color:var(--tx3)">Y-Staff</th><th style="color:var(--tx3)">Y-Contract</th><th style="color:var(--tx3)">Y-Cost ₹</th><th style="color:var(--tx3)">Y-kWh</th></tr></thead><tbody>';
+    var depts=['Forge Shop','Press Shop','HT Shop','Cutting Shop','Machine Shop','Die Shop','Final Shop','Maint Dept','Store','Office'];
+    var totS=0,totC=0,totCC=0,totE=0,ytS=0,ytC=0,ytCC=0,ytE=0;
+    var edMap={'Forge Shop':'Forge','Press Shop':'Press','HT Shop':'HT','Machine Shop':'Machine','Die Shop':'Die','Cutting Shop':'Grinding','Final Shop':'Compressor'};
+    depts.forEach(function(d){
+      var td2=mp[d]||{},yd2=ymp[d]||{};
+      var ek=ed[edMap[d]||'']||0,yek=yed[edMap[d]||'']||0;
+      totS+=td2.staff||0;totC+=td2.contract||0;totCC+=td2.contractCost||0;totE+=ek;
+      ytS+=yd2.staff||0;ytC+=yd2.contract||0;ytCC+=yd2.contractCost||0;ytE+=yek;
+      h+='<tr><td>'+d+'</td><td>'+(td2.staff||0)+'</td><td>'+(td2.contract||0)+'</td><td class="mo">'+fN(td2.contractCost)+'</td><td class="mo">'+(ek>0?fN(ek):'—')+'</td>';
+      h+='<td style="color:var(--tx3)">'+(yd2.staff||0)+'</td><td style="color:var(--tx3)">'+(yd2.contract||0)+'</td><td class="mo" style="color:var(--tx3)">'+fN(yd2.contractCost)+'</td><td class="mo" style="color:var(--tx3)">'+(yek>0?fN(yek):'—')+'</td></tr>';
+    });
+    h+='<tr class="tot"><td>TOTAL</td><td>'+totS+'</td><td>'+totC+'</td><td class="mo">'+fN(totCC)+'</td><td class="mo">'+fN(totE)+'</td><td style="color:var(--tx3)">'+ytS+'</td><td style="color:var(--tx3)">'+ytC+'</td><td class="mo" style="color:var(--tx3)">'+fN(ytCC)+'</td><td class="mo" style="color:var(--tx3)">'+fN(ytE)+'</td></tr>';
+    h+='</tbody></table></div></div>';
+
+    // WIP snapshot
+    h+='<div class="sl2">WIP Snapshot</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Work in Process</div><div class="badge b-or">'+fN((ws.cutWIPPcs||0)+(ws.fgWIPPcs||0))+' pcs</div></div><div class="ws">';
+    h+='<div class="wb" onclick="sw(\'wip\')"><div class="wl">Cut WIP</div><div class="wp or">'+fN(ws.cutWIPPcs)+'</div><div class="wt">'+fT(ws.cutWIPPcs*1.7/1000)+'</div><div class="wu">'+(ws.cutWIPVFs||0)+' VFs</div></div>';
+    h+='<div class="wb" onclick="sw(\'wip\')"><div class="wl">Forged / Pressed WIP</div><div class="wp gn">'+fN(ws.fgWIPPcs)+'</div><div class="wt">'+fT(ws.fgWIPPcs*1.5/1000)+'</div><div class="wu">'+(ws.fgWIPVFs||0)+' VFs</div></div>';
+    h+='<div class="wb" onclick="sw(\'wip\')"><div class="wl">JWK WIP</div><div class="wp bl">'+fN(ws.jwkWIPPcs)+'</div><div class="wu">Laxmi + Kalyani</div></div>';
+    h+='</div></div>';
+  }
+
+  // ═══════════ MTD TAB ═══════════
+  if(CUR==='mtd'){
+    var elCost=m.elecKwh*ELEC_RATE;
+    var elPerKg=totalFinT>0?(elCost/(totalFinT*1000)).toFixed(2):'—';
+    h+='<div class="kg k5">';
+    h+='<div class="kc or"><div class="kl">Turnover MTD</div><div class="kv">'+(m.turnoverFmt||fC((m.turnoverL||0)*1e5))+'</div><div class="ks">'+m.month+'</div></div>';
+    h+='<div class="kc gn"><div class="kl">Own Forged MTD</div><div class="kv">'+fN(m.ownForgedPcs)+'</div><div class="kt">'+fT(m.ownForgedTons)+'</div></div>';
+    h+='<div class="kc bl"><div class="kl">Dispatched MTD</div><div class="kv">'+fN(m.dispQty)+'</div><div class="kt">'+(m.turnoverFmt||'')+'</div></div>';
+    h+='<div class="kc sl"><div class="kl">Cut MTD</div><div class="kv">'+fN(m.cutQty)+'</div><div class="kt">'+fT(m.cutTons)+'</div></div>';
+    h+='<div class="kc am"><div class="kl">Schedule %</div><div class="kv">'+(m.schedPct||0)+'%</div><div class="ks">'+fN(m.producedQty)+' of '+fN(m.schedQty)+'</div></div>';
+    h+='</div>';
+
+    h+='<div class="g2">';
+    // Left column
+    h+='<div>';
+    // Electricity
+    h+='<div class="card"><div class="ch"><div class="ct">Electricity — MTD</div><div class="badge b-sl">'+fN(m.elecKwh)+' kWh</div></div><div class="cb">';
+    h+='<div class="cr"><span class="crl">Total kWh</span><span class="crv">'+fN(m.elecKwh)+'</span></div>';
+    h+='<div class="cr"><span class="crl">Est. Cost (@ ₹'+ELEC_RATE+'/kWh)</span><span class="crv or">'+fC(elCost)+'</span></div>';
+    h+='<div class="cr"><span class="crl">₹/kg on Finished Weight</span><span class="crv rd">₹'+elPerKg+'</span></div>';
+    h+='<div class="cr"><span class="crl">Total Finished Weight</span><span class="crv">'+fT(totalFinT)+'</span></div>';
+    h+='</div></div>';
+    // Dept-wise electricity
+    var de=m.deptElec||{};
+    h+='<div class="card"><div class="ch"><div class="ct">Electricity by Department — MTD</div></div><div class="cb">';
+    var dek=Object.keys(de).sort(function(a,b){return de[b]-de[a]});
+    var maxE=dek.length?de[dek[0]]:1;
+    dek.forEach(function(d){
+      var pct=Math.round(de[d]/maxE*100);
+      h+='<div class="br"><div class="brl">'+d+'</div><div class="brt"><div class="brf" style="width:'+pct+'%;background:var(--sl)"></div></div><div class="brv">'+fN(de[d])+' kWh</div><div style="font-family:var(--mo);font-size:9px;color:var(--tx3);width:40px;text-align:right">'+fC(de[d]*ELEC_RATE)+'</div></div>';
+    });
+    h+='</div></div>';
+    // Oil
+    h+='<div class="card"><div class="ch"><div class="ct">Oil Consumption — MTD</div></div><div class="cb">';
+    h+='<div class="cr"><span class="crl">Forge Oil</span><span class="crv">'+fN(m.oilForgeL)+' L</span></div>';
+    h+='<div class="cr"><span class="crl">HT Oil</span><span class="crv">'+fN(m.oilHTL)+' L</span></div>';
+    h+='<div class="cr"><span class="crl">Avg Daily Forge</span><span class="crv">'+fN(ob.avgDailyForge)+' L</span></div>';
+    h+='<div class="cr"><span class="crl">Avg Daily HT</span><span class="crv">'+fN(ob.avgDailyHT)+' L</span></div>';
+    h+='</div></div>';
+    h+='</div>';
+
+    // Right column
+    h+='<div>';
+    // Manpower
+    h+='<div class="card"><div class="ch"><div class="ct">Manpower — MTD Avg/Day</div><div class="badge b-bl">Staff '+fN(m.staffHead)+' | Contract '+fN(m.contractHead)+'</div></div><div class="sx"><table class="tbl"><thead><tr><th style="text-align:left">Department</th><th>Staff Avg</th><th>Contract Avg</th><th>Contract Cost ₹</th></tr></thead><tbody>';
+    var dm=m.deptManpower||{};
+    var dmk=Object.keys(dm).sort(function(a,b){return(dm[b].contractCost||0)-(dm[a].contractCost||0)});
+    var totDC=0;
+    dmk.forEach(function(d){var v=dm[d];totDC+=v.contractCost||0;h+='<tr><td>'+d+'</td><td class="mo">'+(v.staffAvg||0)+'</td><td class="mo">'+(v.contractAvg||0)+'</td><td class="mo">'+fN(v.contractCost)+'</td></tr>'});
+    h+='<tr class="tot"><td>TOTAL</td><td></td><td></td><td class="mo">'+fN(totDC)+'</td></tr>';
+    h+='</tbody></table></div></div>';
+    // Baselines
+    h+='<div class="card"><div class="ch"><div class="ct">Cost Baselines</div></div><div class="cb">';
+    h+='<div class="cr"><span class="crl">Salary — Company (est)</span><span class="crv">₹'+(m.salaryEstL||27.35)+' L</span></div>';
+    h+='<div class="cr"><span class="crl">Salary — Contractor (est)</span><span class="crv">₹'+(m.contractorEstL||18.34)+' L</span></div>';
+    h+='<div class="cr"><span class="crl">Transport ₹/Ton</span><span class="crv">₹'+fN(tr.avgCostPerT)+'</span></div>';
+    h+='<div class="cr"><span class="crl">RM Rate (Wtd Avg)</span><span class="crv">₹'+(D.rm_rate||'—')+'/kg</span></div>';
+    h+='<div class="cr"><span class="crl">Vendor Rejections</span><span class="crv rd">'+fN(m.vendorRejPcs)+' pcs</span></div>';
+    h+='</div></div>';
+    h+='</div></div>';
+  }
+
+  // ═══════════ WIP TAB ═══════════
+  if(CUR==='wip'){
+    h+='<div class="card"><div class="ch"><div class="ct">Work in Process — Click to expand</div><div class="badge b-or">'+fN((ws.cutWIPPcs||0)+(ws.fgWIPPcs||0))+' pcs total</div></div>';
+    h+='<div class="ws">';
+    h+='<div class="wb" onclick="td(\'dc\')"><div class="wl">Cut WIP</div><div class="wp or">'+fN(ws.cutWIPPcs)+'</div><div class="wu">'+(ws.cutWIPVFs||0)+' VFs</div><div class="wh">▼ expand</div></div>';
+    h+='<div class="wb" onclick="td(\'df\')"><div class="wl">Forged/Pressed WIP</div><div class="wp gn">'+fN(ws.fgWIPPcs)+'</div><div class="wu">'+(ws.fgWIPVFs||0)+' VFs</div><div class="wh">▼ expand</div></div>';
+    h+='<div class="wb" onclick="td(\'dj\')"><div class="wl">JWK WIP</div><div class="wp bl">'+fN(ws.jwkWIPPcs)+'</div><div class="wu">Laxmi + Kalyani</div><div class="wh">▼ expand</div></div>';
+    h+='</div>';
+    // Cut WIP drill
+    h+='<div id="dc" class="dr"><div class="drh"><div class="drt">Cut WIP — All Parts</div><div class="drc" onclick="td(\'dc\')">×</div></div><div class="sx"><table class="tbl"><thead><tr><th>VF No</th><th>Customer</th><th>Cut WIP</th><th>Tons</th></tr></thead><tbody>';
+    (w.rows||[]).filter(function(r){return(r.cutWIP||0)>0}).sort(function(a,b){return b.cutWIP-a.cutWIP}).forEach(function(r){
+      h+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fN(r.cutWIP)+'</td><td class="mo" style="color:var(--tn)">'+fT(r.cutWIPTons)+'</td></tr>'
+    });
+    h+='</tbody></table></div></div>';
+    // FG WIP drill
+    h+='<div id="df" class="dr"><div class="drh"><div class="drt">Forged/Pressed WIP</div><div class="drc" onclick="td(\'df\')">×</div></div><div class="sx"><table class="tbl"><thead><tr><th>VF No</th><th>Customer</th><th>FG WIP</th><th>Tons</th></tr></thead><tbody>';
+    (w.rows||[]).filter(function(r){return(r.fgWIP||0)>0}).sort(function(a,b){return b.fgWIP-a.fgWIP}).forEach(function(r){
+      h+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fN(r.fgWIP)+'</td><td class="mo" style="color:var(--tn)">'+fT(r.fgWIPTons)+'</td></tr>'
+    });
+    h+='</tbody></table></div></div>';
+    // JWK drill
+    h+='<div id="dj" class="dr"><div class="drh"><div class="drt">JWK WIP</div><div class="drc" onclick="td(\'dj\')">×</div></div><div class="sx"><table class="tbl"><thead><tr><th>VF No</th><th>Customer</th><th>Closing WIP</th></tr></thead><tbody>';
+    var jvfs=D.jwk_vfs||[];
+    (w.rows||[]).filter(function(r){return jvfs.indexOf(r.vfNo)>=0&&Math.abs(r.closingWIP||0)>0}).forEach(function(r){
+      h+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fN(Math.abs(r.closingWIP))+'</td></tr>'
+    });
+    h+='</tbody></table></div></div>';
+    h+='</div>';
+  }
+
+  // ═══════════ SCHEDULE TAB ═══════════
+  if(CUR==='sched'){
+    h+='<div class="kg k4">';
+    h+='<div class="kc or"><div class="kl">Total Scheduled</div><div class="kv">'+fN(ss.totalSchedQty)+'</div><div class="kt">'+fT(ss.totalRMRequired/1000)+'</div></div>';
+    h+='<div class="kc gn"><div class="kl">Produced MTD</div><div class="kv">'+fN(ss.totalProduced)+'</div></div>';
+    h+='<div class="kc rd"><div class="kl">Balance to Produce</div><div class="kv">'+fN(ss.totalBalProduce)+'</div><div class="kt">'+fT(m.balProduceTons)+'</div></div>';
+    h+='<div class="kc am"><div class="kl">Dispatched MTD</div><div class="kv">'+fN(ss.totalDispatched)+'</div><div class="kt">'+(m.turnoverFmt||'')+'</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Schedule — IN STOCK first within each Band</div><div class="badge b-or">'+(ss.totalVFs||0)+' VFs</div></div><div class="sx"><table class="tbl"><thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Sched</th><th>Produced</th><th>Dispatched</th><th>Balance</th><th>RM Req T</th><th>Sched %</th><th>Stock</th></tr></thead><tbody>';
+    var sr=(sc.rows||[]).slice().sort(function(a,b){
+      var d=bo(a.band)-bo(b.band);if(d!==0)return d;
+      if(a.hasStock&&!b.hasStock)return -1;if(!a.hasStock&&b.hasStock)return 1;
+      return(b.balProduce||0)-(a.balProduce||0)
+    });
+    sr.forEach(function(r){
+      if((r.balProduce||0)<=0&&(r.dispatchedMTD||0)<=0)return;
+      h+='<tr><td>'+bp(r.band)+'</td><td class="mo">'+r.vfNo+'</td><td style="text-align:left;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.customer+'</td><td class="mo">'+r.grade+'</td>';
+      h+='<td>'+fN(r.schedQty)+'</td><td>'+fN(r.producedMTD)+'</td><td>'+fN(r.dispatchedMTD)+'</td>';
+      h+='<td class="fw6 '+(r.balProduce>0?'am':'gn')+'">'+fN(r.balProduce)+'</td>';
+      h+='<td class="mo" style="color:var(--tn)">'+(r.rmRequiredT>0?r.rmRequiredT.toFixed(1):'—')+'</td>';
+      h+='<td>'+(r.schedPct||0)+'%</td>';
+      h+='<td><span class="badge '+(r.hasStock?'b-gn':'b-rd')+'">'+(r.hasStock?'IN STOCK':'NO STOCK')+'</span></td></tr>'
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  // ═══════════ OUTSTANDING TAB ═══════════
+  if(CUR==='out'){
+    h+='<div class="kg k3">';
+    h+='<div class="kc rd"><div class="kl">Total Overdue</div><div class="kv">'+(ou.totalOverdueFmt||fC(ou.totalOverdue))+'</div></div>';
+    h+='<div class="kc am"><div class="kl">Not Due</div><div class="kv">'+(ou.totalNotDueFmt||fC(ou.totalNotDue))+'</div></div>';
+    h+='<div class="kc or"><div class="kl">Total Outstanding</div><div class="kv">'+(ou.totalOutstandingFmt||fC(ou.totalOutstanding))+'</div><div class="ks">'+ou.asOn+'</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Customer Outstanding</div><div class="badge b-rd">'+(ou.customers||[]).length+' customers</div></div><div class="sx"><table class="tbl"><thead><tr><th>Customer</th><th>Not Due</th><th>Overdue</th><th>Grand Total</th></tr></thead><tbody>';
+    (ou.customers||[]).forEach(function(c){
+      h+='<tr><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.customer+'</td>';
+      h+='<td class="mo">'+(c.notDueFmt||fC(c.notDue))+'</td>';
+      h+='<td class="mo fw6" style="color:'+(c.overdue>0?'var(--rd)':'var(--gn)')+'">'+(c.overdueFmt||fC(c.overdue))+'</td>';
+      h+='<td class="mo fw6">'+(c.grandTotalFmt||fC(c.grandTotal))+'</td></tr>'
+    });
+    h+='<tr class="tot"><td>GRAND TOTAL</td><td class="mo">'+(ou.totalNotDueFmt||'')+'</td><td class="mo rd">'+(ou.totalOverdueFmt||'')+'</td><td class="mo fw6">'+(ou.totalOutstandingFmt||'')+'</td></tr>';
+    h+='</tbody></table></div></div>';
+  }
+
+  // ═══════════ STEEL STOCK TAB ═══════════
+  if(CUR==='steel'){
+    h+='<div class="kg k4">';
+    h+='<div class="kc or"><div class="kl">Total Stock</div><div class="kv">'+fT(st.totalBalanceT)+'</div><div class="ks">₹'+((st.totalValueL||0).toFixed(0))+' L est value</div></div>';
+    h+='<div class="kc gn"><div class="kl">RM Inward</div><div class="kv">'+fT((st.totalInwardKg||0)/1000)+'</div></div>';
+    h+='<div class="kc rd"><div class="kl">Consumed</div><div class="kv">'+fT((st.totalConsumedKg||0)/1000)+'</div></div>';
+    h+='<div class="kc sl"><div class="kl">Avg Rate</div><div class="kv">₹'+(D.rm_rate||'—')+'/kg</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Grade-wise Stock</div></div><div class="sx"><table class="tbl"><thead><tr><th>Grade</th><th>Opening kg</th><th>Inward kg</th><th>Consumed kg</th><th>Balance kg</th><th>Balance T</th><th>Value ₹L</th></tr></thead><tbody>';
+    (st.grades||[]).forEach(function(g){
+      h+='<tr><td>'+g.grade+'</td><td class="mo">'+fN(g.openingKg)+'</td><td class="mo">'+fN(g.inwardKg)+'</td><td class="mo">'+fN(g.consumedKg)+'</td>';
+      h+='<td class="mo fw6" style="color:'+(g.balanceKg>0?'var(--gn)':'var(--rd)')+'">'+fN(g.balanceKg)+'</td>';
+      h+='<td class="mo">'+fT(g.balanceT)+'</td><td class="mo">'+(g.valueL||0)+' L</td></tr>'
+    });
+    h+='<tr class="tot"><td>TOTAL</td><td></td><td class="mo">'+fN(st.totalInwardKg)+'</td><td class="mo">'+fN(st.totalConsumedKg)+'</td><td class="mo fw6">'+fN(st.totalBalanceKg)+'</td><td class="mo">'+fT(st.totalBalanceT)+'</td><td class="mo">'+(st.totalValueL||0)+' L</td></tr>';
+    h+='</tbody></table></div></div>';
+  }
+
+  // ═══════════ 57F4 TAB ═══════════
+  if(CUR==='f4'){
+    var vs=f4.vendors||[];
+    h+='<div class="kg k3">';
+    h+='<div class="kc or"><div class="kl">Vendors</div><div class="kv">'+vs.length+'</div></div>';
+    h+='<div class="kc gn"><div class="kl">Total Sent</div><div class="kv">'+fN(vs.reduce(function(s,v){return s+(v.sentPcs||0)},0))+'</div></div>';
+    h+='<div class="kc sl"><div class="kl">Note</div><div class="kv" style="font-size:11px">Opening inventory pending verification</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">57F4 Vendor Inventory</div></div>';
+    var cols=['#E8731A','#1D4ED8','#0E6E3A','#B91C1C','#6D28D9','#92400E','#1565C0'];
+    vs.forEach(function(v,i){
+      var c=cols[i%cols.length];
+      h+='<div class="f4v"><div class="f4h" onclick="this.nextElementSibling.classList.toggle(\'op\')"><div class="f4d" style="background:'+c+'"></div><div class="f4n">'+v.vendor+'</div><div class="f4t" style="color:'+c+'">Sent: '+fN(v.sentPcs)+(v.rejectedPcs>0?' | <span class="rd">Rej: '+fN(v.rejectedPcs)+'</span>':'')+'</div><span style="font-size:14px;color:var(--tx3)">▼</span></div>';
+      h+='<div class="f4b"><table class="tbl" style="margin:0"><thead><tr><th>VF</th><th>Customer</th><th>Sent</th></tr></thead><tbody>';
+      (v.parts||[]).forEach(function(p){h+='<tr><td class="mo">'+p.vfNo+'</td><td>'+p.customer+'</td><td>'+fN(p.sentPcs)+'</td></tr>'});
+      h+='</tbody></table></div></div>'
+    });
+    h+='</div>';
+  }
+
+  // ═══════════ ELECTRICITY TAB ═══════════
+  if(CUR==='elec'){
+    var eBars=el.deptBars||[],elT=el.totalKwh||0,elCost2=elT*ELEC_RATE;
+    var elPK=totalFinT>0?(elCost2/(totalFinT*1000)).toFixed(2):'—';
+    h+='<div class="kg k4">';
+    h+='<div class="kc sl"><div class="kl">Total kWh MTD</div><div class="kv">'+fN(elT)+'</div><div class="kt">Est. '+fC(elCost2)+'</div></div>';
+    h+='<div class="kc bl"><div class="kl">₹/kg Finished Wt</div><div class="kv">₹'+elPK+'</div></div>';
+    h+='<div class="kc am"><div class="kl">Rate Used</div><div class="kv">₹'+ELEC_RATE+'/kWh</div></div>';
+    h+='<div class="kc or"><div class="kl">Finished Weight</div><div class="kv">'+fT(totalFinT)+'</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Department-wise kWh — MTD</div></div><div class="cb">';
+    var mx=eBars.length?eBars[0].kwh:1;
+    eBars.forEach(function(d){
+      var pc=Math.round(d.kwh/mx*100);
+      h+='<div class="br"><div class="brl">'+d.dept+'</div><div class="brt"><div class="brf" style="width:'+pc+'%;background:var(--sl)"></div></div><div class="brv">'+fN(d.kwh)+' kWh</div><div style="font-family:var(--mo);font-size:9px;color:var(--tx3);width:30px;text-align:right">'+d.pct+'%</div></div>'
+    });
+    h+='</div></div>';
+  }
+
+  // ═══════════ ALERTS TAB ═══════════
+  if(CUR==='alerts'){
+    var hi=al.filter(function(a){return a.priority==='high'}),med=al.filter(function(a){return a.priority!=='high'});
+    h+='<div class="kg k3">';
+    h+='<div class="kc rd"><div class="kl">High Priority</div><div class="kv">'+hi.length+'</div></div>';
+    h+='<div class="kc am"><div class="kl">Total Alerts</div><div class="kv">'+al.length+'</div></div>';
+    h+='<div class="kc gn"><div class="kl">System</div><div class="kv">OK</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Active Alerts</div><div class="badge b-rd">'+al.length+' alerts</div></div>';
+    hi.concat(med).forEach(function(a){
+      var isH=a.priority==='high';
+      h+='<div style="border-left:4px solid '+(isH?'var(--rd)':'var(--bd2)')+';background:'+(isH?'#FEE2E2':'#FAFBFC')+';padding:10px 14px;border-bottom:1px solid var(--bd)">';
+      h+='<div style="font-size:11px;font-weight:700;color:'+(isH?'var(--rd)':'var(--tx2)')+'">'+(a.title||a.type)+'</div>';
+      h+='<div style="font-size:10px;color:var(--tx2);margin-top:2px">'+(a.message||'')+'</div></div>'
+    });
+    if(!al.length)h+='<div style="padding:20px;text-align:center;color:var(--gn)">✓ No alerts</div>';
+    h+='</div>';
+  }
+
+  // ═══════════ DIE LIFE TAB ═══════════
+  if(CUR==='die'){
+    var run=dl.running||[],comp=dl.complete||[];
+    h+='<div class="kg k3">';
+    h+='<div class="kc gn"><div class="kl">Active Runs</div><div class="kv">'+run.length+'</div></div>';
+    h+='<div class="kc sl"><div class="kl">Completed</div><div class="kv">'+comp.length+'</div></div>';
+    h+='<div class="kc or"><div class="kl">Machines</div><div class="kv">'+new Set(run.concat(comp).map(function(r){return r.machine})).size+'</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Active Dies</div><div class="badge b-gn">'+run.length+' running</div></div><div class="sx"><table class="tbl"><thead><tr><th>Machine</th><th>VF</th><th>Start</th><th>Days</th><th>Shifts</th><th>Pcs</th></tr></thead><tbody>';
+    run.forEach(function(r){h+='<tr><td>'+r.machine+'</td><td class="mo">'+r.vf+'</td><td class="mo">'+(r.runStart||'').substring(0,10)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo fw6">'+fN(r.totalPcs)+'</td></tr>'});
+    if(!run.length)h+='<tr><td colspan="6" style="text-align:center;color:var(--tx3)">None</td></tr>';
+    h+='</tbody></table></div></div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Completed Runs</div><div class="badge b-sl">'+comp.length+'</div></div><div class="sx"><table class="tbl"><thead><tr><th>Machine</th><th>VF</th><th>Start</th><th>End</th><th>Days</th><th>Shifts</th><th>Pcs</th></tr></thead><tbody>';
+    comp.slice(0,30).forEach(function(r){h+='<tr><td>'+r.machine+'</td><td class="mo">'+r.vf+'</td><td class="mo">'+(r.runStart||'').substring(0,10)+'</td><td class="mo">'+(r.runEnd||'').substring(0,10)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo fw6">'+fN(r.totalPcs)+'</td></tr>'});
+    h+='</tbody></table></div></div>';
+    // Benchmark alerts
+    var ba=dl.benchmarkAlerts||[];
+    if(ba.length){
+      h+='<div class="card"><div class="ch"><div class="ct">Die Life Drop Alerts</div><div class="badge b-am">'+ba.length+'</div></div>';
+      ba.forEach(function(a){h+='<div style="border-left:4px solid var(--am);padding:8px 14px;border-bottom:1px solid var(--bd);font-size:10px;color:var(--am)">'+a.message+'</div>'});
+      h+='</div>'
+    }
+  }
+
+  // ═══════════ DEPT SCORE TAB ═══════════
+  if(CUR==='dscore'){
+    var scores=ds.scores||[];
+    h+='<div class="kg k4">';
+    h+='<div class="kc gn"><div class="kl">Best</div><div class="kv" style="font-size:14px">'+(scores[0]||{}).dept+'</div><div class="ks">'+(scores[0]||{}).pct+'%</div></div>';
+    h+='<div class="kc rd"><div class="kl">Needs Attention</div><div class="kv" style="font-size:14px">'+(scores[scores.length-1]||{}).dept+'</div><div class="ks">'+(scores[scores.length-1]||{}).pct+'%</div></div>';
+    h+='<div class="kc sl"><div class="kl">Overall</div><div class="kv">'+(ds.overallPct||0)+'%</div><div class="ks">'+(ds.workingDays||0)+' working days</div></div>';
+    h+='<div class="kc or"><div class="kl">Departments</div><div class="kv">'+scores.length+'</div></div>';
+    h+='</div>';
+    h+='<div class="card"><div class="ch"><div class="ct">Data Entry Compliance — '+m.month+'</div></div><div class="sx"><table class="tbl"><thead><tr><th>Department</th><th>Days with Data</th><th>Expected</th><th>Score</th><th>Grade</th></tr></thead><tbody>';
+    scores.forEach(function(s){
+      h+='<tr><td>'+s.dept+'</td><td class="mo">'+s.count+'</td><td class="mo">'+s.expected+'</td><td class="mo fw6">'+s.pct+'%</td><td><span class="badge '+(s.pct>=85?'b-gn':s.pct>=65?'b-am':'b-rd')+'">'+s.grade+'</span></td></tr>'
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  // ═══════════ MARGINS TAB ═══════════
+  if(CUR==='margin'){
+    if(!document.getElementById('pin-ok')){
+      h+='<div style="text-align:center;padding:40px"><div style="font-size:14px;font-weight:600;color:var(--sld);margin-bottom:8px">Owner View — PIN Required</div><div style="display:flex;gap:8px;justify-content:center;margin:16px 0"><input type="password" id="pin-in" maxlength="4" placeholder="PIN" style="padding:8px 12px;border:1px solid var(--bd);border-radius:5px;font-size:14px;font-family:var(--mo);width:100px;text-align:center"><button onclick="if(document.getElementById(\'pin-in\').value===PIN){var d=document.createElement(\'span\');d.id=\'pin-ok\';document.body.appendChild(d);ren()}" style="padding:8px 16px;background:var(--br);color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600">Unlock</button></div></div>';
+    } else {
+      var mrows=mg.rows||[];
+      h+='<div class="card"><div class="ch"><div class="ct">Margin Analysis — RM ₹'+(mg.rmAvgRate||D.rm_rate)+'/kg</div><div class="badge b-or">'+mrows.length+' parts</div></div><div class="sx"><table class="tbl"><thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Conv ₹/kg</th><th>Net ₹/kg</th><th>Disp T</th><th>Turnover ₹L</th><th>Net Real ₹L</th></tr></thead><tbody>';
+      mrows.forEach(function(r){
+        var c=BC[r.band]||'#888';
+        h+='<tr><td>'+bp(r.band)+'</td><td class="mo">'+r.vfNo+'</td><td style="text-align:left;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.customer+'</td><td class="mo">'+r.grade+'</td>';
+        h+='<td class="mo">'+(r.convPerKg||0).toFixed(1)+'</td><td class="mo fw6" style="color:'+c+'">'+(r.netPerKg||0).toFixed(1)+'</td>';
+        h+='<td class="mo">'+fT(r.dispTons)+'</td><td class="mo">'+(r.turnoverL||0)+'</td><td class="mo" style="color:'+c+'">'+(r.netRealL||0)+'</td></tr>'
+      });
+      h+='</tbody></table></div></div>';
+    }
+  }
+
+  // ═══════════ FY MONTHLY TAB ═══════════
+  if(CUR==='fy'){
+    h+='<div class="card"><div class="ch"><div class="ct">FY 2026-27 Monthly Performance</div><div class="badge b-or">12 months</div></div><div class="sx"><table class="tbl"><thead><tr><th>Month</th><th>Cut Pcs</th><th>Cut T</th><th>Forge Pcs</th><th>Forge T</th><th>Press Pcs</th><th>Press T</th><th>HT Qty</th><th>Disp Pcs</th><th>Turnover</th><th>RM kg</th><th>Oil Forge L</th><th>Oil HT L</th><th>Elec kWh</th><th>Staff</th><th>Contract</th></tr></thead><tbody>';
+    fy.forEach(function(r){
+      var has=(r.cutQty||0)>0;
+      h+='<tr'+(has?'':' style="color:var(--tx3)"')+'>';
+      h+='<td class="mo fw6">'+r.month+'</td>';
+      h+='<td>'+fN(r.cutQty)+'</td><td class="mo" style="color:var(--tn)">'+fT(r.cutTons)+'</td>';
+      h+='<td>'+fN(r.forgeQtyIn)+'</td><td class="mo" style="color:var(--tn)">'+fT(r.forgeKgIn/1000)+'</td>';
+      h+='<td>'+fN(r.pressQtyIn)+'</td><td class="mo" style="color:var(--tn)">'+fT(r.pressKgIn/1000)+'</td>';
+      h+='<td>'+fN(r.htQty)+'</td>';
+      h+='<td>'+fN(r.dispQty)+'</td><td class="or fw6">'+(r.dispTurnover>0?fC(r.dispTurnover*1e5):'—')+'</td>';
+      h+='<td class="mo">'+fN(r.rmKg)+'</td>';
+      h+='<td class="mo">'+fN(r.oilForge)+'</td><td class="mo">'+fN(r.oilHT)+'</td>';
+      h+='<td class="mo">'+fN(r.elecKwh)+'</td>';
+      h+='<td class="mo">'+(r.staffHead||'—')+'</td><td class="mo">'+(r.contractHead||'—')+'</td>';
+      h+='</tr>'
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  document.getElementById('app').innerHTML=h;
+};
+
+// Override loadData to call ren after data loads
+function loadData(){
+  document.getElementById('lov').style.display='flex';
+  document.getElementById('ebar').style.display='none';
+  fetch(U+'?v='+Date.now()).then(function(r){return r.json()}).then(function(data){
+    document.getElementById('lov').style.display='none';
+    if(data.error)throw new Error(data.error);
+    D=data;ren();
+  }).catch(function(e){
+    document.getElementById('lov').style.display='none';
+    document.getElementById('ebar').style.display='flex';
+    document.getElementById('emsg').textContent='Load failed: '+e.message;
+  });
+}
+document.addEventListener('DOMContentLoaded',loadData);
+setInterval(function(){fetch(U+'?v='+Date.now()).then(function(r){return r.json()}).then(function(d){if(!d.error){D=d;ren()}}).catch(function(){})},600000);
+</script>
 </body>
 </html>
