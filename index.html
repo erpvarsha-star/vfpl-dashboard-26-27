@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>VFPL Factory OS — FY 2026-27</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -13,36 +12,41 @@
   --tx:#111827;--tx2:#4B5563;--tx3:#9CA3AF;
   --gn:#0E6E3A;--gnb:#DCFCE7;--rd:#B91C1C;--rdb:#FEE2E2;
   --am:#92400E;--amb:#FEF3C7;--bl:#1D4ED8;--blb:#DBEAFE;
-  --mo:'IBM Plex Mono',monospace;--pu:#6D28D9;--pub:#EDE9FE;
+  --pu:#6D28D9;--pub:#EDE9FE;--mo:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;}
-.hdr{background:var(--wh);border-bottom:3px solid var(--br);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:200;box-shadow:0 2px 6px rgba(0,0,0,.06);}
+
+/* HEADER */
+.hdr{background:var(--wh);border-bottom:3px solid var(--br);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:50px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .logo{display:flex;align-items:center;gap:10px;}
-.logo img{height:36px;}
-.logo-name{font-size:15px;font-weight:700;color:var(--sld);}
-.logo-sub{font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;}
-.hdr-r{display:flex;align-items:center;gap:14px;}
+.logo svg{width:32px;height:32px;}
+.logo-text .name{font-size:14px;font-weight:700;color:var(--sld);}
+.logo-text .sub{font-size:9px;font-weight:500;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;}
+.hdr-right{display:flex;align-items:center;gap:12px;}
 .live{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--gn);}
-.pulse{width:7px;height:7px;border-radius:50%;background:var(--gn);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(14,110,58,.4);}50%{opacity:.7;box-shadow:0 0 0 4px rgba(14,110,58,0);}}
-.clk{font-family:var(--mo);font-size:11px;color:var(--tx2);}
-.fy-badge{font-size:9px;font-weight:700;background:var(--sll);color:var(--sld);padding:3px 8px;border-radius:3px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gn);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(14,110,58,.4);}50%{box-shadow:0 0 0 4px rgba(14,110,58,0);}}
+.clock{font-family:var(--mo);font-size:11px;color:var(--tx2);}
+.yr{font-size:9px;font-weight:700;background:var(--sll);color:var(--sld);padding:3px 8px;border-radius:3px;}
+
+/* TABS */
 .tabs{background:var(--wh);border-bottom:2px solid var(--bd);padding:0 16px;display:flex;overflow-x:auto;gap:2px;}
 .tabs::-webkit-scrollbar{height:0;}
 .tab{padding:10px 13px;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;margin-bottom:-2px;}
 .tab:hover:not(.active){color:var(--tx2);background:#F9FAFB;}
 .tab.active{color:var(--br);border-bottom-color:var(--br);background:var(--brl);}
-.main{padding:12px 16px;max-width:2000px;margin:0 auto;}
 
-/* KPI */
-.kgrid{display:grid;gap:7px;margin-bottom:10px;}
+/* MAIN */
+.main{padding:12px 16px;max-width:1800px;margin:0 auto;display:none;}
+.main.active{display:block;}
+
+/* KPI BAR */
+.kbar{display:grid;gap:8px;margin-bottom:12px;}
 .k5{grid-template-columns:repeat(5,1fr);}
-.k4{grid-template-columns:repeat(4,1fr);}
-.k3{grid-template-columns:repeat(3,1fr);}
 .k6{grid-template-columns:repeat(6,1fr);}
 .k7{grid-template-columns:repeat(7,1fr);}
-.kc{background:var(--wh);border:1px solid var(--bd);border-radius:6px;padding:10px 12px;border-top:3px solid var(--bd);}
+.kc{background:var(--wh);border:1px solid var(--bd);border-radius:6px;padding:10px 12px;border-top:3px solid var(--bd);position:relative;}
 .kc.or{border-top-color:var(--br);}
 .kc.gn{border-top-color:var(--gn);}
 .kc.rd{border-top-color:var(--rd);}
@@ -50,1145 +54,977 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 .kc.am{border-top-color:#B45309;}
 .kc.sl{border-top-color:var(--sl);}
 .kc.pu{border-top-color:var(--pu);}
-.kc.todo{border-top-color:var(--bd2);}
 .kl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);margin-bottom:3px;}
-.kv{font-size:19px;font-weight:700;line-height:1;color:var(--tx);}
-.ks{font-size:9px;color:var(--tx2);margin-top:2px;font-family:var(--mo);}
+.kv{font-size:18px;font-weight:700;line-height:1.1;color:var(--tx);}
+.ks{font-size:9.5px;color:var(--tx2);margin-top:2px;font-family:var(--mo);}
+.ks2{font-size:9px;color:var(--tx3);margin-top:1px;font-family:var(--mo);}
 
 /* CARDS */
-.card{background:var(--wh);border:1px solid var(--bd);border-radius:6px;overflow:hidden;margin-bottom:8px;}
+.card{background:var(--wh);border:1px solid var(--bd);border-radius:6px;overflow:hidden;margin-bottom:10px;}
 .card-last{margin-bottom:0;}
 .ch{padding:8px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:#FAFBFC;}
 .ct{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--sld);}
 .cb{padding:10px 12px;}
-.badge{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;}
-.b-or{background:var(--brl);color:var(--brd);}
+
+/* BADGE */
+.badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;}
 .b-gn{background:var(--gnb);color:var(--gn);}
 .b-rd{background:var(--rdb);color:var(--rd);}
 .b-am{background:var(--amb);color:var(--am);}
 .b-bl{background:var(--blb);color:var(--bl);}
 .b-sl{background:var(--sll);color:var(--sld);}
+.b-or{background:var(--brl);color:var(--brd);}
 .b-pu{background:var(--pub);color:var(--pu);}
-.band{font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;color:#fff;display:inline-block;}
 
-/* PRODUCTION GRID */
-.dept-wrap{margin-bottom:14px;}
-.dept-hdr{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff;}
-.dept-hdr.today-hdr{background:#1565C0;}
-.dept-hdr.yest-hdr{background:var(--sl);}
-.dept-hdr .dh-date{font-family:var(--mo);font-size:8px;opacity:.85;font-weight:400;}
-.prod-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.prod-tbl{border-collapse:collapse;white-space:nowrap;font-size:10px;width:100%;}
-.prod-tbl th{font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--tx3);background:var(--bg);padding:5px 8px;text-align:center;border:1px solid var(--bd);min-width:100px;}
-.prod-tbl th.sh-col{min-width:68px;text-align:left;background:var(--sll);color:var(--sld);}
-.prod-tbl td{padding:5px 7px;border:1px solid var(--bd);font-family:var(--mo);font-size:9px;color:var(--tx2);text-align:center;vertical-align:top;min-width:100px;}
-.prod-tbl td.sh-col{font-size:9px;font-weight:600;color:var(--sld);background:var(--sll);text-align:left;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;}
-.prod-tbl tr.tot-row td{background:#E8F5E9;font-weight:700;color:var(--gn);}
-.prod-tbl tr.tot-row td.sh-col{background:#C8E6C9;color:var(--gn);}
-.prod-tbl td.has-d{background:#FDFAF5;color:var(--tx);}
-.cell-entries{display:flex;flex-direction:column;gap:2px;text-align:left;}
-.cell-entry{font-size:8.5px;color:var(--tx);white-space:nowrap;}
-.cell-entry span{color:var(--br);font-weight:600;}
-.cell-total{font-size:9px;font-weight:700;color:var(--gn);border-top:1px solid var(--bd);margin-top:2px;padding-top:2px;}
-.empty-cell{color:var(--tx3);font-size:9px;}
+/* BAND PILL */
+.band{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;color:#fff;display:inline-block;}
 
-/* DEPT SUMMARY */
-.summ-grid{display:grid;grid-template-columns:140px repeat(6,1fr);background:var(--bd);gap:1px;border:1px solid var(--bd);border-radius:6px;overflow:hidden;margin-bottom:10px;}
-.summ-cell{background:var(--wh);padding:6px 8px;font-size:10px;}
-.summ-cell.hdr{background:var(--bg);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);text-align:center;}
-.summ-cell.dept-name{font-weight:500;color:var(--tx);background:var(--sll);}
-.summ-cell.today-val{font-family:var(--mo);text-align:right;}
-.summ-cell.yest-val{font-family:var(--mo);text-align:right;color:var(--tx3);}
-.summ-cell.section-hdr{background:var(--sld);color:#fff;font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;text-align:center;}
-.todo-ph{border:2px dashed var(--bd2);border-radius:5px;padding:12px;text-align:center;color:var(--tx3);}
-.todo-ph strong{display:block;font-size:11px;color:var(--tx2);margin-bottom:2px;}
-.todo-ph small{font-size:9px;}
+/* SHIFT GRID — production table */
+.dept-block{margin-bottom:14px;}
+.dept-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:4px;padding:0 2px;border-left:3px solid var(--br);padding-left:8px;}
+.dept-label.day{color:var(--gn);border-color:var(--gn);}
+.dept-label.yest{color:var(--sl);border-color:var(--sl);}
+.shift-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.shift-tbl{width:100%;border-collapse:collapse;min-width:600px;}
+.shift-tbl th{font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--tx3);padding:5px 8px;text-align:center;border-bottom:2px solid var(--bd);background:var(--bg);white-space:nowrap;}
+.shift-tbl th.lft{text-align:left;min-width:80px;}
+.shift-tbl td{padding:5px 8px;font-size:10px;text-align:center;border-bottom:1px solid var(--bd);vertical-align:top;}
+.shift-tbl td.lft{text-align:left;font-weight:600;color:var(--tx);font-size:10px;}
+.shift-tbl tr.tot-row td{font-weight:700;background:var(--sll);font-family:var(--mo);font-size:10px;}
+.shift-tbl tr:hover td{background:#F9FAFB;}
+.cell-entry{display:block;font-family:var(--mo);font-size:9px;line-height:1.4;}
+.cell-entry .vf{color:var(--tx3);}
+.cell-entry .qty{color:var(--tx);font-weight:600;}
+.cell-zero{color:var(--tx3);font-size:9px;}
 
-/* MATERIAL NEEDED TABLE */
-.mat-tbl{width:100%;border-collapse:collapse;font-size:10px;}
-.mat-tbl th{font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--tx3);padding:5px 8px;border-bottom:2px solid var(--bd);background:var(--bg);white-space:nowrap;text-align:right;}
-.mat-tbl th:first-child,.mat-tbl th:nth-child(2),.mat-tbl th:nth-child(3){text-align:left;}
-.mat-tbl td{padding:5px 8px;border-bottom:.5px solid var(--bd);font-size:10px;color:var(--tx2);text-align:right;vertical-align:middle;}
-.mat-tbl td:first-child{text-align:left;}
-.mat-tbl td:nth-child(2){text-align:left;font-size:9px;}
-.mat-tbl td:nth-child(3){text-align:left;font-family:var(--mo);}
-.mat-tbl tr:hover td{background:#F9FAFB;}
-.mat-tbl tr.no-stock td{background:#FEF2F2;}
-.mat-tbl tr.in-stock td{background:#F0FDF4;}
-.mat-tbl tr.sec-hdr td{background:var(--sll);font-weight:700;font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:var(--sld);padding:4px 8px;border:none;}
-.mat-tbl tr.tot td{font-weight:700;background:var(--sll);border-top:2px solid var(--bd2);}
+/* DEPT SUMMARY ROW */
+.dept-summary{display:grid;gap:6px;margin-top:6px;margin-bottom:14px;}
+.ds3{grid-template-columns:repeat(3,1fr);}
+.ds4{grid-template-columns:repeat(4,1fr);}
+.dscard{background:var(--sll);border-radius:5px;padding:7px 10px;}
+.dslbl{font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--tx3);margin-bottom:3px;}
+.dsval{font-size:12px;font-weight:700;color:var(--tx);}
+.dssub{font-size:9px;font-family:var(--mo);color:var(--tx2);margin-top:1px;}
 
-/* WIP BLOCKS */
-.wip-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--bd);}
-.wip-blk{background:var(--wh);padding:14px;cursor:pointer;transition:background .15s;}
-.wip-blk:hover{background:var(--brl);}
-.wip-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px;}
-.wip-pcs{font-size:22px;font-weight:700;line-height:1;margin-bottom:2px;}
-.wip-sub{font-size:9px;font-family:var(--mo);color:var(--tx2);}
-.wip-hint{font-size:9px;color:var(--br);margin-top:4px;}
-
-/* DRILL */
-.drill{display:none;border-top:1px solid var(--bd);}
-.drill.open{display:block;}
-.drill-hdr{padding:6px 12px;display:flex;justify-content:space-between;align-items:center;background:var(--sll);border-bottom:1px solid var(--bd);}
-.drill-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--sld);}
-.drill-close{cursor:pointer;font-size:16px;color:var(--tx3);}
-
-/* CROW */
-.crow{display:flex;align-items:baseline;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--bd);}
-.crow:last-child{border-bottom:none;}
-.clbl{font-size:11px;color:var(--tx2);}
-.cval{font-family:var(--mo);font-size:12px;font-weight:600;}
-.csub{font-family:var(--mo);font-size:9px;color:var(--tx3);margin-left:5px;}
-
-/* BAR ROW */
-.brow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--bd);}
-.brow:last-child{border-bottom:none;}
-.blbl{font-size:11px;font-weight:500;width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.btrack{flex:1;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;}
-.bfill{height:4px;border-radius:2px;background:var(--br);}
-.bval{font-family:var(--mo);font-size:10px;color:var(--tx2);width:65px;text-align:right;flex-shrink:0;}
-
-/* TABLE */
+/* MATERIAL NEEDED */
+.mat-section{margin-top:4px;}
 .tbl{width:100%;border-collapse:collapse;}
-.tbl th{font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--tx3);padding:5px 8px;text-align:right;border-bottom:2px solid var(--bd);background:var(--bg);white-space:nowrap;}
-.tbl th:first-child,.tbl th:nth-child(2){text-align:left;}
-.tbl td{padding:5px 8px;font-size:10px;text-align:right;border-bottom:.5px solid var(--bd);color:var(--tx2);}
+.tbl th{font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--tx3);padding:6px 10px;text-align:right;border-bottom:2px solid var(--bd);background:var(--bg);white-space:nowrap;}
+.tbl th:first-child,.tbl th:nth-child(2),.tbl th:nth-child(3){text-align:left;}
+.tbl td{padding:5px 10px;font-size:11px;text-align:right;border-bottom:1px solid var(--bd);color:var(--tx2);}
 .tbl td:first-child{text-align:left;color:var(--tx);font-weight:500;}
-.tbl td:nth-child(2){text-align:left;}
+.tbl td:nth-child(2),.tbl td:nth-child(3){text-align:left;}
 .tbl tr:hover td{background:#F9FAFB;}
 .tbl tr.tot td{font-weight:700;color:var(--tx);background:var(--sll);border-top:2px solid var(--bd2);}
+.tbl .mono{font-family:var(--mo);}
 
-/* 57F4 */
-.f4-vendor{border-bottom:1px solid var(--bd);}
-.f4-vendor:last-child{border-bottom:none;}
-.f4-hdr{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;transition:background .15s;}
-.f4-hdr:hover{background:var(--bg);}
-.f4-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.f4-name{flex:1;font-size:11px;font-weight:600;}
-.f4-total{font-family:var(--mo);font-size:11px;font-weight:700;}
-.f4-body{display:none;background:var(--bg);border-top:1px solid var(--bd);}
-.f4-body.open{display:block;}
+/* WIP BLOCKS */
+.wip-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--bd);}
+.wip-block{background:var(--wh);padding:14px;cursor:pointer;transition:background .15s;}
+.wip-block:hover{background:var(--brl);}
+.wip-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px;}
+.wip-pcs{font-size:22px;font-weight:700;margin-bottom:2px;}
+.wip-sub{font-size:10px;font-family:var(--mo);color:var(--tx2);}
+.wip-hint{font-size:9px;color:var(--br);margin-top:4px;}
+
+/* LAYOUT */
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:10px;}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:10px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+/* BAR ROW */
+.brow{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bd);}
+.brow:last-child{border-bottom:none;}
+.blbl{font-size:11px;font-weight:500;width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btrack{flex:1;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;}
+.bfill{height:4px;border-radius:2px;background:var(--br);}
+.bval{font-family:var(--mo);font-size:10px;color:var(--tx2);width:80px;text-align:right;flex-shrink:0;}
+
+/* COST ROW */
+.crow{display:flex;align-items:baseline;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);}
+.crow:last-child{border-bottom:none;}
+.clbl{font-size:11px;color:var(--tx2);}
+.cval{font-family:var(--mo);font-size:13px;font-weight:600;}
+.csub{font-family:var(--mo);font-size:9px;color:var(--tx3);margin-left:6px;}
+
+/* ALERT */
+.alert{display:flex;gap:8px;padding:8px 12px;border-radius:5px;margin-bottom:8px;border:1px solid;font-size:11px;}
+.alert.rd{background:var(--rdb);border-color:#FCA5A5;color:var(--rd);}
+.alert.am{background:var(--amb);border-color:#FCD34D;color:var(--am);}
+.alert.sl{background:var(--sll);border-color:var(--bd2);color:var(--sld);}
+
+/* DIE LIFE */
+.die-status-running{background:#DCFCE7;color:#0E6E3A;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;}
+.die-status-complete{background:var(--sll);color:var(--sld);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;}
 
 /* LOADING */
-#lov{display:flex;position:fixed;inset:0;background:rgba(242,244,247,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
-#err-bar{display:none;background:var(--rdb);border-top:2px solid #FCA5A5;padding:10px 20px;align-items:center;gap:10px;font-size:12px;color:var(--rd);}
+.loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:12px;}
+.spin{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--br);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-txt{font-size:12px;color:var(--tx3);}
 
-.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.g21{display:grid;grid-template-columns:2fr 1fr;gap:10px;}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
-.sec-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--bd);padding-bottom:4px;margin:12px 0 7px;}
-.mo{font-family:var(--mo);}
-.fw6{font-weight:600;}
-.or{color:var(--br);}
-.gn{color:var(--gn);}
-.rd{color:var(--rd);}
-.bl{color:var(--bl);}
-.am{color:#92400E;}
-.sl{color:var(--sl);}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
+.scroll-x{overflow-x:auto;}
+
+/* PIN MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--wh);border-radius:8px;padding:24px;width:280px;text-align:center;}
+.modal h3{font-size:14px;font-weight:700;margin-bottom:8px;}
+.modal p{font-size:11px;color:var(--tx2);margin-bottom:16px;}
+.modal input{width:100%;border:1px solid var(--bd);border-radius:5px;padding:8px 12px;font-size:14px;text-align:center;letter-spacing:4px;outline:none;}
+.modal input:focus{border-color:var(--br);}
+.modal-btns{display:flex;gap:8px;margin-top:12px;}
+.modal-btns button{flex:1;padding:8px;border-radius:5px;border:1px solid var(--bd);background:var(--bg);cursor:pointer;font-size:12px;font-weight:600;}
+.modal-btns .btn-ok{background:var(--br);color:#fff;border-color:var(--br);}
+.modal-err{color:var(--rd);font-size:10px;margin-top:6px;}
 </style>
 </head>
 <body>
 
-<!-- LOADING OVERLAY -->
-<div id="lov">
-  <img id="lov-logo" src="data:image/png;base64,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" style="height:50px;" alt="VFPL">
-  <svg width="36" height="36" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#E8731A" stroke-width="3" stroke-dasharray="80 20" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur=".8s" repeatCount="indefinite"/></circle></svg>
-  <div style="font-size:13px;color:var(--sl);font-weight:600;">Loading Factory OS&hellip;</div>
-  <div style="font-size:10px;color:var(--tx3);">FY 2026-27 &bull; Varsha Forgings Pvt Ltd</div>
-</div>
-
 <!-- HEADER -->
 <div class="hdr">
   <div class="logo">
-    <img src="data:image/png;base64,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" alt="VFPL">
-    <div><div class="logo-name">VARSHA FORGINGS</div><div class="logo-sub">Factory Operating System</div></div>
+    <svg viewBox="0 0 100 100"><circle cx="50" cy="56" r="42" fill="#E8731A"/><path d="M22 36L50 84L78 36Q66 50 50 44Q34 50 22 36Z" fill="white"/><path d="M29 29L50 70L71 29Q61 42 50 37Q39 42 29 29Z" fill="#606B7A"/></svg>
+    <div class="logo-text"><div class="name">VARSHA FORGINGS</div><div class="sub">Factory Operating System</div></div>
   </div>
-  <div class="hdr-r">
-    <span class="fy-badge">FY 2026-27</span>
-    <div class="live"><div class="pulse"></div>Live</div>
-    <div class="clk" id="clk">&mdash;</div>
+  <div class="hdr-right">
+    <div class="yr">FY 2026-27</div>
+    <div class="live"><div class="dot"></div>Live</div>
+    <div class="clock" id="clk">—</div>
   </div>
 </div>
 
 <!-- TABS -->
 <div class="tabs">
-  <div class="tab active" onclick="showTab('today',this)">Today / Last Day</div>
-  <div class="tab" onclick="showTab('mtd',this)">Month to Date</div>
-  <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
+  <div class="tab active" onclick="showTab('today',this)">Today</div>
+  <div class="tab" onclick="showTab('schedule',this)">Schedule</div>
   <div class="tab" onclick="showTab('wip',this)">WIP</div>
-  <div class="tab" onclick="showTab('sched',this)">Schedule</div>
-  <div class="tab" onclick="showTab('outstanding',this)">Outstanding</div>
   <div class="tab" onclick="showTab('steel',this)">Steel Stock</div>
   <div class="tab" onclick="showTab('f4',this)">57F4</div>
   <div class="tab" onclick="showTab('elec',this)">Electricity</div>
-  <div class="tab" id="mbtn" onclick="showMargins()">&#9679; Margins</div>
+  <div class="tab" onclick="showTab('dielife',this)">Die Life</div>
+  <div class="tab" onclick="showMargins()">Margins ●</div>
+  <div class="tab" onclick="showTab('monthly',this)">FY Monthly</div>
 </div>
 
-<!-- ═══════════════ TODAY TAB ═══════════════ -->
-<div id="tab-today" class="main">
-
-  <!-- KPI BAR -->
-  <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc bl">
-      <div class="kl">Balance to Produce</div>
-      <div class="kv" id="k-bal">&mdash;</div>
-      <div class="ks" id="k-bal-s">pcs this month</div>
+<!-- PIN MODAL -->
+<div class="modal-bg" id="pin-modal">
+  <div class="modal">
+    <h3>Owner Access</h3>
+    <p>Enter PIN to view margin analysis</p>
+    <input type="password" id="pin-inp" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')checkPin()">
+    <div class="modal-btns">
+      <button onclick="document.getElementById('pin-modal').classList.remove('open')">Cancel</button>
+      <button class="btn-ok" onclick="checkPin()">Enter</button>
     </div>
-    <div class="kc todo">
-      <div class="kl">Machine Utilisation</div>
-      <div class="kv" style="font-size:13px;color:var(--tx3);">TO DO</div>
-      <div class="ks">Baseline = Dec-2025 (best month)</div>
-    </div>
-    <div class="kc sl">
-      <div class="kl">Electricity Today</div>
-      <div class="kv" id="k-elec">&mdash;</div>
-      <div class="ks" id="k-elec-s">kWh — Main MSEB meter</div>
-    </div>
-    <div class="kc or">
-      <div class="kl">Cut Today</div>
-      <div class="kv" id="k-cut">&mdash;</div>
-      <div class="ks" id="k-cut-s">&mdash;</div>
-    </div>
-    <div class="kc gn">
-      <div class="kl">Forged Today</div>
-      <div class="kv" id="k-frg">&mdash;</div>
-      <div class="ks" id="k-frg-s">Inhouse + JWK</div>
-    </div>
-  </div>
-
-  <!-- DATE NOTICE -->
-  <div id="date-notice" style="display:none;background:var(--amb);border:1px solid #FCD34D;border-radius:5px;padding:7px 12px;margin-bottom:8px;font-size:11px;color:var(--am);">
-    &bull; No entries for today &mdash; showing last available date
-  </div>
-
-  <!-- ═══ CUTTING ═══ -->
-  <div class="dept-wrap">
-    <div class="dept-hdr today-hdr">
-      <span>&#9998; Cutting Shop &mdash; Today</span>
-      <span class="dh-date" id="cut-today-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-cut-today"></table>
-    </div>
-    <div class="dept-hdr yest-hdr" style="margin-top:1px;">
-      <span>Cutting Shop &mdash; Yesterday</span>
-      <span class="dh-date" id="cut-yest-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-cut-yest"></table>
-    </div>
-  </div>
-
-  <!-- ═══ FORGE ═══ -->
-  <div class="dept-wrap">
-    <div class="dept-hdr today-hdr">
-      <span>&#9998; Forge Shop &mdash; Today</span>
-      <span class="dh-date" id="frg-today-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-frg-today"></table>
-    </div>
-    <div class="dept-hdr yest-hdr" style="margin-top:1px;">
-      <span>Forge Shop &mdash; Yesterday</span>
-      <span class="dh-date" id="frg-yest-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-frg-yest"></table>
-    </div>
-  </div>
-
-  <!-- ═══ PRESS ═══ -->
-  <div class="dept-wrap">
-    <div class="dept-hdr today-hdr">
-      <span>&#9998; Press Shop &mdash; Today</span>
-      <span class="dh-date" id="press-today-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-press-today"></table>
-    </div>
-    <div class="dept-hdr yest-hdr" style="margin-top:1px;">
-      <span>Press Shop &mdash; Yesterday</span>
-      <span class="dh-date" id="press-yest-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-press-yest"></table>
-    </div>
-  </div>
-
-  <!-- ═══ MACHINE ═══ -->
-  <div class="dept-wrap">
-    <div class="dept-hdr today-hdr">
-      <span>&#9998; Machine Shop &mdash; Today</span>
-      <span class="dh-date" id="mach-today-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-mach-today"></table>
-    </div>
-    <div class="dept-hdr yest-hdr" style="margin-top:1px;">
-      <span>Machine Shop &mdash; Yesterday</span>
-      <span class="dh-date" id="mach-yest-date"></span>
-    </div>
-    <div class="prod-scroll">
-      <table class="prod-tbl" id="tbl-mach-yest"></table>
-    </div>
-  </div>
-
-  <!-- ═══ DEPT SUMMARY: Manpower + Electricity ═══ -->
-  <div class="sec-label">Department Summary &mdash; Manpower &amp; Electricity</div>
-  <div class="card" style="margin-bottom:10px;">
-    <div class="ch">
-      <div class="ct">Today vs Yesterday &mdash; Staff / Contract / Electricity kWh</div>
-      <div class="badge b-am">Colour benchmark = Dec-2025 (TO DO)</div>
-    </div>
-    <div class="scroll-x">
-      <table class="tbl" style="font-size:10px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;min-width:110px;">Department</th>
-            <th colspan="3" style="text-align:center;background:#E3F2FD;color:#1565C0;border-bottom:1px solid var(--bd);">Today</th>
-            <th colspan="3" style="text-align:center;background:var(--sll);color:var(--sld);border-bottom:1px solid var(--bd);">Yesterday</th>
-          </tr>
-          <tr>
-            <th style="text-align:left;"></th>
-            <th>Staff</th><th>Contract</th><th>Elec kWh</th>
-            <th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Elec kWh</th>
-          </tr>
-        </thead>
-        <tbody id="dept-summ-body">
-          <!-- populated by JS -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ═══ MATERIAL NEEDED ═══ -->
-  <div class="sec-label">Material Needed &mdash; Schedule Priority (A+ First)</div>
-  <div class="card" style="margin-bottom:10px;">
-    <div class="ch">
-      <div class="ct">Steel Requirement vs Stock &mdash; Order or Produce Now</div>
-      <div style="display:flex;gap:6px;">
-        <span class="badge b-rd">&#9650; No Stock — Order</span>
-        <span class="badge b-gn">&#9654; In Stock — Produce</span>
-        <span class="badge b-sl" id="mat-count">&mdash;</span>
-      </div>
-    </div>
-    <div class="scroll-x">
-      <table class="mat-tbl">
-        <thead>
-          <tr>
-            <th style="text-align:left;">Band</th>
-            <th style="text-align:left;">VF No</th>
-            <th style="text-align:left;">Customer</th>
-            <th>Grade</th>
-            <th>Pending Pcs</th>
-            <th>RM Required T</th>
-            <th>Stock T</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="mat-body">
-          <tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3);">Loading&hellip;</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ═══ WIP SNAPSHOT ═══ -->
-  <div class="sec-label">WIP Snapshot</div>
-  <div class="card card-last">
-    <div class="ch"><div class="ct">Work in Process &mdash; Closing Balance</div><div class="badge b-or" id="wip-total-badge">&mdash;</div></div>
-    <div class="wip-strip">
-      <div class="wip-blk" onclick="showTab('wip',null)">
-        <div class="wip-lbl">Cut WIP &mdash; Own</div>
-        <div class="wip-pcs or" id="wip-cut-pcs">&mdash;</div>
-        <div class="wip-sub" id="wip-cut-sub">&mdash;</div>
-        <div class="wip-hint">&#9660; click to expand</div>
-      </div>
-      <div class="wip-blk" onclick="showTab('wip',null)">
-        <div class="wip-lbl">Forged WIP &mdash; Own</div>
-        <div class="wip-pcs gn" id="wip-frg-pcs">&mdash;</div>
-        <div class="wip-sub" id="wip-frg-sub">&mdash;</div>
-        <div class="wip-hint">&#9660; click to expand</div>
-      </div>
-      <div class="wip-blk" onclick="showTab('wip',null)">
-        <div class="wip-lbl">JWK WIP &mdash; Laxmi + Kalyani</div>
-        <div class="wip-pcs bl" id="wip-jwk-pcs">&mdash;</div>
-        <div class="wip-sub" id="wip-jwk-sub">&mdash;</div>
-        <div class="wip-hint">&#9660; click to expand</div>
-      </div>
-    </div>
+    <div class="modal-err" id="pin-err"></div>
   </div>
 </div>
 
-<!-- ═══════════════ MTD TAB ═══════════════ -->
-<div id="tab-mtd" class="main" style="display:none;">
-  <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Turnover MTD</div><div class="kv" id="m-tov">&mdash;</div><div class="ks" id="m-tov-s">&mdash;</div></div>
-    <div class="kc gn"><div class="kl">Own Forged MTD</div><div class="kv" id="m-own">&mdash;</div><div class="ks" id="m-own-s">&mdash;</div></div>
-    <div class="kc bl"><div class="kl">JWK Forged MTD</div><div class="kv" id="m-jwk">&mdash;</div><div class="ks" id="m-jwk-s">&mdash;</div></div>
-    <div class="kc sl"><div class="kl">Cut MTD</div><div class="kv" id="m-cut">&mdash;</div><div class="ks" id="m-cut-s">&mdash;</div></div>
-    <div class="kc am"><div class="kl">Schedule Done %</div><div class="kv" id="m-sch">&mdash;</div><div class="ks" id="m-sch-s">&mdash;</div></div>
-  </div>
-  <div class="g2">
-    <div>
-      <div class="card">
-        <div class="ch"><div class="ct">Machine Output MTD &mdash; Forging + Pressing</div><div class="badge b-or" id="mtd-days-badge">&mdash;</div></div>
-        <div class="cb" id="mtd-mach-bars"><div style="color:var(--tx3);font-size:11px;">Loading&hellip;</div></div>
-      </div>
-      <div class="card card-last">
-        <div class="ch"><div class="ct">WIP Balance &mdash; MTD Closing</div></div>
-        <div class="wip-strip">
-          <div class="wip-blk"><div class="wip-lbl">Cut WIP</div><div class="wip-pcs or" id="mtd-cw">&mdash;</div><div class="wip-sub" id="mtd-cw-s">&mdash;</div></div>
-          <div class="wip-blk"><div class="wip-lbl">Forged WIP</div><div class="wip-pcs gn" id="mtd-fw">&mdash;</div><div class="wip-sub" id="mtd-fw-s">&mdash;</div></div>
-          <div class="wip-blk"><div class="wip-lbl">JWK WIP</div><div class="wip-pcs bl" id="mtd-jw">&mdash;</div><div class="wip-sub" id="mtd-jw-s">&mdash;</div></div>
+<!-- ══════════════ TODAY ══════════════ -->
+<div id="tab-today" class="main active">
+  <div id="today-loading" class="loading"><div class="spin"></div><div class="loading-txt">Loading factory data...</div></div>
+  <div id="today-content" style="display:none">
+
+    <!-- KPI BAR -->
+    <div class="kbar k7" id="kpi-bar" style="margin-bottom:12px">
+      <div class="kc or"><div class="kl">Balance to Produce</div><div class="kv" id="k-bal-pcs">—</div><div class="ks" id="k-bal-tons">—</div></div>
+      <div class="kc sl"><div class="kl">Machine Utilisation</div><div class="kv" id="k-util">—</div><div class="ks" id="k-util-sub">—</div></div>
+      <div class="kc bl"><div class="kl">Dispatched Yesterday</div><div class="kv" id="k-disp-yest">—</div><div class="ks" id="k-disp-yest-val">—</div></div>
+      <div class="kc gn"><div class="kl">Cut Today</div><div class="kv" id="k-cut">—</div><div class="ks" id="k-cut-sub">—</div></div>
+      <div class="kc or"><div class="kl">Forged Today</div><div class="kv" id="k-forge">—</div><div class="ks" id="k-forge-sub">—</div></div>
+      <div class="kc am"><div class="kl">Total Manpower Yest</div><div class="kv" id="k-mp">—</div><div class="ks" id="k-mp-cost">—</div></div>
+      <div class="kc rd"><div class="kl">Missing Data</div><div class="kv" id="k-missing">—</div><div class="ks" id="k-missing-sub">—</div></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div id="alert-bar"></div>
+
+    <!-- PRODUCTION GRID -->
+    <div id="prod-grid"></div>
+
+    <!-- DEPT SUMMARY + MATERIAL NEEDED + WIP -->
+    <div class="g21" style="margin-top:10px">
+      <div>
+        <!-- MATERIAL NEEDED -->
+        <div class="card">
+          <div class="ch"><div class="ct">Material Needed — A+ First · Order if No Stock</div><div class="badge b-rd" id="mat-count">—</div></div>
+          <div class="scroll-x"><table class="tbl">
+            <thead><tr><th>Band</th><th>VF</th><th>Customer</th><th>Grade</th><th>Pending Pcs</th><th>RM Need (T)</th><th>Stock (T)</th><th>Status</th></tr></thead>
+            <tbody id="mat-body"></tbody>
+          </table></div>
         </div>
       </div>
-    </div>
-    <div>
-      <div class="card card-last">
-        <div class="ch"><div class="ct">MTD Cost Actuals</div></div>
-        <div class="cb">
-          <div class="crow"><span class="clbl gn fw6">Oil / Fuel</span><div><span class="cval gn" id="m-oil">&mdash;</span><span class="csub" id="m-oil-s"></span></div></div>
-          <div class="crow"><span class="clbl or fw6">Electricity (kWh)</span><div><span class="cval or" id="m-elec">&mdash;</span></div></div>
-          <div class="crow"><span class="clbl bl fw6">Contract Labour</span><div><span class="cval bl" id="m-clab">&mdash;</span></div></div>
-          <div class="crow"><span class="clbl sl fw6">RM Rate (Apr)</span><div><span class="cval sl" id="m-rm">&mdash;</span><span class="csub">/kg wtd avg</span></div></div>
+      <div>
+        <!-- WIP SNAPSHOT -->
+        <div class="card card-last">
+          <div class="ch"><div class="ct">WIP Snapshot</div><div class="badge b-or" id="wip-total-badge">—</div></div>
+          <div class="wip-row">
+            <div class="wip-block"><div class="wip-lbl">Cut WIP — Own</div><div class="wip-pcs or" id="wip-cut-pcs">—</div><div class="wip-sub" id="wip-cut-sub">—</div></div>
+            <div class="wip-block"><div class="wip-lbl">Forged WIP — Own</div><div class="wip-pcs gn" id="wip-fg-pcs">—</div><div class="wip-sub" id="wip-fg-sub">—</div></div>
+            <div class="wip-block"><div class="wip-lbl">JWK WIP</div><div class="wip-pcs bl" id="wip-jwk-pcs">—</div><div class="wip-sub" id="wip-jwk-sub">—</div></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ FY MONTHLY TAB ═══════════════ -->
-<div id="tab-fy" class="main" style="display:none;">
+<!-- ══════════════ SCHEDULE ══════════════ -->
+<div id="tab-schedule" class="main">
+  <div class="kbar k5" id="sched-kpis" style="margin-bottom:12px"></div>
   <div class="card">
-    <div class="ch"><div class="ct">Monthly Performance &mdash; Apr 2026 to Mar 2027</div><div class="badge b-or">FY 2026-27</div></div>
-    <div class="scroll-x">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th style="text-align:left;">Month</th>
-            <th>Cut Qty</th><th>Cut T</th>
-            <th>Own Frg Pcs</th><th>Own Frg T</th>
-            <th>JWK Pcs</th><th>JWK T</th>
-            <th>Disp Qty</th><th>Turnover</th>
-            <th>RM In kg</th>
-            <th>Oil Forge L</th><th>Oil HT L</th>
-            <th>Elec kWh</th>
-          </tr>
-        </thead>
-        <tbody id="tb-fy"></tbody>
-      </table>
-    </div>
+    <div class="ch"><div class="ct">Schedule — A+ First · Complete A before B or C</div><div class="badge b-or" id="sched-count">—</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Band</th><th>VF</th><th>Customer</th><th>Grade</th><th>Sched</th><th>Produced</th><th>Dispatched</th><th>Balance</th><th>RM Need (T)</th><th>%</th></tr></thead>
+      <tbody id="sched-body"></tbody>
+    </table></div>
   </div>
 </div>
 
-<!-- ═══════════════ WIP TAB ═══════════════ -->
-<div id="tab-wip" class="main" style="display:none;">
+<!-- ══════════════ WIP ══════════════ -->
+<div id="tab-wip" class="main">
   <div class="card">
-    <div class="ch"><div class="ct">Work in Process &mdash; Click block to expand &bull; Highest first</div><div class="badge b-or" id="wip-badge">&mdash;</div></div>
-    <div class="wip-strip">
-      <div class="wip-blk" onclick="toggleDrill('d-cut')">
-        <div class="wip-lbl">Cut WIP &mdash; Own</div>
-        <div class="wip-pcs or" id="w-cpcs">&mdash;</div>
-        <div class="wip-sub" id="w-csub">&mdash;</div>
-        <div class="wip-hint">&#9660; expand parts</div>
-      </div>
-      <div class="wip-blk" onclick="toggleDrill('d-frg')">
-        <div class="wip-lbl">Forged WIP &mdash; Own</div>
-        <div class="wip-pcs gn" id="w-fpcs">&mdash;</div>
-        <div class="wip-sub" id="w-fsub">&mdash;</div>
-        <div class="wip-hint">&#9660; expand parts</div>
-      </div>
-      <div class="wip-blk" onclick="toggleDrill('d-jwk')">
-        <div class="wip-lbl">JWK WIP &mdash; Laxmi + Kalyani</div>
-        <div class="wip-pcs bl" id="w-jpcs">&mdash;</div>
-        <div class="wip-sub" id="w-jsub">&mdash;</div>
-        <div class="wip-hint">&#9660; expand parts</div>
-      </div>
+    <div class="ch"><div class="ct">Work in Process</div><div class="badge b-or" id="wip-badge">—</div></div>
+    <div class="wip-row">
+      <div class="wip-block"><div class="wip-lbl">Cut WIP — Own</div><div class="wip-pcs or" id="wip2-cut">—</div><div class="wip-sub" id="wip2-cut-s">—</div><div class="wip-hint">▼ details below</div></div>
+      <div class="wip-block"><div class="wip-lbl">Forged WIP — Own</div><div class="wip-pcs gn" id="wip2-fg">—</div><div class="wip-sub" id="wip2-fg-s">—</div><div class="wip-hint">▼ details below</div></div>
+      <div class="wip-block"><div class="wip-lbl">JWK WIP</div><div class="wip-pcs bl" id="wip2-jwk">—</div><div class="wip-sub" id="wip2-jwk-s">—</div></div>
     </div>
-    <div id="d-cut" class="drill"><div class="drill-hdr"><div class="drill-title">Cut WIP &mdash; All Parts</div><div class="drill-close" onclick="toggleDrill('d-cut')">&times;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th>VF No</th><th>Customer</th><th>Cut WIP Pcs</th><th>FG WIP Pcs</th></tr></thead><tbody id="tb-cwip"></tbody></table></div></div>
-    <div id="d-frg" class="drill"><div class="drill-hdr"><div class="drill-title">Forged WIP &mdash; All Parts</div><div class="drill-close" onclick="toggleDrill('d-frg')">&times;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th>VF No</th><th>Customer</th><th>FG WIP Pcs</th></tr></thead><tbody id="tb-fwip"></tbody></table></div></div>
-    <div id="d-jwk" class="drill"><div class="drill-hdr"><div class="drill-title">JWK WIP &mdash; Laxmi Agni + Kalyani Technoforge</div><div class="drill-close" onclick="toggleDrill('d-jwk')">&times;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th>VF No</th><th>Customer</th><th>Closing WIP Pcs</th></tr></thead><tbody id="tb-jwip"></tbody></table></div></div>
+  </div>
+  <div class="card" style="margin-top:10px">
+    <div class="ch"><div class="ct">All Parts with WIP Balance</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>VF</th><th>Customer</th><th>Cut MTD</th><th>Forged</th><th>Dispatched</th><th>Cut WIP</th><th>FG WIP</th><th>Closing</th></tr></thead>
+      <tbody id="wip-body"></tbody>
+    </table></div>
   </div>
 </div>
 
-<!-- ═══════════════ SCHEDULE TAB ═══════════════ -->
-<div id="tab-sched" class="main" style="display:none;">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Total Scheduled</div><div class="kv" id="sc-tot">&mdash;</div><div class="ks" id="sc-tot-s">pcs this month</div></div>
-    <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv" id="sc-pro">&mdash;</div></div>
-    <div class="kc rd"><div class="kl">Balance to Produce</div><div class="kv" id="sc-bal">&mdash;</div></div>
-    <div class="kc am"><div class="kl">Schedule %</div><div class="kv" id="sc-pct">&mdash;</div></div>
-  </div>
+<!-- ══════════════ STEEL ══════════════ -->
+<div id="tab-steel" class="main">
+  <div class="kbar k4" id="steel-kpis" style="margin-bottom:12px"></div>
   <div class="card">
-    <div class="ch"><div class="ct">Schedule &mdash; A+ to C &bull; Balance to Produce Descending within Band</div><div class="badge b-or" id="sc-badge">&mdash;</div></div>
-    <div class="scroll-x">
-      <table class="tbl">
-        <thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Sched</th><th>Produced</th><th>Dispatched</th><th>Bal Produce</th><th>RM Req T</th><th>Sched %</th></tr></thead>
-        <tbody id="tb-sched"></tbody>
-      </table>
-    </div>
+    <div class="ch"><div class="ct">Grade-wise Steel Stock</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Grade</th><th>Opening kg</th><th>Inward kg</th><th>Consumed kg</th><th>Balance kg</th><th>Balance T</th><th>Avg Rate</th><th>Value ₹L</th></tr></thead>
+      <tbody id="steel-body"></tbody>
+    </table></div>
   </div>
 </div>
 
-<!-- ═══════════════ OUTSTANDING TAB ═══════════════ -->
-<div id="tab-outstanding" class="main" style="display:none;">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="out-od">&mdash;</div><div class="ks" id="out-od-s">&mdash;</div></div>
-    <div class="kc am"><div class="kl">Not Due</div><div class="kv" id="out-nd">&mdash;</div></div>
-    <div class="kc or"><div class="kl">Total Outstanding</div><div class="kv" id="out-gt">&mdash;</div><div class="ks" id="out-as">&mdash;</div></div>
-  </div>
+<!-- ══════════════ 57F4 ══════════════ -->
+<div id="tab-f4" class="main">
+  <div class="kbar k3" id="f4-kpis" style="margin-bottom:12px"></div>
   <div class="card">
-    <div class="ch"><div class="ct">Customer Outstanding &mdash; Overdue First</div><div class="badge b-rd" id="out-badge">&mdash;</div></div>
-    <div class="scroll-x">
-      <table class="tbl">
-        <thead><tr><th>Customer</th><th>Not Due</th><th>Overdue</th><th>Grand Total</th></tr></thead>
-        <tbody id="tb-out"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════ STEEL TAB ═══════════════ -->
-<div id="tab-steel" class="main" style="display:none;">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">RM Inward FY</div><div class="kv" id="st-in">&mdash;</div><div class="ks">tonnes</div></div>
-    <div class="kc am"><div class="kl">Balance Stock</div><div class="kv" id="st-bal">&mdash;</div><div class="ks" id="st-val">est. value</div></div>
-    <div class="kc gn"><div class="kl">Avg RM Rate</div><div class="kv" id="st-rate">&mdash;</div><div class="ks">Rs/kg wtd avg</div></div>
-    <div class="kc rd"><div class="kl">Consumed FY</div><div class="kv" id="st-con">&mdash;</div><div class="ks">tonnes</div></div>
-  </div>
-  <div class="card">
-    <div class="ch"><div class="ct">Grade-wise Stock &mdash; RM Inward &minus; Consumed</div></div>
-    <div class="scroll-x">
-      <table class="tbl">
-        <thead><tr><th>Grade</th><th>Opening kg</th><th>Inward kg</th><th>Consumed kg</th><th>Balance kg</th><th>Balance T</th><th>Avg Rs/kg</th><th>Value Rs L</th></tr></thead>
-        <tbody id="tb-steel"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════ 57F4 TAB ═══════════════ -->
-<div id="tab-f4" class="main" style="display:none;">
-  <div class="kgrid k3" style="margin-bottom:10px;" id="f4-kpis"></div>
-  <div class="card">
-    <div class="ch"><div class="ct">57F4 Vendor Inventory &mdash; Pending Return (Out &minus; In)</div><div class="badge b-or" id="f4-badge">&mdash;</div></div>
+    <div class="ch"><div class="ct">57F4 Vendor Stock — Sent − Returned = Pending</div></div>
     <div id="f4-list"></div>
   </div>
 </div>
 
-<!-- ═══════════════ ELECTRICITY TAB ═══════════════ -->
-<div id="tab-elec" class="main" style="display:none;">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc sl"><div class="kl">Total kWh FY</div><div class="kv" id="el-tot">&mdash;</div></div>
-    <div class="kc bl"><div class="kl">Forge kWh</div><div class="kv" id="el-frg">&mdash;</div></div>
-    <div class="kc am"><div class="kl">HT kWh</div><div class="kv" id="el-ht">&mdash;</div></div>
-    <div class="kc or"><div class="kl">Press kWh</div><div class="kv" id="el-pr">&mdash;</div></div>
-  </div>
-  <div class="card">
-    <div class="ch"><div class="ct">Department-wise kWh &mdash; FY to Date</div></div>
-    <div class="cb" id="elec-bars"></div>
+<!-- ══════════════ ELECTRICITY ══════════════ -->
+<div id="tab-elec" class="main">
+  <div class="kbar k4" id="elec-kpis" style="margin-bottom:12px"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div class="ct">Department-wise kWh — FY MTD</div></div><div class="cb" id="elec-dept"></div></div>
+    <div class="card"><div class="ch"><div class="ct">Monthly kWh by Department</div></div><div class="scroll-x"><table class="tbl"><thead id="elec-monthly-hdr"></thead><tbody id="elec-monthly-body"></tbody></table></div></div>
   </div>
 </div>
 
-<!-- ═══════════════ MARGINS TAB ═══════════════ -->
-<div id="tab-margin" class="main" style="display:none;">
-  <div id="pin-gate" style="text-align:center;padding:40px 20px;">
-    <div style="font-size:14px;font-weight:600;color:var(--sld);margin-bottom:8px;">Owner View &mdash; PIN Required</div>
-    <div style="display:flex;gap:8px;justify-content:center;margin:16px 0;">
-      <input type="password" id="pin-in" maxlength="4" placeholder="Enter PIN" style="padding:8px 12px;border:1px solid var(--bd);border-radius:5px;font-size:14px;font-family:var(--mo);width:140px;text-align:center;">
-      <button onclick="checkPin()" style="padding:8px 16px;background:var(--br);color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;">Unlock</button>
-    </div>
-    <div id="pin-err" style="color:var(--rd);font-size:11px;display:none;">Incorrect PIN</div>
+<!-- ══════════════ DIE LIFE ══════════════ -->
+<div id="tab-dielife" class="main">
+  <div class="kbar k3" id="die-kpis" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div class="ch"><div class="ct">Current Runs — RUNNING Dies (Active Today)</div><div class="badge b-gn" id="die-running-cnt">—</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Machine</th><th>VF</th><th>Customer</th><th>Run Start</th><th>Days</th><th>Shifts</th><th>Pcs This Run</th><th>Status</th></tr></thead>
+      <tbody id="die-running-body"></tbody>
+    </table></div>
   </div>
-  <div id="margin-content" style="display:none;">
-    <div class="kgrid k7" id="band-kpis" style="margin-bottom:10px;"></div>
-    <div class="card">
-      <div class="ch"><div class="ct">All Active Parts &mdash; A+ First &bull; Net = Conv &minus; Rs25.66/kg</div><div class="badge b-or" id="mg-rm">&mdash;</div></div>
-      <div class="scroll-x">
-        <table class="tbl">
-          <thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Conv Rs/kg</th><th>Net Rs/kg</th><th>Disp T</th><th>Turnover Rs L</th><th>Net Real Rs L</th></tr></thead>
-          <tbody id="tb-margin"></tbody>
-        </table>
-      </div>
+  <div class="card" style="margin-top:10px">
+    <div class="ch"><div class="ct">Complete Run History — All Machines</div><div class="badge b-sl" id="die-hist-cnt">—</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Machine</th><th>VF</th><th>Customer</th><th>Run Start</th><th>Run End</th><th>Days</th><th>Shifts</th><th>Total Pcs</th></tr></thead>
+      <tbody id="die-hist-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══════════════ MARGINS ══════════════ -->
+<div id="tab-margins" class="main">
+  <div class="alert sl"><span>🔒</span><div>Owner tab — Dynamic band analysis. Band = ranked by Net ₹/kg across all 536 parts. A+ = top performers.</div></div>
+  <div class="kbar k7" id="margin-kpis" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div class="ch"><div class="ct">All Parts — A+ First · Conv = Sell − RM · Net = Conv − ₹25.66/kg</div><div class="badge b-or" id="margin-rm-rate">—</div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Band</th><th>VF</th><th>Customer</th><th>Grade</th><th>Conv ₹/kg</th><th>Net ₹/kg</th><th>Disp T</th><th>Turnover ₹L</th><th>Net Real ₹L</th></tr></thead>
+      <tbody id="margin-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══════════════ FY MONTHLY ══════════════ -->
+<div id="tab-monthly" class="main">
+  <div class="card">
+    <div class="ch"><div class="ct">FY 2026-27 Monthly Performance — Apr to Mar</div><div class="badge b-or">12 months</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th style="text-align:left">Month</th><th>Cut T</th><th>Own T</th><th>JWK T</th><th>Disp T</th><th>Turnover</th><th>RM kg</th><th>Oil L</th><th>Elec kWh</th><th>Contract ₹</th><th>Staff</th><th>Contract</th></tr></thead>
+        <tbody id="monthly-body"></tbody>
+      </table>
     </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // CONFIG
-// ═══════════════════════════════════════════════════════
-var WEB_APP = 'https://script.google.com/macros/s/AKfycbxK-_HBrq1I2Glo4m8maHT5upAQUX8qZyOixoFwwJ7vus-pT1LP2MF3fQGtHCHD6p4lbw/exec';
-var OWNER_PIN = '1234'; // change this
-var D = {}; // global data store
+// ══════════════════════════════════════════════════════════════
+const WEB_APP = 'https://script.google.com/macros/s/AKfycbxK-_HBrq1I2Glo4m8maHT5upAQUX8qZyOixoFwwJ7vus-pT1LP2MF3fQGtHCHD6p4lbw/exec';
+const PIN = '1234'; // Change to your PIN
 
-// ═══ MACHINE CODE MAPS (locked) ═══
-var CUT_MACHINES  = ['SM','BS1','BS2','BS3','CS80','CS100','CSITL','HS1','HS2'];
-var CUT_NAMES     = {SM:'Shearing Machine',BS1:'Band Saw No. 1',BS2:'Band Saw No. 2',BS3:'Band Saw No. 3',CS80:'Circular Saw 80',CS100:'Circular Saw 100',CSITL:'Circular Saw ITL',HS1:'HGCKSGW 1',HS2:'HGCKSGW 2'};
+// Machine code map — locked
+const MCODE = {
+  CUTTING: ['Shearing Machine','Band Saw No 1','Band Saw No 2','Band Saw No 3',
+            'Circular Saw 80','Circular Saw 100','HGCKSGW 1','HGCKSGW 2','Circular Saw ITL'],
+  FORGE:   ['Hammer 1 Ton Old','Hammer 1 Ton New','Hammer 1.5 Ton','Hammer 2 Ton','Hammer 3 Ton'],
+  PRESS:   ['800 Ton Screw Press','1000 Ton Press','1300 Ton Press','2500 Ton Press'],
+  MACHINE: ['Facing & Centering 1','Facing & Centering 2','Lathe P/T','SPM',
+            'CNC 01','CNC 02','CNC 03','CNC 04','CNC 05',
+            'Hobbing 1','Hobbing 2','Hobbing 3','Hobbing 4',
+            'Hobbing 5','Hobbing 6','Hobbing 7','Hobbing 8']
+};
+const MCODE_SHORT = {
+  'Shearing Machine':'SM','Band Saw No 1':'BS1','Band Saw No 2':'BS2',
+  'Band Saw No 3':'BS3','Circular Saw 80':'CS80','Circular Saw 100':'CS100',
+  'HGCKSGW 1':'HS1','HGCKSGW 2':'HS2','Circular Saw ITL':'CSITL',
+  'Hammer 1 Ton Old':'H1-O','Hammer 1 Ton New':'H1','Hammer 1.5 Ton':'H1.5',
+  'Hammer 2 Ton':'H2','Hammer 3 Ton':'H3',
+  '800 Ton Screw Press':'800T','1000 Ton Press':'1000T',
+  '1300 Ton Press':'1300T','2500 Ton Press':'2500T',
+  'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2','Lathe P/T':'LATHE','SPM':'SPM',
+  'CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5',
+  'Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4',
+  'Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8'
+};
+const BAND_COLOR = {
+  'A+':'#1A7F4B','A':'#2E9B5F','A-':'#B45309',
+  'B+':'#D97706','B':'#E8731A','B-':'#DC2626','C':'#C0392B'
+};
+const TOTAL_MACHINES = Object.values(MCODE).reduce((a,b)=>a+b.length,0);
 
-var FRG_MACHINES  = ['H1O','H1','H15','H2','H3'];
-var FRG_NAMES     = {H1O:'1T Hammer (Old)',H1:'1T Hammer (New)',H15:'1.5T Hammer',H2:'2T Hammer',H3:'3T Hammer'};
-var FRG_SRC       = {'Hammer 1 Ton Old':'H1O','1 Ton Hammer (old)':'H1O','Hammer 1 Ton New':'H1','1 Ton Hammer (new)':'H1','Hammer 1.5 Ton':'H15','1.5 ton Hammer':'H15','1.5 Ton Hammer':'H15','Hammer 2 Ton':'H2','2 Ton Hammer':'H2','2 ton Hammer':'H2','Hammer 3 Ton':'H3','3 Ton Hammer':'H3','3 ton Hammer':'H3'};
-
-var PRESS_MACHINES= ['P800','P1300','P2500','P1000'];
-var PRESS_NAMES   = {P800:'800T Press',P1300:'1300T Press',P2500:'2500T Press',P1000:'1000T Press'};
-var PRESS_SRC     = {'800 Ton Screw Press':'P800','800T Press':'P800','1300 Ton Press':'P1300','2500 Ton Press':'P2500','1000 Ton Press':'P1000'};
-
-var MACH_MACHINES = ['FC1','FC2','LATHE','SPM','CNC1','CNC2','CNC3','CNC4','CNC5','HOB1','HOB2','HOB3','HOB4','HOB5','HOB6','HOB7','HOB8'];
-var MACH_NAMES    = {FC1:'FC 1',FC2:'FC 2',LATHE:'Lathe',SPM:'SPM',CNC1:'CNC 01',CNC2:'CNC 02',CNC3:'CNC 03',CNC4:'CNC 04',CNC5:'CNC 05',HOB1:'Hobbing 1',HOB2:'Hobbing 2',HOB3:'Hobbing 3',HOB4:'Hobbing 4',HOB5:'Hobbing 5',HOB6:'Hobbing 6',HOB7:'Hobbing 7',HOB8:'Hobbing 8'};
-var MACH_SRC      = {'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2','Lathe P/T':'LATHE','SPM':'SPM','CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5','Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4','Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8'};
-
-var SHIFTS = ['First Shift','Second Shift','Third Shift'];
-var SHIFT_SHORT = {'First Shift':'Shift 1','Second Shift':'Shift 2','Third Shift':'Shift 3','1':'Shift 1','2':'Shift 2','3':'Shift 3'};
-
-var BAND_COLORS = {'A+':'#1A7F4B','A':'#2E9B5F','A-':'#B45309','B+':'#D97706','B':'#E8731A','B-':'#DC2626','C':'#C0392B'};
-var DEPT_ROWS   = ['Forge Shop','Press Shop','HT Shop','Cutting Shop','Machine Shop','Die Shop','Final Shop'];
-var ELEC_DEPTS  = ['Forge','HT','Press','Machine','Die','Grinding','Compressor'];
-
-// ═══ CLOCK ═══
-function tick(){
-  var n=new Date();
-  var h=n.getHours().toString().padStart(2,'0');
-  var m=n.getMinutes().toString().padStart(2,'0');
-  var s=n.getSeconds().toString().padStart(2,'0');
-  var ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][n.getDay()];
-  var ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][n.getMonth()];
-  document.getElementById('clk').textContent=ds+' '+n.getDate()+'-'+ms+' '+h+':'+m+':'+s+' IST';
+// ── Clock ──
+function updateClock(){
+  const d=new Date();
+  document.getElementById('clk').textContent=
+    d.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
-setInterval(tick,1000); tick();
+setInterval(updateClock,1000); updateClock();
 
-// ═══ TABS ═══
-function showTab(name,el){
-  document.querySelectorAll('.main').forEach(function(d){d.style.display='none';});
-  document.getElementById('tab-'+name).style.display='block';
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  if(el)el.classList.add('active');
+// ── Tabs ──
+function showTab(id, el){
+  document.querySelectorAll('.main').forEach(m=>m.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(el) el.classList.add('active');
 }
 function showMargins(){
-  showTab('margin',document.getElementById('mbtn'));
-}
-function toggleDrill(id){
-  var el=document.getElementById(id);
-  el.classList.toggle('open');
+  document.getElementById('pin-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('pin-inp').focus(),100);
 }
 function checkPin(){
-  var v=document.getElementById('pin-in').value;
-  if(v===OWNER_PIN){
-    document.getElementById('pin-gate').style.display='none';
-    document.getElementById('margin-content').style.display='block';
-    renderMargins();
-  }else{
-    document.getElementById('pin-err').style.display='block';
+  const v=document.getElementById('pin-inp').value;
+  if(v===PIN){
+    document.getElementById('pin-modal').classList.remove('open');
+    document.getElementById('pin-inp').value='';
+    document.getElementById('pin-err').textContent='';
+    showTab('margins',null);
+    document.querySelectorAll('.tab').forEach(t=>{if(t.textContent.includes('Margin'))t.classList.add('active');});
+  } else {
+    document.getElementById('pin-err').textContent='Wrong PIN';
   }
 }
 
-// ═══ FORMATTERS ═══
-function fmtN(n){return Math.round(n).toLocaleString('en-IN');}
-function fmtT(kg){return (kg/1000).toFixed(2)+' T';}
-function fmtCurr(rs){
-  if(!rs||rs===0)return '—';
-  var abs=Math.abs(rs), sign=rs<0?'-':'';
-  if(abs>=10000000)return sign+'Rs '+(abs/10000000).toFixed(2)+' Cr';
-  if(abs>=100000)  return sign+'Rs '+(abs/100000).toFixed(1)+' L';
-  return sign+'Rs '+Math.round(abs).toLocaleString('en-IN');
+// ── Formatters ──
+function fmtN(n){if(!n&&n!==0)return'—';return Number(n).toLocaleString('en-IN');}
+function fmtT(kg){if(!kg)return'0.00 T';return(kg/1000).toFixed(2)+' T';}
+function fmtCr(rs){
+  if(!rs&&rs!==0)return'—';
+  const a=Math.abs(rs),s=rs<0?'-':'';
+  if(a>=10000000)return s+'₹'+(a/10000000).toFixed(2)+' Cr';
+  if(a>=100000)  return s+'₹'+(a/100000).toFixed(1)+' L';
+  return s+'₹'+Math.round(a).toLocaleString('en-IN');
 }
-function fmtT2(kg){return kg>0?(kg/1000).toFixed(2):0;}
 function bandPill(b){
-  var c=BAND_COLORS[b]||'#888';
-  return '<span class="band" style="background:'+c+'">'+b+'</span>';
+  const c=BAND_COLOR[b]||'#888';
+  return`<span class="band" style="background:${c}">${b||'—'}</span>`;
+}
+function fmtDate(ds){
+  if(!ds||ds==='—') return'—';
+  // yyyy-MM-dd → dd-Mon-yyyy
+  const [y,m,d]=ds.split('-');
+  const mons=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return`${d}-${mons[parseInt(m)]||m}-${y}`;
 }
 
-// ═══ PRODUCTION TABLE BUILDER ═══
-// machCodes: array of code strings e.g. ['SM','BS1']
-// machNames: map code→display
-// machSrc:   map source-name→code (for matching API data)
-// rawData: array of {machine, shift, entries:{VF:qty}}
-// returns 2 tables: today and yesterday HTML
-
-function buildProdTable(machCodes, machNames, machSrc, rawToday, rawYest){
-  return {
-    today: buildSingleProdTable(machCodes, machNames, machSrc, rawToday),
-    yest:  buildSingleProdTable(machCodes, machNames, machSrc, rawYest)
-  };
+// ══════════════════════════════════════════════════════════════
+// DATA LOAD
+// ══════════════════════════════════════════════════════════════
+let D = null;
+async function loadData(){
+  try {
+    const res = await fetch(WEB_APP+'?t='+Date.now());
+    D = await res.json();
+    if(D.error) throw new Error(D.error);
+    renderAll();
+  } catch(e) {
+    document.getElementById('today-loading').innerHTML=
+      `<div style="color:var(--rd);font-size:12px">⚠ Could not load: ${e.message}<br><small>Ensure Web App deployed as Anyone</small></div>`;
+  }
 }
 
-function buildSingleProdTable(machCodes, machNames, machSrc, rawData){
-  // Build structure: shift → machCode → {VF:qty}
-  var grid = {};
-  SHIFTS.forEach(function(sh){ grid[sh]={}; machCodes.forEach(function(mc){ grid[sh][mc]={}; }); });
-  var totals = {}; machCodes.forEach(function(mc){ totals[mc]=0; });
+function renderAll(){
+  document.getElementById('today-loading').style.display='none';
+  document.getElementById('today-content').style.display='block';
+  renderToday();
+  renderSchedule();
+  renderWIP();
+  renderSteel();
+  renderF4();
+  renderElec();
+  renderDieLife();
+  renderMargins();
+  renderMonthly();
+}
 
-  (rawData||[]).forEach(function(row){
-    var srcMach = row.machine||'';
-    var mc = machSrc[srcMach] || srcMach;
-    if(machCodes.indexOf(mc)<0) return;
-    var sh = row.shift||'';
-    // Normalise shift
-    var shNorm = null;
-    SHIFTS.forEach(function(s){ if(sh===s||sh===s.replace('Shift ','').trim()) shNorm=s; });
-    if(!shNorm){
-      if(sh==='1'||sh.toLowerCase().indexOf('first')>=0) shNorm=SHIFTS[0];
-      else if(sh==='2'||sh.toLowerCase().indexOf('second')>=0) shNorm=SHIFTS[1];
-      else if(sh==='3'||sh.toLowerCase().indexOf('third')>=0) shNorm=SHIFTS[2];
-    }
-    if(!shNorm) return;
-    var entries = row.entries||{};
-    Object.keys(entries).forEach(function(vf){
-      var q=entries[vf]||0;
-      grid[shNorm][mc][vf]=(grid[shNorm][mc][vf]||0)+q;
-      totals[mc]+=q;
+// ══════════════════════════════════════════════════════════════
+// TODAY
+// ══════════════════════════════════════════════════════════════
+function renderToday(){
+  const prod = D.prod||{};
+  const today = prod.today||{};
+  const yest  = prod.yesterday||{};
+  const mtd   = D.mtd||{};
+  const wip   = D.wip||{};
+  const mp    = D.manpower||{};
+  const eTY   = D.elec_ty||{};
+  const alerts= D.alerts||[];
+
+  // ── KPI BAR ──
+  const balPcs = mtd.balProduce||0;
+  const balT   = (mtd.balProduceTons||0).toFixed(1);
+  document.getElementById('k-bal-pcs').textContent = fmtN(balPcs)+' pcs';
+  document.getElementById('k-bal-tons').textContent = balT+' T remaining';
+
+  // Machine utilisation — machines that ran today
+  let activeMachines=new Set();
+  ['cutting','forging','pressing','machine'].forEach(dept=>{
+    (today[dept]||[]).forEach(item=>activeMachines.add(item.machine));
+  });
+  const util=TOTAL_MACHINES>0?Math.round(activeMachines.size/TOTAL_MACHINES*100):0;
+  document.getElementById('k-util').textContent=util+'%';
+  document.getElementById('k-util-sub').textContent=activeMachines.size+'/'+TOTAL_MACHINES+' machines active';
+
+  // Dispatched yesterday
+  document.getElementById('k-disp-yest').textContent=fmtN(mtd.dispYest||0)+' pcs';
+  document.getElementById('k-disp-yest-val').textContent=(mtd.dispYestValFmt||'—')+' · '+(mtd.dispYestDate?fmtDate(mtd.dispYestDate):'');
+
+  // Cut today
+  let cutToday=0;
+  (today.cutting||[]).forEach(m=>{Object.values(m.entries||{}).forEach(q=>{cutToday+=q;});});
+  document.getElementById('k-cut').textContent=fmtN(cutToday)+' pcs';
+  document.getElementById('k-cut-sub').textContent=today.date?fmtDate(today.date):'—';
+
+  // Forged today
+  let forgeToday=0,jwkToday=0;
+  [...(today.forging||[]),...(today.pressing||[])].forEach(m=>{
+    const isJWK=m.type&&m.type.toLowerCase().includes('jobwork');
+    Object.values(m.entries||{}).forEach(q=>{if(isJWK)jwkToday+=q;else forgeToday+=q;});
+  });
+  document.getElementById('k-forge').textContent=fmtN(forgeToday)+' pcs';
+  document.getElementById('k-forge-sub').textContent='JWK: '+fmtN(jwkToday)+' pcs';
+
+  // Manpower yesterday
+  const mpY = mp.yesterday||{};
+  let totStaff=0,totContract=0,totContractCost=0;
+  Object.values(mpY).forEach(d=>{totStaff+=d.staff||0;totContract+=d.contract||0;totContractCost+=d.contractCost||0;});
+  document.getElementById('k-mp').textContent=fmtN(totStaff+totContract);
+  document.getElementById('k-mp-cost').textContent='Staff '+fmtN(totStaff)+' · Contract '+fmtN(totContract);
+
+  // Missing data — check which depts have no entries today
+  const deptNames=['Cutting','Forge','Press'];
+  const deptData=[today.cutting,today.forging,today.pressing];
+  const missing=deptNames.filter((_,i)=>!(deptData[i]&&deptData[i].length));
+  document.getElementById('k-missing').textContent=missing.length?missing.length+' dept':'All OK';
+  document.getElementById('k-missing-sub').textContent=missing.length?missing.join(', '):'Data received';
+
+  // ── ALERTS ──
+  const alertBar=document.getElementById('alert-bar');
+  alertBar.innerHTML='';
+  alerts.slice(0,5).forEach(a=>{
+    const cls=a.severity==='RED'?'rd':'am';
+    alertBar.innerHTML+=`<div class="alert ${cls}"><span>⚠</span><div>${a.message}</div></div>`;
+  });
+  if(missing.length){
+    alertBar.innerHTML+=`<div class="alert am"><span>⚠</span><div>Missing production entries for today: <strong>${missing.join(', ')}</strong> — DME to fill</div></div>`;
+  }
+
+  // ── PRODUCTION GRID ──
+  const grid=document.getElementById('prod-grid');
+  grid.innerHTML='';
+
+  const DEPTS=[
+    {key:'cutting', label:'CUTTING', machines:MCODE.CUTTING, dataKey:'cutting'},
+    {key:'forge',   label:'FORGE',   machines:MCODE.FORGE,   dataKey:'forging'},
+    {key:'press',   label:'PRESS',   machines:MCODE.PRESS,   dataKey:'pressing'},
+    {key:'machine', label:'MACHINE', machines:MCODE.MACHINE, dataKey:'machine'},
+  ];
+
+  DEPTS.forEach(dept=>{
+    // Build today + yesterday blocks
+    [
+      {label:'TODAY',label2:today.date?fmtDate(today.date):'—',data:today[dept.dataKey]||[],cls:'day',period:'today'},
+      {label:'YESTERDAY',label2:yest.date?fmtDate(yest.date):'—',data:yest[dept.dataKey]||[],cls:'yest',period:'yesterday'}
+    ].forEach(block=>{
+      const el=buildShiftGrid(dept.label+' — '+block.label+' · '+block.label2, dept.machines, block.data, block.cls);
+      grid.appendChild(el);
+    });
+
+    // Dept summary row (manpower + electricity)
+    const mpT=mp.today||{},mpY2=mp.yesterday||{};
+    const elecT=eTY.today||{},elecY=eTY.yesterday||{};
+    const deptMPMap={cutting:'Cutting Shop',forge:'Forge Shop',press:'Press Shop',machine:'Machine Shop'};
+    const deptElecMap={cutting:null,forge:'Forge',press:'Press',machine:'Machine'};
+    const deptKey=dept.key;
+    const mpDept=deptMPMap[deptKey]||'';
+    const elecDept=deptElecMap[deptKey]||'';
+
+    const mpTval=(mpT[mpDept]||{});
+    const mpYval=(mpY2[mpDept]||{});
+    const elecTval=elecDept?(elecT[elecDept]||0):0;
+    const elecYval=elecDept?(elecY[elecDept]||0):0;
+
+    const summary=document.createElement('div');
+    summary.className='dept-summary ds4';
+    summary.style.marginBottom='16px';
+    summary.innerHTML=`
+      <div class="dscard"><div class="dslbl">Staff Today</div><div class="dsval">${fmtN((mpTval.staff||0))}</div><div class="dssub">Yesterday: ${fmtN(mpYval.staff||0)}</div></div>
+      <div class="dscard"><div class="dslbl">Contract Today</div><div class="dsval">${fmtN(mpTval.contract||0)}</div><div class="dssub">Yesterday: ${fmtN(mpYval.contract||0)}</div></div>
+      <div class="dscard"><div class="dslbl">Contract Cost Yest</div><div class="dsval">${fmtCr(mpYval.contractCost||0)}</div><div class="dssub">Today: ${fmtCr(mpTval.contractCost||0)}</div></div>
+      ${elecDept?`<div class="dscard"><div class="dslbl">Electricity kWh</div><div class="dsval">${fmtN(Math.round(elecTval))}</div><div class="dssub">Yesterday: ${fmtN(Math.round(elecYval))} kWh</div></div>`:'<div class="dscard"><div class="dslbl">Electricity</div><div class="dsval">—</div></div>'}
+    `;
+    grid.appendChild(summary);
+  });
+
+  // ── MATERIAL NEEDED ──
+  const schedRows=(D.schedule||{}).rows||[];
+  const steelGrades={};
+  ((D.steel||{}).grades||[]).forEach(g=>{steelGrades[g.grade]=g.balanceT||0;});
+
+  // Sort: A+ no stock first (red), A+ in stock (green), then A, A- etc
+  const ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6,'—':7};
+  const matRows=schedRows
+    .filter(r=>r.balProduce>0)
+    .map(r=>{
+      const stockT=steelGrades[r.grade]||0;
+      const needT=r.rmRequiredT||0;
+      const hasStock=stockT>=needT;
+      return {...r, stockT, needT, hasStock};
+    })
+    .sort((a,b)=>{
+      const oa=ORDER[a.band]||7, ob=ORDER[b.band]||7;
+      if(oa!==ob) return oa-ob;
+      // Within same band: no stock first
+      if(a.hasStock!==b.hasStock) return a.hasStock?1:-1;
+      return b.balProduce-a.balProduce;
+    });
+
+  const matBody=document.getElementById('mat-body');
+  matBody.innerHTML='';
+  document.getElementById('mat-count').textContent=matRows.length+' parts';
+
+  matRows.forEach(r=>{
+    const noStock=!r.hasStock;
+    const rowColor=noStock?'background:#FEF2F2':'background:#F0FDF4';
+    const statusBadge=noStock?
+      `<span class="badge b-rd">ORDER NOW</span>`:
+      `<span class="badge b-gn">IN STOCK</span>`;
+    matBody.innerHTML+=`<tr style="${rowColor}">
+      <td>${bandPill(r.band)}</td>
+      <td class="mono">${r.vfNo||''}</td>
+      <td style="font-size:10px">${(r.customer||'').substring(0,22)}</td>
+      <td class="mono">${r.grade||'—'}</td>
+      <td class="mono">${fmtN(r.balProduce)}</td>
+      <td class="mono">${(r.needT||0).toFixed(2)} T</td>
+      <td class="mono">${(r.stockT||0).toFixed(2)} T</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  });
+
+  // ── WIP SNAPSHOT ──
+  const wipS=(wip.summary||{});
+  document.getElementById('wip-cut-pcs').textContent=fmtN(wipS.cutWIPPcs);
+  document.getElementById('wip-cut-sub').textContent=(wipS.cutWIPVFs||0)+' VFs';
+  document.getElementById('wip-fg-pcs').textContent=fmtN(wipS.fgWIPPcs);
+  document.getElementById('wip-fg-sub').textContent=(wipS.fgWIPVFs||0)+' VFs';
+  document.getElementById('wip-jwk-pcs').textContent=fmtN(wipS.jwkWIPPcs);
+  document.getElementById('wip-jwk-sub').textContent='Laxmi + Kalyani';
+  const totalWIP=(wipS.cutWIPPcs||0)+(wipS.fgWIPPcs||0)+(wipS.jwkWIPPcs||0);
+  document.getElementById('wip-total-badge').textContent=fmtN(totalWIP)+' total pcs';
+}
+
+// Build shift grid for one dept one period
+function buildShiftGrid(title, machines, data, labelCls){
+  const wrapper=document.createElement('div');
+  wrapper.className='card';
+  wrapper.style.marginBottom='6px';
+
+  // Index data: machine → shift → {vf:qty}
+  const idx={};
+  (data||[]).forEach(item=>{
+    if(!idx[item.machine]) idx[item.machine]={};
+    if(!idx[item.machine][item.shift]) idx[item.machine][item.shift]={};
+    Object.entries(item.entries||{}).forEach(([vf,qty])=>{
+      idx[item.machine][item.shift][vf]=(idx[item.machine][item.shift][vf]||0)+qty;
     });
   });
 
-  // Build HTML
-  var h='<thead><tr><th class="sh-col">Shift</th>';
-  machCodes.forEach(function(mc){ h+='<th>'+machNames[mc]+'</th>'; });
-  h+='</tr></thead><tbody>';
+  const shifts=['Shift 1','Shift 2','Shift 3'];
 
-  SHIFTS.forEach(function(sh){
-    h+='<tr><td class="sh-col">'+SHIFT_SHORT[sh]+'</td>';
-    machCodes.forEach(function(mc){
-      var entries=grid[sh][mc];
-      var vfs=Object.keys(entries);
-      if(vfs.length===0){ h+='<td class="empty-cell"><span style="color:var(--tx3)">—</span></td>'; return; }
-      var tot=0; vfs.forEach(function(v){ tot+=entries[v]; });
-      h+='<td class="has-d"><div class="cell-entries">';
-      vfs.sort(function(a,b){return entries[b]-entries[a];}).slice(0,5).forEach(function(vf){
-        h+='<div class="cell-entry"><span>'+vf+'</span> → '+fmtN(entries[vf])+'</div>';
-      });
-      if(vfs.length>5) h+='<div class="cell-entry" style="color:var(--tx3)">+'+( vfs.length-5)+' more</div>';
-      h+='<div class="cell-total">'+fmtN(tot)+'</div></div></td>';
+  // Build HTML
+  let html=`<div class="ch"><div class="ct" style="border-left:3px solid ${labelCls==='day'?'var(--gn)':'var(--sl)'};padding-left:8px">${title}</div></div>`;
+  html+=`<div class="shift-wrap"><table class="shift-tbl"><thead><tr><th class="lft">Shift</th>`;
+  machines.forEach(m=>{html+=`<th>${MCODE_SHORT[m]||m}</th>`;});
+  html+=`</tr></thead><tbody>`;
+
+  let totalPerMachine={};
+  machines.forEach(m=>{totalPerMachine[m]=0;});
+
+  shifts.forEach(shift=>{
+    html+=`<tr><td class="lft">${shift}</td>`;
+    machines.forEach(m=>{
+      const entries=idx[m]&&idx[m][shift]?idx[m][shift]:{};
+      const vfs=Object.entries(entries);
+      if(vfs.length===0){
+        html+=`<td class="cell-zero">—</td>`;
+      } else {
+        html+=`<td>`;
+        vfs.forEach(([vf,qty])=>{
+          html+=`<span class="cell-entry"><span class="vf">${vf}</span> <span class="qty">${fmtN(qty)}</span></span>`;
+          totalPerMachine[m]=(totalPerMachine[m]||0)+qty;
+        });
+        html+=`</td>`;
+      }
     });
-    h+='</tr>';
+    html+=`</tr>`;
   });
 
   // Total row
-  h+='<tr class="tot-row"><td class="sh-col">TOTAL</td>';
-  machCodes.forEach(function(mc){
-    h+='<td>'+(totals[mc]>0?fmtN(totals[mc]):'—')+'</td>';
+  html+=`<tr class="tot-row"><td class="lft">TOTAL</td>`;
+  machines.forEach(m=>{
+    const t=totalPerMachine[m]||0;
+    html+=`<td>${t>0?fmtN(t):'—'}</td>`;
   });
-  h+='</tr></tbody>';
-  return h;
+  html+=`</tr></tbody></table></div>`;
+
+  wrapper.innerHTML=html;
+  return wrapper;
 }
 
-// ═══ DEPT SUMMARY TABLE ═══
-function renderDeptSummary(today, yest){
-  var mpT = today.manpower||{}, mpY = yest.manpower||{};
-  var elT = today.elecByDept||{}, elY = yest.elecByDept||{};
-  var tbody = document.getElementById('dept-summ-body');
-  var h='';
-  DEPT_ROWS.forEach(function(dept){
-    var mt=mpT[dept]||{}, my=mpY[dept]||{};
-    var eT=elT[dept]||0, eY=elY[dept]||0;
-    h+='<tr>';
-    h+='<td style="text-align:left;font-weight:500;">'+dept+'</td>';
-    h+='<td>'+(mt.staff||0)+'</td>';
-    h+='<td>'+(mt.contract||0)+'</td>';
-    h+='<td>'+(eT>0?fmtN(eT):'—')+'</td>';
-    h+='<td style="color:var(--tx3);">'+(my.staff||0)+'</td>';
-    h+='<td style="color:var(--tx3);">'+(my.contract||0)+'</td>';
-    h+='<td style="color:var(--tx3);">'+(eY>0?fmtN(eY):'—')+'</td>';
-    h+='</tr>';
+// ══════════════════════════════════════════════════════════════
+// SCHEDULE
+// ══════════════════════════════════════════════════════════════
+function renderSchedule(){
+  const sched=D.schedule||{};
+  const rows=sched.rows||[];
+  const s=sched.summary||{};
+
+  // KPIs
+  const kpis=document.getElementById('sched-kpis');
+  kpis.innerHTML=`
+    <div class="kc or"><div class="kl">Scheduled Qty</div><div class="kv">${fmtN(s.totalSchedQty)}</div></div>
+    <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv">${fmtN(s.totalProduced)}</div></div>
+    <div class="kc rd"><div class="kl">Balance to Produce</div><div class="kv">${fmtN(s.totalBalProduce)}</div></div>
+    <div class="kc bl"><div class="kl">RM Required</div><div class="kv">${((s.totalRMRequired||0)/1000).toFixed(1)} T</div></div>
+    <div class="kc am"><div class="kl">Schedule %</div><div class="kv">${s.totalSchedQty>0?Math.round((s.totalProduced||0)/(s.totalSchedQty)*100):0}%</div></div>
+  `;
+
+  document.getElementById('sched-count').textContent=rows.length+' VFs';
+  const body=document.getElementById('sched-body');
+  body.innerHTML='';
+  rows.forEach(r=>{
+    const pct=r.schedPct||0;
+    const pctColor=pct===0?'var(--rd)':pct<50?'var(--am)':pct>=100?'var(--gn)':'var(--tx)';
+    body.innerHTML+=`<tr>
+      <td>${bandPill(r.band)}</td>
+      <td class="mono">${r.vfNo}</td>
+      <td style="font-size:10px">${(r.customer||'').substring(0,22)}</td>
+      <td class="mono" style="font-size:10px">${r.grade||'—'}</td>
+      <td class="mono">${fmtN(r.schedQty)}</td>
+      <td class="mono">${fmtN(r.producedMTD)}</td>
+      <td class="mono">${fmtN(r.dispatchedMTD)}</td>
+      <td class="mono" style="font-weight:700;color:var(--am)">${fmtN(r.balProduce)}</td>
+      <td class="mono">${(r.rmRequiredT||0).toFixed(2)} T</td>
+      <td class="mono" style="color:${pctColor};font-weight:700">${pct}%</td>
+    </tr>`;
   });
-  tbody.innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:12px;">No manpower data available</td></tr>';
 }
 
-// ═══ MATERIAL NEEDED ═══
-function renderMaterial(schedRows, steelGrades){
-  // Build grade stock map in kg
-  var stockMap={};
-  (steelGrades||[]).forEach(function(g){ stockMap[g.grade]=g.balanceKg||0; });
+// ══════════════════════════════════════════════════════════════
+// WIP
+// ══════════════════════════════════════════════════════════════
+function renderWIP(){
+  const wip=D.wip||{};
+  const s=wip.summary||{};
+  document.getElementById('wip2-cut').textContent=fmtN(s.cutWIPPcs);
+  document.getElementById('wip2-cut-s').textContent=(s.cutWIPVFs||0)+' VFs';
+  document.getElementById('wip2-fg').textContent=fmtN(s.fgWIPPcs);
+  document.getElementById('wip2-fg-s').textContent=(s.fgWIPVFs||0)+' VFs';
+  document.getElementById('wip2-jwk').textContent=fmtN(s.jwkWIPPcs);
+  document.getElementById('wip2-jwk-s').textContent='Laxmi + Kalyani';
+  document.getElementById('wip-badge').textContent=fmtN((s.cutWIPPcs||0)+(s.fgWIPPcs||0)+(s.jwkWIPPcs||0))+' total pcs';
 
-  // Build rows: filter schedule rows with balance to produce > 0
-  var rows=[];
-  (schedRows||[]).forEach(function(s){
-    if((s.balProduce||0)<=0) return;
-    var grade=s.grade||'';
-    var rmKg=(s.rmRequired||0)*1000; // rmRequired is in kg, convert display to T
-    var rmT=s.rmRequired||0; // already kg from doGet, convert to T
-    // doGet returns rmRequired in kg
-    var rmTons=(s.rmRequired||0)/1000;
-    var stockKg=stockMap[grade]||0;
-    var stockT=stockKg/1000;
-    var hasStock=stockKg>=s.rmRequired;
-    rows.push({
-      band:s.band||'—', vf:s.vfNo, customer:s.customer||'', grade:grade,
-      pending:s.balProduce||0, rmT:rmTons, stockT:stockT,
-      hasStock:hasStock,
-      status:hasStock?'IN STOCK':'NO STOCK'
-    });
+  const body=document.getElementById('wip-body');
+  body.innerHTML='';
+  (wip.rows||[]).filter(r=>r.cutWIP||r.fgWIP||r.closingWIP).forEach(r=>{
+    body.innerHTML+=`<tr>
+      <td class="mono">${r.vfNo}</td>
+      <td style="font-size:10px">${(r.customer||'').substring(0,22)}</td>
+      <td class="mono">${fmtN(r.cutMTD)}</td>
+      <td class="mono">${fmtN(r.forgeMTD+r.pressMTD)}</td>
+      <td class="mono">${fmtN(r.dispatchedMTD)}</td>
+      <td class="mono" style="color:var(--br)">${r.cutWIP?fmtN(r.cutWIP):'—'}</td>
+      <td class="mono" style="color:var(--gn)">${r.fgWIP?fmtN(r.fgWIP):'—'}</td>
+      <td class="mono" style="font-weight:700">${fmtN(r.closingWIP)}</td>
+    </tr>`;
   });
-
-  // Sort: band order, then no-stock first within same band
-  var ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6,'—':7};
-  rows.sort(function(a,b){
-    var bo=(ORDER[a.band]||7)-(ORDER[b.band]||7);
-    if(bo!==0) return bo;
-    // within same band: no stock first
-    if(!a.hasStock&&b.hasStock) return -1;
-    if(a.hasStock&&!b.hasStock) return 1;
-    return b.pending-a.pending;
-  });
-
-  document.getElementById('mat-count').textContent=rows.length+' parts pending';
-
-  var h='';
-  var lastBand='', lastStatus='';
-  rows.forEach(function(r){
-    var sectionKey=r.band+'|'+r.status;
-    if(r.band!==lastBand||r.status!==lastStatus){
-      lastBand=r.band; lastStatus=r.status;
-      var label=r.band+' &mdash; '+(r.hasStock?'&#9654; In Stock &mdash; Produce Now':'&#9650; No Stock &mdash; Order Now');
-      var bg=r.hasStock?'#E8F5E9':'#FEF2F2';
-      var col=r.hasStock?'var(--gn)':'var(--rd)';
-      h+='<tr class="sec-hdr"><td colspan="8" style="background:'+bg+';color:'+col+';">'+label+'</td></tr>';
-    }
-    var cls=r.hasStock?'in-stock':'no-stock';
-    h+='<tr class="'+cls+'">';
-    h+='<td>'+bandPill(r.band)+'</td>';
-    h+='<td class="mo">'+r.vf+'</td>';
-    h+='<td style="text-align:left;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.customer+'">'+r.customer+'</td>';
-    h+='<td class="mo">'+r.grade+'</td>';
-    h+='<td>'+fmtN(r.pending)+'</td>';
-    h+='<td class="mo">'+(r.rmT>0?r.rmT.toFixed(3)+' T':'—')+'</td>';
-    h+='<td class="mo" style="color:'+(r.stockT>0?'var(--gn)':'var(--rd)')+';">'+(r.stockT>0?r.stockT.toFixed(2)+' T':'—')+'</td>';
-    var stCol=r.hasStock?'var(--gn)':'var(--rd)';
-    h+='<td><span class="badge" style="background:'+(r.hasStock?'var(--gnb)':'var(--rdb)')+';color:'+stCol+';">'+r.status+'</span></td>';
-    h+='</tr>';
-  });
-
-  document.getElementById('mat-body').innerHTML=h||'<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3);">No pending schedule items</td></tr>';
 }
 
-// ═══ MAIN RENDER ═══
-function render(data){
-  D=data;
-  var t=data.today||{}, wip=data.wip||{}, sc=data.schedule||{};
-  var out=data.outstanding||{}, steel=data.steel||{};
-  var f4=data.f4||{}, elec=data.elec||{}, mg=data.margins||{};
-  var fy=data.fy_monthly||[], mtd=data.mtd||{};
-  var ws=wip.summary||{};
-
-  // Date labels
-  var todayDate=t.date||'—';
-  var isLastAvail=todayDate.indexOf('last available')>=0;
-  document.getElementById('date-notice').style.display=isLastAvail?'block':'none';
-  ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-today-date').textContent=todayDate; });
-  var prevDate=t.prevDate||'—';
-  ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-yest-date').textContent=prevDate; });
-
-  // ─ KPI Bar ─
-  var scSum=sc.summary||{};
-  document.getElementById('k-bal').textContent=fmtN(scSum.totalBalProduce||0);
-  document.getElementById('k-bal-s').textContent=sc.month||'this month';
-
-  // Electricity today from elec data (today's main meter reading)
-  var elecToday=elec.todayKwh||0;
-  document.getElementById('k-elec').textContent=elecToday>0?fmtN(elecToday)+' kWh':'—';
-
-  // Cut today totals
-  var cutPcs=0;
-  (t.cutting||[]).forEach(function(r){ Object.values(r.entries||{}).forEach(function(q){cutPcs+=q;}); });
-  document.getElementById('k-cut').textContent=fmtN(cutPcs);
-  document.getElementById('k-cut-s').textContent=todayDate;
-
-  // Forge today
-  var frgIn=0, frgJWK=0, jwkSet=data.jwk_vfs||[];
-  (t.forging||[]).concat(t.pressing||[]).forEach(function(r){
-    var isJWK=(r.type||'').toLowerCase().indexOf('jobwork')>=0;
-    Object.values(r.entries||{}).forEach(function(q){ if(isJWK)frgJWK+=q; else frgIn+=q; });
+// ══════════════════════════════════════════════════════════════
+// STEEL
+// ══════════════════════════════════════════════════════════════
+function renderSteel(){
+  const steel=D.steel||{};
+  document.getElementById('steel-kpis').innerHTML=`
+    <div class="kc or"><div class="kl">Total Balance</div><div class="kv">${fmtN(Math.round(steel.totalBalanceKg))} kg</div><div class="ks">${(steel.totalBalanceT||0).toFixed(1)} T</div></div>
+    <div class="kc gn"><div class="kl">Stock Value</div><div class="kv">${fmtCr((steel.totalValueL||0)*100000)}</div></div>
+    <div class="kc bl"><div class="kl">Grades in Stock</div><div class="kv">${(steel.grades||[]).filter(g=>g.balanceKg>0).length}</div></div>
+    <div class="kc rd"><div class="kl">Out of Stock</div><div class="kv">${(steel.grades||[]).filter(g=>g.balanceKg<=0).length} grades</div></div>
+  `;
+  const body=document.getElementById('steel-body');
+  body.innerHTML='';
+  (steel.grades||[]).forEach(g=>{
+    const rowStyle=g.balanceKg<=0?'background:#FEF2F2':'';
+    body.innerHTML+=`<tr style="${rowStyle}">
+      <td style="font-weight:600">${g.grade}</td>
+      <td class="mono">${fmtN(Math.round(g.openingKg))}</td>
+      <td class="mono">${fmtN(Math.round(g.inwardKg))}</td>
+      <td class="mono">${fmtN(Math.round(g.consumedKg))}</td>
+      <td class="mono" style="font-weight:700">${fmtN(Math.round(g.balanceKg))}</td>
+      <td class="mono">${(g.balanceT||0).toFixed(2)} T</td>
+      <td class="mono">₹${(g.avgRate||0).toFixed(2)}/kg</td>
+      <td class="mono">${g.valueL||0} L</td>
+    </tr>`;
   });
-  document.getElementById('k-frg').textContent=fmtN(frgIn+frgJWK);
-  document.getElementById('k-frg-s').textContent='Inhouse: '+fmtN(frgIn)+' | JWK: '+fmtN(frgJWK);
-
-  // ─ Production Tables ─
-  // We need today rows and yesterday rows — doGet returns today.cutting etc.
-  // Yesterday is in today.yesterday_cutting etc. — we build from raw using prevDate
-  var yest=t.yesterday||{};
-  var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC_MAP(),(t.cutting||[]),(yest.cutting||[]));
-  document.getElementById('tbl-cut-today').innerHTML=cutRes.today;
-  document.getElementById('tbl-cut-yest').innerHTML=cutRes.yest;
-
-  var frgRes=buildProdTable(FRG_MACHINES,FRG_NAMES,FRG_SRC,(t.forging||[]),(yest.forging||[]));
-  document.getElementById('tbl-frg-today').innerHTML=frgRes.today;
-  document.getElementById('tbl-frg-yest').innerHTML=frgRes.yest;
-
-  var prRes=buildProdTable(PRESS_MACHINES,PRESS_NAMES,PRESS_SRC,(t.pressing||[]),(yest.pressing||[]));
-  document.getElementById('tbl-press-today').innerHTML=prRes.today;
-  document.getElementById('tbl-press-yest').innerHTML=prRes.yest;
-
-  var mRes=buildProdTable(MACH_MACHINES,MACH_NAMES,MACH_SRC,(t.machine||[]),(yest.machine||[]));
-  document.getElementById('tbl-mach-today').innerHTML=mRes.today;
-  document.getElementById('tbl-mach-yest').innerHTML=mRes.yest;
-
-  // ─ Dept Summary ─
-  renderDeptSummary(t, yest);
-
-  // ─ Material Needed ─
-  renderMaterial(sc.rows||[], steel.grades||[]);
-
-  // ─ WIP Snapshot (Today tab) ─
-  document.getElementById('wip-cut-pcs').textContent=fmtN(ws.cutWIPPcs||0);
-  document.getElementById('wip-cut-sub').textContent=(ws.cutWIPVFs||0)+' VFs';
-  document.getElementById('wip-frg-pcs').textContent=fmtN(ws.fgWIPPcs||0);
-  document.getElementById('wip-frg-sub').textContent=(ws.fgWIPVFs||0)+' VFs';
-  document.getElementById('wip-jwk-pcs').textContent=fmtN(ws.jwkWIPPcs||0);
-  document.getElementById('wip-jwk-sub').textContent='Laxmi + Kalyani';
-  var totalWip=(ws.cutWIPPcs||0)+(ws.fgWIPPcs||0)+(ws.jwkWIPPcs||0);
-  document.getElementById('wip-total-badge').textContent=fmtN(totalWip)+' pcs total';
-
-  // ─ MTD ─
-  document.getElementById('m-tov').textContent=fmtCurr(mtd.turnoverL*100000);
-  document.getElementById('m-tov-s').textContent=mtd.month||'';
-  document.getElementById('m-own').textContent=fmtN(mtd.ownForgedPcs||0);
-  document.getElementById('m-own-s').textContent=((mtd.ownForgedT||0).toFixed(1))+' T';
-  document.getElementById('m-jwk').textContent=fmtN(mtd.jwkForgedPcs||0);
-  document.getElementById('m-jwk-s').textContent=((mtd.jwkForgedT||0).toFixed(1))+' T';
-  document.getElementById('m-cut').textContent=fmtN(mtd.cutQty||0);
-  document.getElementById('m-cut-s').textContent=((mtd.cutT||0).toFixed(1))+' T';
-  document.getElementById('m-sch').textContent=(mtd.schedPct||0)+'%';
-  document.getElementById('m-sch-s').textContent='of schedule done';
-  document.getElementById('m-oil').textContent=fmtN((mtd.oilForgeL||0)+(mtd.oilHTL||0))+' L';
-  document.getElementById('m-elec').textContent=fmtN(mtd.elecKwh||0)+' kWh';
-  document.getElementById('m-clab').textContent=fmtCurr((mtd.contractCostL||0)*100000);
-  document.getElementById('m-rm').textContent='Rs '+(data.rm_rate||'—');
-
-  // MTD machine bars
-  var mbars=mtd.machineBars||[];
-  var maxMB=mbars.length>0?mbars[0][1]:1;
-  var mbH='';
-  mbars.forEach(function(b){
-    var pct=Math.round(b[1]/maxMB*100);
-    mbH+='<div class="brow"><div class="blbl">'+b[0]+'</div><div class="btrack"><div class="bfill" style="width:'+pct+'%"></div></div><div class="bval">'+fmtN(b[1])+' pcs</div></div>';
-  });
-  document.getElementById('mtd-mach-bars').innerHTML=mbH||'<div style="color:var(--tx3);font-size:11px;">No machine data</div>';
-
-  // MTD WIP
-  document.getElementById('mtd-cw').textContent=fmtN(ws.cutWIPPcs||0);
-  document.getElementById('mtd-cw-s').textContent=(ws.cutWIPVFs||0)+' VFs';
-  document.getElementById('mtd-fw').textContent=fmtN(ws.fgWIPPcs||0);
-  document.getElementById('mtd-fw-s').textContent=(ws.fgWIPVFs||0)+' VFs';
-  document.getElementById('mtd-jw').textContent=fmtN(ws.jwkWIPPcs||0);
-  document.getElementById('mtd-jw-s').textContent='Laxmi + Kalyani';
-
-  // ─ FY Monthly ─
-  var fyH='';
-  fy.forEach(function(r){
-    var hasDat=(r.cutQty||0)>0||(r.forgeQtyIn||0)>0;
-    fyH+='<tr'+(hasDat?'':' style="color:var(--tx3);"')+'>';
-    fyH+='<td class="mo fw6">'+r.month+'</td>';
-    fyH+='<td>'+fmtN(r.cutQty||0)+'</td>';
-    fyH+='<td>'+(r.cutKg>0?(r.cutKg/1000).toFixed(1):'—')+'</td>';
-    fyH+='<td>'+fmtN((r.forgeQtyIn||0)+(r.pressQtyIn||0))+'</td>';
-    fyH+='<td>'+((( r.forgeKgIn||0)+(r.pressKgIn||0))>0?(((r.forgeKgIn||0)+(r.pressKgIn||0))/1000).toFixed(1):'—')+'</td>';
-    fyH+='<td>'+fmtN((r.forgeQtyJWK||0)+(r.pressQtyJWK||0))+'</td>';
-    fyH+='<td>'+(((r.forgeKgJWK||0)+(r.pressKgJWK||0))>0?(((r.forgeKgJWK||0)+(r.pressKgJWK||0))/1000).toFixed(1):'—')+'</td>';
-    fyH+='<td>'+fmtN(r.dispQty||0)+'</td>';
-    fyH+='<td class="or fw6">'+(r.dispTurnover>0?fmtCurr(r.dispTurnover*100000):'—')+'</td>';
-    fyH+='<td>'+fmtN(r.rmKg||0)+'</td>';
-    fyH+='<td>'+fmtN(r.oilForge||0)+'</td>';
-    fyH+='<td>'+fmtN(r.oilHT||0)+'</td>';
-    fyH+='<td>'+fmtN(r.elecKwh||0)+'</td>';
-    fyH+='</tr>';
-  });
-  document.getElementById('tb-fy').innerHTML=fyH;
-
-  // ─ WIP Tab ─
-  document.getElementById('w-cpcs').textContent=fmtN(ws.cutWIPPcs||0);
-  document.getElementById('w-csub').textContent=(ws.cutWIPVFs||0)+' VFs';
-  document.getElementById('w-fpcs').textContent=fmtN(ws.fgWIPPcs||0);
-  document.getElementById('w-fsub').textContent=(ws.fgWIPVFs||0)+' VFs';
-  document.getElementById('w-jpcs').textContent=fmtN(ws.jwkWIPPcs||0);
-  document.getElementById('w-jsub').textContent='Laxmi + Kalyani';
-  document.getElementById('wip-badge').textContent=fmtN(totalWip)+' pcs total';
-
-  var cwH='', fwH='', jwH='';
-  (wip.rows||[]).forEach(function(r){
-    if((r.cutWIP||0)>0) cwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.cutWIP)+'</td><td>'+(r.fgWIP>0?fmtN(r.fgWIP):'—')+'</td></tr>';
-    if((r.fgWIP||0)>0)  fwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.fgWIP)+'</td></tr>';
-    if(jwkSet.indexOf(r.vfNo)>=0&&Math.abs(r.closingWIP||0)>0) jwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(Math.abs(r.closingWIP))+'</td></tr>';
-  });
-  document.getElementById('tb-cwip').innerHTML=cwH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);">No cut WIP</td></tr>';
-  document.getElementById('tb-fwip').innerHTML=fwH||'<tr><td colspan="3" style="text-align:center;color:var(--tx3);">No forged WIP</td></tr>';
-  document.getElementById('tb-jwip').innerHTML=jwH||'<tr><td colspan="3" style="text-align:center;color:var(--tx3);">No JWK WIP</td></tr>';
-
-  // ─ Schedule ─
-  var ss=sc.summary||{};
-  document.getElementById('sc-tot').textContent=fmtN(ss.totalSchedQty||0);
-  document.getElementById('sc-tot-s').textContent=sc.month||'';
-  document.getElementById('sc-pro').textContent=fmtN(ss.totalProduced||0);
-  document.getElementById('sc-bal').textContent=fmtN(ss.totalBalProduce||0);
-  document.getElementById('sc-pct').textContent=(ss.totalSchedQty>0?Math.round(ss.totalProduced/ss.totalSchedQty*100):0)+'%';
-  document.getElementById('sc-badge').textContent=(sc.rows||[]).length+' VFs';
-  var scH='';
-  (sc.rows||[]).forEach(function(r){
-    scH+='<tr>';
-    scH+='<td>'+bandPill(r.band)+'</td>';
-    scH+='<td class="mo">'+r.vfNo+'</td>';
-    scH+='<td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.customer+'">'+r.customer+'</td>';
-    scH+='<td class="mo">'+r.grade+'</td>';
-    scH+='<td>'+fmtN(r.schedQty||0)+'</td>';
-    scH+='<td>'+fmtN(r.producedMTD||0)+'</td>';
-    scH+='<td>'+fmtN(r.dispatchedMTD||0)+'</td>';
-    scH+='<td class="'+(r.balProduce>0?'am fw6':'gn')+'">'+fmtN(r.balProduce||0)+'</td>';
-    scH+='<td class="mo">'+(r.rmRequired>0?(r.rmRequired/1000).toFixed(2)+'T':'—')+'</td>';
-    scH+='<td>'+(r.schedPct||0)+'%</td>';
-    scH+='</tr>';
-  });
-  document.getElementById('tb-sched').innerHTML=scH||'<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:16px;">No schedule data</td></tr>';
-
-  // ─ Outstanding ─
-  document.getElementById('out-od').textContent=fmtCurr(out.totalOverdue||0);
-  document.getElementById('out-od-s').textContent=(out.customers||[]).filter(function(c){return c.overdue>0;}).length+' customers overdue';
-  document.getElementById('out-nd').textContent=fmtCurr(out.totalNotDue||0);
-  document.getElementById('out-gt').textContent=fmtCurr(out.totalOutstanding||0);
-  document.getElementById('out-as').textContent=out.asOn||'';
-  document.getElementById('out-badge').textContent=(out.customers||[]).length+' customers';
-  var outH='';
-  (out.customers||[]).forEach(function(c){
-    outH+='<tr>';
-    outH+='<td>'+c.customer+'</td>';
-    outH+='<td style="text-align:right;font-family:var(--mo);color:var(--tx2);">'+(c.notDue>0?fmtCurr(c.notDue):'—')+'</td>';
-    outH+='<td style="text-align:right;font-family:var(--mo);font-weight:700;color:'+(c.overdue>0?'var(--rd)':'var(--gn)')+';">'+(c.overdue>0?fmtCurr(c.overdue):'—')+'</td>';
-    outH+='<td style="text-align:right;font-family:var(--mo);font-weight:600;">'+fmtCurr(c.grandTotal)+'</td>';
-    outH+='</tr>';
-  });
-  document.getElementById('tb-out').innerHTML=outH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:16px;">No outstanding data</td></tr>';
-
-  // ─ Steel ─
-  document.getElementById('st-in').textContent=((steel.totalInwardKg||0)/1000).toFixed(1)+' T';
-  document.getElementById('st-bal').textContent=((steel.totalBalanceKg||0)/1000).toFixed(1)+' T';
-  document.getElementById('st-val').textContent='Rs '+(steel.totalValueL||0).toFixed(1)+' L est.';
-  document.getElementById('st-rate').textContent='Rs '+(data.rm_rate||'—');
-  document.getElementById('st-con').textContent=((steel.totalConsumedKg||0)/1000).toFixed(1)+' T';
-  var stH='';
-  (steel.grades||[]).forEach(function(g){
-    stH+='<tr>';
-    stH+='<td>'+g.grade+'</td>';
-    stH+='<td>'+fmtN(g.openingKg||0)+'</td>';
-    stH+='<td>'+fmtN(g.inwardKg||0)+'</td>';
-    stH+='<td>'+fmtN(g.consumedKg||0)+'</td>';
-    stH+='<td class="fw6" style="color:'+(g.balanceKg>0?'var(--gn)':'var(--rd)')+';">'+fmtN(g.balanceKg||0)+'</td>';
-    stH+='<td class="mo">'+(g.balanceKg>0?(g.balanceKg/1000).toFixed(2):'—')+'</td>';
-    stH+='<td class="mo">'+(g.avgRate>0?'Rs '+g.avgRate.toFixed(2):'—')+'</td>';
-    stH+='<td class="mo">'+(g.valueL>0?g.valueL.toFixed(1)+'L':'—')+'</td>';
-    stH+='</tr>';
-  });
-  document.getElementById('tb-steel').innerHTML=stH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:16px;">No steel data</td></tr>';
-
-  // ─ 57F4 ─
-  var vendors=f4.vendors||[];
-  var totSent=0, totRec=0, totPend=0;
-  vendors.forEach(function(v){ totSent+=v.sentPcs||0; totRec+=v.receivedPcs||0; totPend+=v.pendingPcs||0; });
-  document.getElementById('f4-badge').textContent=vendors.length+' vendors | '+fmtN(totPend)+' pcs pending';
-  var f4KH='<div class="kc or"><div class="kl">Total Sent</div><div class="kv">'+fmtN(totSent)+'</div><div class="ks">pcs out</div></div>';
-  f4KH+='<div class="kc gn"><div class="kl">Total Returned</div><div class="kv">'+fmtN(totRec)+'</div><div class="ks">pcs in</div></div>';
-  f4KH+='<div class="kc rd"><div class="kl">Pending Return</div><div class="kv">'+fmtN(totPend)+'</div><div class="ks">pcs at vendor</div></div>';
-  document.getElementById('f4-kpis').innerHTML=f4KH;
-  var f4H='';
-  var VCOLS=['#E8731A','#1D4ED8','#0E6E3A','#B91C1C','#6D28D9','#92400E','#1565C0'];
-  vendors.forEach(function(v,i){
-    var col=VCOLS[i%VCOLS.length];
-    f4H+='<div class="f4-vendor"><div class="f4-hdr" onclick="this.nextElementSibling.classList.toggle(\'open\')">';
-    f4H+='<div class="f4-dot" style="background:'+col+'"></div>';
-    f4H+='<div class="f4-name">'+v.vendor+'</div>';
-    f4H+='<div class="f4-total" style="color:'+col+'">'+fmtN(v.pendingPcs)+' pcs pending</div>';
-    f4H+='<span style="font-size:16px;color:var(--tx3);margin-left:8px;">&#9660;</span>';
-    f4H+='</div><div class="f4-body"><table class="tbl" style="margin:0;"><thead><tr><th>VF No</th><th>Customer</th><th>Sent</th><th>Returned</th><th>Pending</th></tr></thead><tbody>';
-    (v.parts||[]).sort(function(a,b){return Math.abs(b.pendingPcs)-Math.abs(a.pendingPcs);}).forEach(function(p){
-      f4H+='<tr><td class="mo">'+p.vfNo+'</td><td>'+p.customer+'</td><td>'+fmtN(p.sentPcs)+'</td><td>'+fmtN(p.receivedPcs)+'</td><td class="fw6" style="color:'+col+';">'+fmtN(p.pendingPcs)+'</td></tr>';
-    });
-    f4H+='</tbody></table></div></div>';
-  });
-  document.getElementById('f4-list').innerHTML=f4H||'<div style="text-align:center;padding:20px;color:var(--tx3);">No 57F4 pending</div>';
-
-  // ─ Electricity ─
-  var deptBars=elec.deptBars||[];
-  var maxKwh=deptBars.length>0?deptBars[0].kwh:1;
-  document.getElementById('el-tot').textContent=fmtN(elec.totalKwh||0)+' kWh';
-  var frgEl=deptBars.find(function(d){return d.dept==='Forge';});
-  var htEl=deptBars.find(function(d){return d.dept==='HT';});
-  var prEl=deptBars.find(function(d){return d.dept==='Press';});
-  document.getElementById('el-frg').textContent=frgEl?fmtN(frgEl.kwh)+' kWh':'—';
-  document.getElementById('el-ht').textContent=htEl?fmtN(htEl.kwh)+' kWh':'—';
-  document.getElementById('el-pr').textContent=prEl?fmtN(prEl.kwh)+' kWh':'—';
-  var elBH='';
-  deptBars.forEach(function(d){
-    var pct=Math.round(d.kwh/maxKwh*100);
-    elBH+='<div class="brow"><div class="blbl">'+d.dept+'</div><div class="btrack"><div class="bfill" style="width:'+pct+'%;background:var(--sl);"></div></div><div class="bval">'+fmtN(d.kwh)+' kWh</div><div style="font-family:var(--mo);font-size:9px;color:var(--tx3);width:35px;text-align:right;">'+d.pct+'%</div></div>';
-  });
-  document.getElementById('elec-bars').innerHTML=elBH||'<div style="color:var(--tx3);">No electricity data</div>';
 }
 
-// Cutting source map (API uses full names, map to codes)
-function CUT_SRC_MAP(){
-  return {'Shearing Machine':'SM','Band Saw No. 1':'BS1','Band Saw No. 1 ':'BS1','Band Saw No. 2':'BS2','Band Saw No. 3':'BS3','Circular Saw 80':'CS80','Circular Saw 100':'CS100','Circular Saw ITL':'CSITL','HGCKSGW 1':'HS1','HGCKSGW 2':'HS2','Band Saw No 1':'BS1','Band Saw No 2':'BS2','Band Saw No 3':'BS3'};
+// ══════════════════════════════════════════════════════════════
+// 57F4
+// ══════════════════════════════════════════════════════════════
+function renderF4(){
+  const f4=D.f4||{};
+  const vendors=f4.vendors||[];
+  const totalPend=vendors.reduce((a,v)=>a+(v.pendingPcs||0),0);
+  document.getElementById('f4-kpis').innerHTML=`
+    <div class="kc or"><div class="kl">Total Pending</div><div class="kv">${fmtN(totalPend)} pcs</div></div>
+    <div class="kc bl"><div class="kl">Vendors</div><div class="kv">${vendors.length}</div></div>
+    <div class="kc rd"><div class="kl">Overdue Vendors</div><div class="kv">${vendors.filter(v=>v.pendingPcs>500).length}</div></div>
+  `;
+  const list=document.getElementById('f4-list');
+  list.innerHTML='';
+  vendors.forEach(v=>{
+    const color=v.pendingPcs>1000?'var(--rd)':v.pendingPcs>200?'var(--am)':'var(--gn)';
+    list.innerHTML+=`<div style="border-bottom:1px solid var(--bd);padding:8px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:600;font-size:12px">${v.vendor}</span>
+        <span style="font-family:var(--mo);font-weight:700;color:${color}">${fmtN(v.pendingPcs)} pcs pending</span>
+      </div>
+      <div style="font-size:10px;color:var(--tx2)">Sent: ${fmtN(v.sentPcs)} · Returned: ${fmtN(v.receivedPcs)}</div>
+      ${v.parts&&v.parts.length?`<table class="tbl" style="margin-top:6px"><thead><tr><th>VF</th><th>Customer</th><th>Sent</th><th>Returned</th><th>Pending</th></tr></thead><tbody>
+        ${v.parts.map(p=>`<tr><td class="mono">${p.vfNo}</td><td style="font-size:10px">${(p.customer||'').substring(0,20)}</td><td class="mono">${fmtN(p.sentPcs)}</td><td class="mono">${fmtN(p.receivedPcs)}</td><td class="mono" style="font-weight:700;color:${color}">${fmtN(p.pendingPcs)}</td></tr>`).join('')}
+      </tbody></table>`:''}
+    </div>`;
+  });
 }
 
-// ─ Margins render ─
+// ══════════════════════════════════════════════════════════════
+// ELECTRICITY
+// ══════════════════════════════════════════════════════════════
+function renderElec(){
+  const elec=D.elec||{};
+  const total=elec.totalKwh||0;
+  document.getElementById('elec-kpis').innerHTML=`
+    <div class="kc sl"><div class="kl">Total kWh FY MTD</div><div class="kv">${(total/1000).toFixed(0)}k kWh</div></div>
+    <div class="kc or"><div class="kl">Forge Share</div><div class="kv">${((elec.deptBars||[]).find(d=>d.dept==='Forge')||{}).pct||0}%</div></div>
+    <div class="kc bl"><div class="kl">HT Share</div><div class="kv">${((elec.deptBars||[]).find(d=>d.dept==='HT')||{}).pct||0}%</div></div>
+    <div class="kc am"><div class="kl">Press Share</div><div class="kv">${((elec.deptBars||[]).find(d=>d.dept==='Press')||{}).pct||0}%</div></div>
+  `;
+  const deptEl=document.getElementById('elec-dept');
+  deptEl.innerHTML='';
+  const maxKwh=Math.max(...(elec.deptBars||[]).map(d=>d.kwh),1);
+  (elec.deptBars||[]).forEach(d=>{
+    deptEl.innerHTML+=`<div class="brow">
+      <div class="blbl">${d.dept}</div>
+      <div class="btrack"><div class="bfill" style="width:${Math.round(d.kwh/maxKwh*100)}%"></div></div>
+      <div class="bval">${fmtN(d.kwh)} kWh (${d.pct}%)</div>
+    </div>`;
+  });
+
+  // Monthly table
+  const monthly=elec.monthly||{};
+  const months=Object.keys(monthly).sort();
+  const depts=['Forge','HT','Press','Machine','Die','Grinding','Compressor'];
+  const hdr=document.getElementById('elec-monthly-hdr');
+  hdr.innerHTML=`<tr><th style="text-align:left">Month</th>${depts.map(d=>`<th>${d}</th>`).join('')}<th>Total</th></tr>`;
+  const mBody=document.getElementById('elec-monthly-body');
+  mBody.innerHTML='';
+  months.forEach(m=>{
+    const row=monthly[m]||{};
+    const tot=depts.reduce((a,d)=>a+(row[d]||0),0);
+    mBody.innerHTML+=`<tr><td class="mono">${m}</td>${depts.map(d=>`<td class="mono">${fmtN(Math.round(row[d]||0))}</td>`).join('')}<td class="mono" style="font-weight:700">${fmtN(Math.round(tot))}</td></tr>`;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// DIE LIFE
+// ══════════════════════════════════════════════════════════════
+function renderDieLife(){
+  const dl=D.die_life||{};
+  const running=dl.running||[];
+  const complete=dl.complete||[];
+
+  document.getElementById('die-kpis').innerHTML=`
+    <div class="kc gn"><div class="kl">Active Runs</div><div class="kv">${running.length}</div><div class="ks">Dies currently running</div></div>
+    <div class="kc sl"><div class="kl">Completed Runs</div><div class="kv">${complete.length}</div><div class="ks">Historical records</div></div>
+    <div class="kc or"><div class="kl">Machines Tracked</div><div class="kv">${new Set([...running,...complete].map(r=>r.machine)).size}</div></div>
+  `;
+
+  document.getElementById('die-running-cnt').textContent=running.length+' running';
+  const runBody=document.getElementById('die-running-body');
+  runBody.innerHTML='';
+  running.forEach(r=>{
+    runBody.innerHTML+=`<tr>
+      <td style="font-weight:600">${r.machine}</td>
+      <td class="mono">${r.vf}</td>
+      <td style="font-size:10px">${(r.customer||'').substring(0,20)}</td>
+      <td class="mono">${fmtDate(r.runStart)}</td>
+      <td class="mono">${r.days}</td>
+      <td class="mono">${r.shifts}</td>
+      <td class="mono" style="font-weight:700">${fmtN(r.totalPcs)}</td>
+      <td><span class="die-status-running">RUNNING</span></td>
+    </tr>`;
+  });
+
+  document.getElementById('die-hist-cnt').textContent=complete.length+' records';
+  const histBody=document.getElementById('die-hist-body');
+  histBody.innerHTML='';
+  complete.slice(0,100).forEach(r=>{
+    histBody.innerHTML+=`<tr>
+      <td style="font-weight:600">${r.machine}</td>
+      <td class="mono">${r.vf}</td>
+      <td style="font-size:10px">${(r.customer||'').substring(0,20)}</td>
+      <td class="mono">${fmtDate(r.runStart)}</td>
+      <td class="mono">${fmtDate(r.runEnd)}</td>
+      <td class="mono">${r.days}</td>
+      <td class="mono">${r.shifts}</td>
+      <td class="mono" style="font-weight:700">${fmtN(r.totalPcs)}</td>
+    </tr>`;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// MARGINS
+// ══════════════════════════════════════════════════════════════
 function renderMargins(){
-  var mg=D.margins||{};
-  var rows=mg.rows||[];
-  var bandCounts={};
-  rows.forEach(function(r){ bandCounts[r.band]=(bandCounts[r.band]||0)+1; });
-  var ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
-  var bKeys=Object.keys(BAND_COLORS).sort(function(a,b){return (ORDER[a]||9)-(ORDER[b]||9);});
-  var bH='';
-  bKeys.forEach(function(b){
-    var cnt=bandCounts[b]||0;
-    var col=BAND_COLORS[b];
-    bH+='<div class="kc" style="border-top-color:'+col+'"><div class="kl" style="color:'+col+';">Band '+b+'</div><div class="kv">'+cnt+'</div><div class="ks">parts</div></div>';
+  const mrg=D.margins||{};
+  const rows=mrg.rows||[];
+  document.getElementById('margin-rm-rate').textContent='RM Rate ₹'+mrg.rmAvgRate+'/kg';
+
+  const bandCounts={};
+  rows.forEach(r=>{bandCounts[r.band]=(bandCounts[r.band]||0)+1;});
+  const ORDER=['A+','A','A-','B+','B','B-','C'];
+  document.getElementById('margin-kpis').innerHTML=ORDER.map(b=>
+    `<div class="kc"><div class="kl" style="color:${BAND_COLOR[b]}">${b}</div><div class="kv">${bandCounts[b]||0}</div><div class="ks">parts dispatched</div></div>`
+  ).join('');
+
+  const body=document.getElementById('margin-body');
+  body.innerHTML='';
+  rows.forEach(r=>{
+    const net=r.netPerKg||0;
+    const netColor=net>0?'var(--gn)':'var(--rd)';
+    body.innerHTML+=`<tr>
+      <td>${bandPill(r.band)}</td>
+      <td class="mono">${r.vfNo}</td>
+      <td style="font-size:10px">${(r.customer||'').substring(0,20)}</td>
+      <td class="mono" style="font-size:10px">${r.grade||'—'}</td>
+      <td class="mono">₹${(r.convPerKg||0).toFixed(1)}</td>
+      <td class="mono" style="font-weight:700;color:${netColor}">₹${net.toFixed(1)}</td>
+      <td class="mono">${(r.dispTons||0).toFixed(1)} T</td>
+      <td class="mono">${fmtCr((r.turnoverL||0)*100000)}</td>
+      <td class="mono" style="color:${netColor}">${fmtCr((r.netRealL||0)*100000)}</td>
+    </tr>`;
   });
-  document.getElementById('band-kpis').innerHTML=bH;
-  document.getElementById('mg-rm').textContent='RM Rs '+(mg.rmAvgRate||'—')+'/kg';
-  var mgH='';
-  rows.forEach(function(r){
-    var col=BAND_COLORS[r.band]||'#888';
-    mgH+='<tr>';
-    mgH+='<td>'+bandPill(r.band)+'</td>';
-    mgH+='<td class="mo">'+r.vfNo+'</td>';
-    mgH+='<td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.customer+'</td>';
-    mgH+='<td class="mo">'+r.grade+'</td>';
-    mgH+='<td class="mo">'+(r.convPerKg||0).toFixed(1)+'</td>';
-    mgH+='<td class="mo fw6" style="color:'+col+';">'+(r.netPerKg||0).toFixed(1)+'</td>';
-    mgH+='<td class="mo">'+(r.dispTons||0).toFixed(2)+'</td>';
-    mgH+='<td class="mo">'+(r.turnoverL||0)+'</td>';
-    mgH+='<td class="mo" style="color:'+col+';">'+(r.netRealL||0)+'</td>';
-    mgH+='</tr>';
-  });
-  document.getElementById('tb-margin').innerHTML=mgH||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:16px;">No margin data</td></tr>';
 }
 
-// ═══ DATA LOAD ═══
-function loadData(){
-  document.getElementById('lov').style.display='flex';
-  fetch(WEB_APP+'?v='+Date.now())
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.error){throw new Error(data.error);}
-      document.getElementById('lov').style.display='none';
-      render(data);
-    })
-    .catch(function(e){
-      document.getElementById('lov').style.display='none';
-      var eb=document.getElementById('err-bar');
-      eb.style.display='flex';
-      document.getElementById('err-msg').textContent='Could not load: '+e.message+'. Ensure Web App deployed as Anyone.';
-      document.getElementById('err-msg').insertAdjacentHTML('afterend','<br><small style="color:var(--rd);font-size:10px;">'+WEB_APP+'</small>');
-    });
+// ══════════════════════════════════════════════════════════════
+// FY MONTHLY
+// ══════════════════════════════════════════════════════════════
+function renderMonthly(){
+  const months=D.fy_monthly||[];
+  const body=document.getElementById('monthly-body');
+  body.innerHTML='';
+  let totCut=0,totOwn=0,totJWK=0,totDisp=0,totTov=0;
+  months.forEach(m=>{
+    if(!m.month) return;
+    const ownT=(m.forgeKgIn||0)/1000+(m.pressKgIn||0)/1000;
+    const jwkT=(m.forgeKgJWK||0)/1000+(m.pressKgJWK||0)/1000;
+    const dispT=m.cutTons||0;
+    const tov=m.dispTurnover||0;
+    totCut+=m.cutTons||0; totOwn+=ownT; totJWK+=jwkT;
+    totDisp+=dispT; totTov+=tov;
+    const hasData=m.cutQty||m.forgeQtyIn;
+    body.innerHTML+=`<tr style="${!hasData?'color:var(--tx3)':''}">
+      <td style="font-weight:600">${m.month}</td>
+      <td class="mono">${m.cutTons?m.cutTons.toFixed(1):'—'}</td>
+      <td class="mono">${ownT?ownT.toFixed(1):'—'}</td>
+      <td class="mono">${jwkT?jwkT.toFixed(1):'—'}</td>
+      <td class="mono">${dispT?dispT.toFixed(1):'—'}</td>
+      <td class="mono">${tov?fmtCr(tov*100000):'—'}</td>
+      <td class="mono">${m.rmKg?fmtN(Math.round(m.rmKg)):'—'}</td>
+      <td class="mono">${m.oilForge?fmtN(Math.round(m.oilForge+m.oilHT)):'—'}</td>
+      <td class="mono">${m.elecKwh?fmtN(Math.round(m.elecKwh)):'—'}</td>
+      <td class="mono">${m.contractCost?fmtCr(m.contractCost*100000):'—'}</td>
+      <td class="mono">${m.staffHead||'—'}</td>
+      <td class="mono">${m.contractHead||'—'}</td>
+    </tr>`;
+  });
+  body.innerHTML+=`<tr class="tot">
+    <td>TOTAL</td>
+    <td class="mono">${totCut.toFixed(1)}</td>
+    <td class="mono">${totOwn.toFixed(1)}</td>
+    <td class="mono">${totJWK.toFixed(1)}</td>
+    <td class="mono">${totDisp.toFixed(1)}</td>
+    <td class="mono">${fmtCr(totTov*100000)}</td>
+    <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+  </tr>`;
 }
 
-document.addEventListener('DOMContentLoaded', loadData);
-// Auto-refresh every 10 minutes
-setInterval(function(){
-  fetch(WEB_APP+'?v='+Date.now()).then(function(r){return r.json();}).then(function(d){if(!d.error)render(d);}).catch(function(){});
-}, 600000);
+// START
+loadData();
 </script>
 </body>
 </html>
