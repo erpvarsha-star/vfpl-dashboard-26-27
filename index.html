@@ -515,10 +515,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
         <div class="cb">
           <div class="crow"><span class="clbl gn fw6">Oil — Forge</span><div><span class="cval gn" id="m-oil">&mdash;</span></div></div>
           <div class="crow"><span class="clbl bl fw6">Contract Labour</span><div><span class="cval bl" id="m-clab">&mdash;</span></div></div>
-          <div class="crow"><span class="clbl sl fw6">Salary (Company est.)</span><div><span class="cval sl">₹27.35 L/month</span></div></div>
-          <div class="crow"><span class="clbl sl fw6">Salary (Contractor est.)</span><div><span class="cval sl">₹18.34 L/month</span></div></div>
-          <div class="crow"><span class="clbl" style="color:#7C8A99;font-weight:600">Transport — Inbound (RM)</span><div><span style="font-size:11px;font-family:var(--mo);font-weight:600">₹3.95 L/month avg</span></div></div>
-          <div class="crow"><span class="clbl" style="color:#7C8A99;font-weight:600">Transport — Outbound (Dispatch)</span><div><span style="font-size:11px;font-family:var(--mo);font-weight:600">₹4.07 L/month avg</span></div></div>
+          <div class="crow"><span class="clbl sl fw6">Salary — Company</span><div><span class="cval sl" id="m-sal">&mdash;</span><span class="csub" id="m-sal-src"></span></div></div>
+          <div class="crow"><span class="clbl sl fw6">Salary — Contractor</span><div><span class="cval sl" id="m-contr">&mdash;</span><span class="csub" id="m-contr-src"></span></div></div>
+          <div class="crow"><span class="clbl" style="color:#7C8A99;font-weight:600">Transport — Inbound (RM)</span><div><span class="cval" id="m-tr-in" style="font-size:13px;">&mdash;</span><span class="csub" id="m-tr-in-src"></span></div></div>
+          <div class="crow"><span class="clbl" style="color:#7C8A99;font-weight:600">Transport — Outbound (Dispatch)</span><div><span class="cval" id="m-tr-out" style="font-size:13px;">&mdash;</span><span class="csub" id="m-tr-out-src"></span></div></div>
           <div class="crow"><span class="clbl" style="color:#7C8A99;font-weight:600">RM Rate (Wtd Avg)</span><div><span class="cval sl" id="m-rm">&mdash;</span><span class="csub">/kg</span></div></div>
           <div class="crow"><span class="clbl rd fw6">Vendor Rejections MTD</span><div><span class="cval rd" id="m-rej">&mdash;</span></div></div>
         </div>
@@ -1045,6 +1045,43 @@ function render(data){
   if(epk) epk.textContent='₹'+elecPerKg+'/kg finished';
   document.getElementById('m-clab').innerHTML=fmtCurr((mtd.contractCostL||0)*100000);
   document.getElementById('m-rm').innerHTML='₹'+(data.rm_rate||'—')+'/kg';
+
+  // Salary — green = actual from _RAW_SALARY, grey = estimate
+  var salEl=document.getElementById('m-sal');
+  if(salEl){
+    var salL=mtd.salaryActualL>0?mtd.salaryActualL:(mtd.salaryEstL||27.35);
+    salEl.textContent='₹'+salL.toFixed(2)+' L';
+    salEl.style.color=mtd.salaryActualL>0?'var(--gn)':'var(--sl)';
+    var ss2=document.getElementById('m-sal-src');
+    if(ss2)ss2.textContent=mtd.salaryActualL>0?' actual':' est';
+  }
+  // Contractor — green = actual from _RAW_CONTRACTOR, grey = estimate
+  var conEl=document.getElementById('m-contr');
+  if(conEl){
+    var conL=mtd.contractorActualL>0?mtd.contractorActualL:(mtd.contractorEstL||18.34);
+    conEl.textContent='₹'+conL.toFixed(2)+' L';
+    conEl.style.color=mtd.contractorActualL>0?'var(--gn)':'var(--sl)';
+    var cs2=document.getElementById('m-contr-src');
+    if(cs2)cs2.textContent=mtd.contractorActualL>0?' actual':' est';
+  }
+  // Transport Inbound — actual from _RAW_TRANSPORT (49% split) or FY25-26 avg
+  var trInEl=document.getElementById('m-tr-in');
+  if(trInEl){
+    var trIn=mtd.transportActualL>0?(mtd.transportActualL*0.49).toFixed(2):(mtd.transportInboundL||3.95).toFixed(2);
+    trInEl.textContent='₹'+trIn+' L';
+    trInEl.style.color=mtd.transportActualL>0?'var(--gn)':'var(--tn)';
+    var ti2=document.getElementById('m-tr-in-src');
+    if(ti2)ti2.textContent=mtd.transportActualL>0?' actual':' FY25-26 avg';
+  }
+  // Transport Outbound
+  var trOutEl=document.getElementById('m-tr-out');
+  if(trOutEl){
+    var trOut=mtd.transportActualL>0?(mtd.transportActualL*0.51).toFixed(2):(mtd.transportOutboundL||4.07).toFixed(2);
+    trOutEl.textContent='₹'+trOut+' L';
+    trOutEl.style.color=mtd.transportActualL>0?'var(--gn)':'var(--tn)';
+    var to2=document.getElementById('m-tr-out-src');
+    if(to2)to2.textContent=mtd.transportActualL>0?' actual':' FY25-26 avg';
+  }
   var mrej=document.getElementById('m-rej');
   if(mrej) mrej.textContent=fmtN(mtd.vendorRejPcs||0)+' pcs';
   var mmpb=document.getElementById('m-mp-badge');
