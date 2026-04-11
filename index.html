@@ -90,7 +90,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 .cell-entries{display:flex;flex-direction:column;gap:2px;text-align:left;}
 .cell-entry{font-size:8.5px;color:var(--tx);white-space:nowrap;}
 .cell-entry span{color:var(--br);font-weight:600;}
-.cell-total{font-size:9px;font-weight:700;color:var(--gn);border-top:1px solid var(--bd);margin-top:2px;padding-top:2px;}
+.cell-total{font-size:11px;font-weight:700;color:var(--gn);border-top:1px solid var(--bd);margin-top:2px;padding-top:2px;}
 .empty-cell{color:var(--tx3);font-size:9px;}
 
 /* DEPT SUMMARY */
@@ -873,10 +873,11 @@ function buildSingleProdTable(machCodes, machNames, machSrc, rawData){
       var tot=0; vfs.forEach(function(v){ tot+=entries[v]; });
       h+='<td class="has-d"><div class="cell-entries">';
       vfs.sort(function(a,b){return entries[b]-entries[a];}).slice(0,5).forEach(function(vf){
-        h+='<div class="cell-entry"><span class="mo" style="font-size:8px;color:var(--br);font-weight:600;">'+vf+'</span><span style="color:var(--tx3)"> → </span><span style="font-size:9px;font-weight:700;color:var(--tx);">'+fmtN(entries[vf])+'</span></div>';
+        h+='<div class="cell-entry"><span class="mo" style="font-size:11px;color:var(--br);font-weight:700;">'+vf+'</span><span style="color:var(--tx3)"> → </span><span style="font-size:12px;font-weight:700;color:var(--tx);">'+fmtN(entries[vf])+'</span></div>';
       });
       if(vfs.length>5) h+='<div class="cell-entry" style="color:var(--tx3)">+'+(vfs.length-5)+' more</div>';
-      h+='<div class="cell-total">'+fmtN(tot)+'</div></div></td>';
+      if(vfs.length>1) h+='<div class="cell-total">'+fmtN(tot)+'</div>';
+      h+='</div></td>';
     });
     h+='</tr>';
   });
