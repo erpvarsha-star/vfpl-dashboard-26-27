@@ -736,18 +736,19 @@ function buildSingleProdTable(machCodes, machNames, machSrc, rawData){
   var totals = {}; machCodes.forEach(function(mc){ totals[mc]=0; });
 
   (rawData||[]).forEach(function(row){
-    var srcMach = (row.machine||'').toLowerCase().trim();
-    var mc = machSrc[srcMach] || machSrc[(row.machine||'').trim()] || row.machine||'';
+    var rawMach = (row.machine||'').trim();
+    var srcMach = rawMach.toLowerCase().trim().replace(/\.\s*/g,'');
+    // Try exact, then lowercase, then without periods
+    var mc = machSrc[rawMach] || machSrc[rawMach.toLowerCase()] || machSrc[srcMach] || rawMach;
     if(machCodes.indexOf(mc)<0) return;
     var sh = row.shift||'';
     var shNorm = null;
-    SHIFTS.forEach(function(s){ if(sh===s||sh===s.replace('Shift ','').trim()) shNorm=s; });
-    if(!shNorm){
-      if(sh==='1'||sh.toLowerCase().indexOf('first')>=0) shNorm=SHIFTS[0];
-      else if(sh==='2'||sh.toLowerCase().indexOf('second')>=0) shNorm=SHIFTS[1];
-      else if(sh==='3'||sh.toLowerCase().indexOf('third')>=0) shNorm=SHIFTS[2];
-    }
-    if(!shNorm) return;
+    var shL = (sh||'').toLowerCase().trim();
+    // Match: 'First Shift', 'Shift 1', 'Shift1', '1', 'S1', 'first'
+    if(shL==='first shift'||shL==='shift 1'||shL==='shift1'||shL==='1'||shL==='s1'||shL.indexOf('first')>=0) shNorm=SHIFTS[0];
+    else if(shL==='second shift'||shL==='shift 2'||shL==='shift2'||shL==='2'||shL==='s2'||shL.indexOf('second')>=0) shNorm=SHIFTS[1];
+    else if(shL==='third shift'||shL==='shift 3'||shL==='shift3'||shL==='3'||shL==='s3'||shL.indexOf('third')>=0) shNorm=SHIFTS[2];
+    if(!shNorm) shNorm=SHIFTS[0]; // default to Shift 1 rather than drop the row
     var entries = row.entries||{};
     Object.keys(entries).forEach(function(vf){
       var q=entries[vf]||0;
@@ -829,8 +830,9 @@ function renderMaterial(schedRows, steelGrades){
   });
 
   var ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
+  function matBandOrder(b){ var v=ORDER[b]; return (v===undefined||v===null)?99:v; }
   rows.sort(function(a,b){
-    var bo=(ORDER[a.band]||7)-(ORDER[b.band]||7);
+    var bo=matBandOrder(a.band)-matBandOrder(b.band);
     if(bo!==0) return bo;
     if(!a.hasStock&&b.hasStock) return -1;
     if(a.hasStock&&!b.hasStock) return 1;
@@ -876,18 +878,20 @@ function render(data){
   var ws=wip.summary||{};
 
   var todayDate=t.date||'&mdash;';
-  var isLastAvail=todayDate.indexOf('last available')>=0;
+  var isLastAvail=(t.isLastAvail===true)||todayDate.indexOf('last available')>=0;
   document.getElementById('date-notice').style.display=isLastAvail?'block':'none';
   ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-today-date').textContent=todayDate; });
   var prevDate=t.prevDate||'&mdash;';
-  ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-yest-date').textContent=prevDate; });
+  ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-yest-date').innerHTML=prevDate; });
 
   var scSum=sc.summary||{};
   document.getElementById('k-bal').textContent=fmtN(scSum.totalBalProduce||0);
   document.getElementById('k-bal-s').textContent=sc.month||'this month';
 
-  var elecToday=elec.todayKwh||0;
-  document.getElementById('k-elec').textContent=elecToday>0?fmtN(elecToday)+' kWh':'&mdash;';
+  // elecByDept is in data.today.elecByDept (from getElecTodayYest_)
+  var elecByDeptToday = (t.elecByDept)||{};
+  var elecToday = Object.values(elecByDeptToday).reduce(function(s,v){return s+(v||0);},0);
+  document.getElementById('k-elec').innerHTML=elecToday>0?fmtN(Math.round(elecToday))+' kWh':'&mdash;';
 
   var cutPcs=0;
   (t.cutting||[]).forEach(function(r){ Object.values(r.entries||{}).forEach(function(q){cutPcs+=q;}); });
@@ -1011,8 +1015,9 @@ function render(data){
   document.getElementById('sc-badge').textContent=(sc.rows||[]).length+' VFs';
   var scH='';
   var SC_ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
+  function scBandOrder(b){ var v=SC_ORDER[b]; return (v===undefined||v===null)?99:v; }
   var scRows=(sc.rows||[]).slice().sort(function(a,b){
-    var bo=(SC_ORDER[a.band]||9)-(SC_ORDER[b.band]||9);
+    var bo=scBandOrder(a.band)-scBandOrder(b.band);
     if(bo!==0) return bo;
     return (b.balProduce||0)-(a.balProduce||0);
   });
@@ -1112,7 +1117,16 @@ function render(data){
 }
 
 function CUT_SRC_MAP(){
-  return {'Shearing Machine':'SM','Band Saw No. 1':'BS1','Band Saw No. 1 ':'BS1','Band Saw No. 2':'BS2','Band Saw No. 3':'BS3','Circular Saw 80':'CS80','Circular Saw 100':'CS100','Circular Saw ITL':'CSITL','HGCKSGW 1':'HS1','HGCKSGW 2':'HS2','Band Saw No 1':'BS1','Band Saw No 2':'BS2','Band Saw No 3':'BS3'};
+  return {
+    'Shearing Machine':'SM','shearing machine':'SM',
+    'Band Saw No. 1':'BS1','Band Saw No 1':'BS1','band saw no 1':'BS1','band saw no. 1':'BS1','Band Saw No. 1 ':'BS1',
+    'Band Saw No. 2':'BS2','Band Saw No 2':'BS2','band saw no 2':'BS2','band saw no. 2':'BS2',
+    'Band Saw No. 3':'BS3','Band Saw No 3':'BS3','band saw no 3':'BS3','band saw no. 3':'BS3',
+    'Circular Saw 80':'CS80','circular saw 80':'CS80',
+    'Circular Saw 100':'CS100','circular saw 100':'CS100',
+    'Circular Saw ITL':'CSITL','circular saw itl':'CSITL',
+    'HGCKSGW 1':'HS1','hgcksgw 1':'HS1','HGCKSGW 2':'HS2','hgcksgw 2':'HS2'
+  };
 }
 
 function renderAlerts(){
