@@ -79,11 +79,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 .dept-hdr.yest-hdr{background:var(--sl);}
 .dept-hdr .dh-date{font-family:var(--mo);font-size:8px;opacity:.85;font-weight:400;}
 .prod-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.prod-tbl{border-collapse:collapse;white-space:nowrap;font-size:12px;width:100%;}
-.prod-tbl th{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--tx3);background:var(--bg);padding:6px 10px;text-align:center;border:1px solid var(--bd);min-width:110px;}
+.prod-tbl{border-collapse:collapse;white-space:nowrap;font-size:13px;width:100%;}
+.prod-tbl th{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--tx3);background:var(--bg);padding:6px 10px;text-align:center;border:1px solid var(--bd);min-width:110px;}
 .prod-tbl th.sh-col{min-width:72px;text-align:left;background:var(--sll);color:var(--sld);}
-.prod-tbl td{padding:6px 8px;border:1px solid var(--bd);font-family:var(--mo);font-size:11px;color:var(--tx2);text-align:center;vertical-align:top;min-width:110px;}
-.prod-tbl td.sh-col{font-size:11px;font-weight:600;color:var(--sld);background:var(--sll);text-align:left;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;}
+.prod-tbl td{padding:6px 8px;border:1px solid var(--bd);font-family:var(--mo);font-size:12px;color:var(--tx2);text-align:center;vertical-align:top;min-width:110px;}
+.prod-tbl td.sh-col{font-size:12px;font-weight:600;color:var(--sld);background:var(--sll);text-align:left;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;}
 .prod-tbl tr.tot-row td{background:#E8F5E9;font-weight:700;color:var(--gn);}
 .prod-tbl tr.tot-row td.sh-col{background:#C8E6C9;color:var(--gn);}
 .prod-tbl td.has-d{background:#FDFAF5;color:var(--tx);}
@@ -732,19 +732,38 @@ var D = {}; // global data store
 
 // ═══ MACHINE CODE MAPS (locked) ═══
 var CUT_MACHINES  = ['SM','BS1','BS2','BS3','CS80','CS100','CSITL','HS1','HS2'];
-var CUT_NAMES     = {SM:'Shearing Machine',BS1:'Band Saw No. 1',BS2:'Band Saw No. 2',BS3:'Band Saw No. 3',CS80:'Circular Saw 80',CS100:'Circular Saw 100',CSITL:'Circular Saw ITL',HS1:'HGCKSGW 1',HS2:'HGCKSGW 2'};
+var CUT_NAMES     = {SM:'Shear',BS1:'BS-1',BS2:'BS-2',BS3:'BS-3',CS80:'CS-80',CS100:'CS-100',CSITL:'CS-ITL',HS1:'HGCK-1',HS2:'HGCK-2'};
 
-var FRG_MACHINES  = ['H1O','H1','H15','H2','H3'];
-var FRG_NAMES     = {H1O:'1T Hammer (Old)',H1:'1T Hammer (New)',H15:'1.5T Hammer',H2:'2T Hammer',H3:'3T Hammer'};
-var FRG_SRC       = {'hammer 1 ton old':'H1O','1 ton hammer (old)':'H1O','hammer 1 ton new':'H1','1 ton hammer (new)':'H1','hammer 1.5 ton':'H15','1.5 ton hammer':'H15','hammer 2 ton':'H2','2 ton hammer':'H2','hammer 3 ton':'H3','3 ton hammer':'H3','Hammer 1 Ton Old':'H1O','Hammer 1 Ton New':'H1','Hammer 1.5 Ton':'H15','Hammer 2 Ton':'H2','Hammer 3 Ton':'H3'};
+var FRG_MACHINES  = ['H1O','H15','H2','H3'];
+var FRG_NAMES     = {H1O:'1T Old',H15:'1.5T',H2:'2T',H3:'3T'};
+var FRG_SRC       = {
+  'Hammer 1 Ton Old':'H1O','Hammer 1 Ton New':'H1O','hammer 1 ton old':'H1O','hammer 1 ton new':'H1O',
+  'Hammer 1.5 Ton':'H15','Hammer 1.5 ton':'H15','hammer 1.5 ton':'H15',
+  'Hammer 2 Ton':'H2','Hammer 2 ton':'H2','hammer 2 ton':'H2',
+  'Hammer 3 Ton':'H3','Hammer 3 ton':'H3','hammer 3 ton':'H3'
+};
 
 var PRESS_MACHINES= ['P800','P1300','P2500','P1000'];
-var PRESS_NAMES   = {P800:'800T Press',P1300:'1300T Press',P2500:'2500T Press',P1000:'1000T Press'};
-var PRESS_SRC     = {'800 ton press':'P800','800 ton screw press':'P800','800 ton press':'P800','1300 ton press':'P1300','2500 ton press':'P2500','1000 ton press':'P1000','800 Ton Press':'P800','800 Ton Screw Press':'P800','1300 Ton Press':'P1300','2500 Ton Press':'P2500','1000 Ton Press':'P1000'};
+var PRESS_NAMES   = {P800:'800T',P1300:'1300T',P2500:'2500T',P1000:'1000T'};
+var PRESS_SRC     = {
+  '800 Ton Press':'P800','800 ton press':'P800','800 Ton Screw Press':'P800','800 ton screw press':'P800',
+  '1300 Ton Press':'P1300','1300 ton press':'P1300',
+  '2500 Ton Press':'P2500','2500 ton press':'P2500',
+  '1000 Ton Press':'P1000','1000 ton press':'P1000'
+};
 
 var MACH_MACHINES = ['FC1','FC2','LATHE','SPM','CNC1','CNC2','CNC3','CNC4','CNC5','HOB1','HOB2','HOB3','HOB4','HOB5','HOB6','HOB7','HOB8'];
-var MACH_NAMES    = {FC1:'FC 1',FC2:'FC 2',LATHE:'Lathe',SPM:'SPM',CNC1:'CNC 01',CNC2:'CNC 02',CNC3:'CNC 03',CNC4:'CNC 04',CNC5:'CNC 05',HOB1:'Hobbing 1',HOB2:'Hobbing 2',HOB3:'Hobbing 3',HOB4:'Hobbing 4',HOB5:'Hobbing 5',HOB6:'Hobbing 6',HOB7:'Hobbing 7',HOB8:'Hobbing 8'};
-var MACH_SRC      = {'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2','Lathe P/T':'LATHE','SPM':'SPM','CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5','Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4','Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8'};
+var MACH_NAMES    = {FC1:'FC-1',FC2:'FC-2',LATHE:'Lathe',SPM:'SPM',CNC1:'CNC1',CNC2:'CNC2',CNC3:'CNC3',CNC4:'CNC4',CNC5:'CNC5',HOB1:'H-1',HOB2:'H-2',HOB3:'H-3',HOB4:'H-4',HOB5:'H-5',HOB6:'H-6',HOB7:'H-7',HOB8:'H-8'};
+var MACH_SRC      = {
+  'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2',
+  'Lathe P/T':'LATHE','Lathe-P/T Machine':'LATHE',
+  'SPM':'SPM','SPM Machine':'SPM',
+  'CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5',
+  'Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4',
+  'Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8',
+  'Hobbing M/C FD-250':'HOB1','Hobbing M/C FD-250UMC':'HOB2','Hobbing M/C FD-800':'HOB3',
+  'Hobbing M/C-400':'HOB4','Hobbing M/C FD-400':'HOB5'
+};
 
 var SHIFTS = ['First Shift','Second Shift','Third Shift'];
 var SHIFT_SHORT = {'First Shift':'Shift 1','Second Shift':'Shift 2','Third Shift':'Shift 3','1':'Shift 1','2':'Shift 2','3':'Shift 3'};
