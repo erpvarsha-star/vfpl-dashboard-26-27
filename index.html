@@ -728,7 +728,7 @@ var WEB_APP = 'https://script.google.com/macros/s/AKfycbxK-_HBrq1I2Glo4m8maHT5up
 var OWNER_PIN = '1234'; // change this
 var D = {};
 var PW = {}; // part weights {VF1050:{iw:3.52,fw:2.7},...} — populated in render()
-var D = {}; // global data store
+ // global data store
 
 // ═══ MACHINE CODE MAPS (locked) ═══
 var CUT_MACHINES  = ['SM','BS1','BS2','BS3','CS80','CS100','CSITL','HS1','HS2'];
@@ -1246,16 +1246,13 @@ function render(data){
   document.getElementById('sc-pro').textContent=fmtN(ss.totalProduced||0);
   document.getElementById('sc-bal').textContent=fmtN(ss.totalBalProduce||0);
   document.getElementById('sc-pct').textContent=(ss.totalSchedQty>0?Math.round(ss.totalProduced/ss.totalSchedQty*100):0)+'%';
-  // Compute tonnage from rows × finish weight
-  var scTotT=0,scProT=0,scBalT=0;
-  (sc.rows||[]).forEach(function(r){
-    var w=(PW[r.vfNo]||PW[(r.vfNo||'').toUpperCase()]||{});
-    var fw=w.fw||0;
-    if(fw){scTotT+=(r.schedQty||0)*fw/1000;scProT+=(r.producedMTD||0)*fw/1000;scBalT+=(r.balProduce||0)*fw/1000;}
-  });
-  var stt=document.getElementById('sc-tot-t');if(stt)stt.textContent=scTotT>0?scTotT.toFixed(1)+' T':'';
-  var spt=document.getElementById('sc-pro-t');if(spt)spt.textContent=scProT>0?scProT.toFixed(1)+' T':'';
-  var sbt=document.getElementById('sc-bal-t');if(sbt)sbt.textContent=scBalT>0?scBalT.toFixed(1)+' T req':'';
+  // Schedule tonnage: compute from rmRequired (input kg) as proxy for balance tons
+  // schedQty/producedMTD tonnage not computable without fw — show balance RM only
+  var scBalRMT=0;
+  (sc.rows||[]).forEach(function(r){scBalRMT+=(r.rmRequired||0);});
+  var stt=document.getElementById('sc-tot-t');if(stt)stt.textContent='';
+  var spt=document.getElementById('sc-pro-t');if(spt)spt.textContent='';
+  var sbt=document.getElementById('sc-bal-t');if(sbt)sbt.textContent=scBalRMT>0?(scBalRMT/1000).toFixed(1)+' T RM req':'';
   document.getElementById('sc-badge').textContent=(sc.rows||[]).length+' VFs';
   var scH='';
   var SC_ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
@@ -1303,22 +1300,27 @@ function render(data){
   });
   document.getElementById('tb-out').innerHTML=outH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:16px;">No outstanding data</td></tr>';
 
-  document.getElementById('st-in').textContent=((steel.totalInwardKg||0)/1000).toFixed(1)+' T';
-  document.getElementById('st-bal').textContent=((steel.totalBalanceKg||0)/1000).toFixed(1)+' T';
-  document.getElementById('st-val').innerHTML='₹'+(steel.totalValueL||0).toFixed(1)+' L est.';
+  // Steel: compute totals from grades array (keys match sheet headers exactly)
+  var stGrades=steel.grades||[];
+  var stTotIn=0,stTotCon=0,stTotBal=0,stTotVal=0;
+  stGrades.forEach(function(g){stTotIn+=g['Inward (kg)']||0;stTotCon+=g['Consumed (kg)']||0;stTotBal+=g['Balance (kg)']||0;stTotVal+=g['Value (₹L)']||0;});
+  document.getElementById('st-in').textContent=(stTotIn/1000).toFixed(1)+' T';
+  document.getElementById('st-bal').textContent=(stTotBal/1000).toFixed(1)+' T';
+  document.getElementById('st-val').innerHTML='₹'+stTotVal.toFixed(1)+' L est.';
   document.getElementById('st-rate').innerHTML='₹'+(data.rm_rate||'—')+'/kg';
-  document.getElementById('st-con').textContent=((steel.totalConsumedKg||0)/1000).toFixed(1)+' T';
+  document.getElementById('st-con').textContent=(stTotCon/1000).toFixed(1)+' T';
   var stH='';
-  (steel.grades||[]).forEach(function(g){
+  stGrades.forEach(function(g){
+    var bal=g['Balance (kg)']||0,inw=g['Inward (kg)']||0,con=g['Consumed (kg)']||0,val=g['Value (₹L)']||0;
     stH+='<tr>';
-    stH+='<td>'+g.grade+'</td>';
-    stH+='<td>'+fmtN(g.openingKg||0)+'</td>';
-    stH+='<td>'+fmtN(g.inwardKg||0)+'</td>';
-    stH+='<td>'+fmtN(g.consumedKg||0)+'</td>';
-    stH+='<td class="fw6" style="color:'+(g.balanceKg>0?'var(--gn)':'var(--rd)')+';">'+fmtN(g.balanceKg||0)+'</td>';
-    stH+='<td class="mo">'+(g.balanceKg>0?(g.balanceKg/1000).toFixed(2):'&mdash;')+'</td>';
-    stH+='<td class="mo">'+(g.avgRate>0?'Rs '+g.avgRate.toFixed(2):'&mdash;')+'</td>';
-    stH+='<td class="mo">'+(g.valueL>0?g.valueL.toFixed(1)+'L':'&mdash;')+'</td>';
+    stH+='<td style="font-weight:500;">'+g['Grade']+'</td>';
+    stH+='<td>'+fmtN(g['Opening (kg)']||0)+'</td>';
+    stH+='<td>'+fmtN(inw)+'</td>';
+    stH+='<td>'+fmtN(con)+'</td>';
+    stH+='<td class="fw6" style="color:'+(bal>0?'var(--gn)':'var(--rd)')+';">'+fmtN(bal)+'</td>';
+    stH+='<td class="mo">'+(bal>0?(bal/1000).toFixed(2):'—')+'</td>';
+    stH+='<td class="mo">₹'+(data.rm_rate||0)+'/kg</td>';
+    stH+='<td class="mo">'+(val>0?val.toFixed(1)+'L':'—')+'</td>';
     stH+='</tr>';
   });
   document.getElementById('tb-steel').innerHTML=stH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:16px;">No steel data</td></tr>';
@@ -1472,7 +1474,7 @@ function renderDieLife(){
     '<div class="kc or"><div class="kl">Machines</div><div class="kv">'+new Set([].concat(running,complete).map(function(r){return r.machine;})).size+'</div></div>';
   document.getElementById('die-running-cnt').textContent=running.length+' active';
   var h='';
-  running.forEach(function(r){h+='<tr><td style="font-weight:600">'+r.machine+'</td><td class="mo">'+r.vf+'</td><td style="font-size:10px">'+(r.customer||'').substring(0,25)+'</td><td class="mo">'+fmtDate(r.runStart)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo" style="font-weight:700">'+fmtN(r.totalPcs)+'</td><td><span class="die-status-running">RUNNING</span></td></tr>';});
+  running.forEach(function(r){h+='<tr><td style="font-weight:600">'+r.machine+'</td><td class="mo">'+r.vf+'</td><td style="font-size:10px">'+(r.customer||'').substring(0,25)+'</td><td class="mo">'+fmtDate(r.runStart)+'</td><td class="mo">'+(r.days||0)+'d / '+(r.shifts||0)+' sh</td><td class="mo">'+fmtN(r.totalPcs)+'</td><td class="mo">&mdash;</td><td><span class="badge b-gn">RUNNING</span></td></tr>';});
   document.getElementById('die-running-body').innerHTML=h||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:12px;">No active dies</td></tr>';
   document.getElementById('die-hist-cnt').textContent=complete.length+' records';
   var hh='';
@@ -1532,8 +1534,6 @@ setInterval(function(){
   fetch(WEB_APP+'?v='+Date.now()).then(function(r){return r.json();}).then(function(d){if(!d.error)render(d);}).catch(function(){});
 }, 600000);
 </script>
-</body>
-</html>
 <!-- ══════════════ DIE LIFE ══════════════ -->
 <div id="tab-dielife" class="main">
   <div class="kgrid k3" id="die-kpis" style="margin-bottom:12px"></div>
@@ -1564,3 +1564,5 @@ setInterval(function(){
     </table></div>
   </div>
 </div>
+</body>
+</html>
