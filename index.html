@@ -456,8 +456,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 <div id="tab-mtd" class="main" style="display:none;">
   <div class="kgrid k5" style="margin-bottom:10px;">
     <div class="kc or"><div class="kl">Turnover MTD</div><div class="kv" id="m-tov">&mdash;</div><div class="ks" id="m-tov-s">&mdash;</div></div>
-    <div class="kc gn"><div class="kl">Own Forged MTD</div><div class="kv" id="m-own">&mdash;</div><div class="ks" id="m-own-s">&mdash;</div></div>
-    <div class="kc bl"><div class="kl">JWK Forged MTD</div><div class="kv" id="m-jwk">&mdash;</div><div class="ks" id="m-jwk-s">&mdash;</div></div>
+    <div class="kc gn"><div class="kl">Own MTD (Forge+Press)</div><div class="kv" id="m-own">&mdash;</div><div class="ks" id="m-own-s">&mdash;</div></div>
+    <div class="kc bl"><div class="kl">JWK MTD (Forge+Press)</div><div class="kv" id="m-jwk">&mdash;</div><div class="ks" id="m-jwk-s">&mdash;</div></div>
     <div class="kc sl"><div class="kl">Cut MTD</div><div class="kv" id="m-cut">&mdash;</div><div class="ks" id="m-cut-s">&mdash;</div></div>
     <div class="kc am"><div class="kl">Schedule Done %</div><div class="kv" id="m-sch">&mdash;</div><div class="ks" id="m-sch-s">&mdash;</div></div>
   </div>
@@ -611,11 +611,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 
 <!-- ═══════════════ SCHEDULE TAB ═══════════════ -->
 <div id="tab-sched" class="main" style="display:none;">
-  <div class="kgrid k4" style="margin-bottom:10px;">
+  <div class="kgrid k5" style="margin-bottom:10px;">
     <div class="kc or"><div class="kl">Total Scheduled</div><div class="kv" id="sc-tot">&mdash;</div><div class="kt" id="sc-tot-t"></div><div class="ks" id="sc-tot-s">pcs this month</div></div>
     <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv" id="sc-pro">&mdash;</div><div class="kt" id="sc-pro-t"></div></div>
     <div class="kc rd"><div class="kl">Balance to Produce</div><div class="kv" id="sc-bal">&mdash;</div><div class="kt" id="sc-bal-t"></div></div>
     <div class="kc am"><div class="kl">Schedule %</div><div class="kv" id="sc-pct">&mdash;</div></div>
+    <div class="kc rd"><div class="kl">RM Still Required</div><div class="kv" id="sc-rm-t">&mdash;</div><div class="ks">T to complete schedule</div></div>
   </div>
   <div class="card">
     <div class="ch"><div class="ct">Schedule &mdash; A+ to C &bull; Balance to Produce Descending within Band</div><div class="badge b-or" id="sc-badge">&mdash;</div></div>
@@ -624,6 +625,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
         <thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Sched</th><th>Produced</th><th>Dispatched</th><th>Bal Produce</th><th>RM Req T</th><th>Sched %</th></tr></thead>
         <tbody id="tb-sched"></tbody>
       </table>
+    </div>
   </div>
   <div class="card" style="margin-top:8px;">
     <div class="ch">
@@ -1237,21 +1239,32 @@ function render(data){
 
   var fyH='';
   fy.forEach(function(r){
-    var hasDat=(r.cutQty||0)>0||(r.forgeQtyIn||0)>0;
+    // Field names match FY_MONTHLY sheet headers exactly
+    var cq=r['Cut Qty']||0, ct=r['Cut Tons']||0;
+    var fqIn=(r['Forge Qty (Inhouse)']||0)+(r['Press Qty (Inhouse)']||0);
+    var ftIn=(r['Forge Tons (Inhouse)']||0)+(r['Press Tons (Inhouse)']||0);
+    var fqJWK=(r['Forge Qty (JWK)']||0)+(r['Press Qty (JWK)']||0);
+    var ftJWK=(r['Forge Tons (JWK)']||0)+(r['Press Tons (JWK)']||0);
+    var dq=r['Dispatch Qty']||0, dtov=r['Dispatch Turnover (Rs L)']||0;
+    var rmkg=r['RM Inward (kg)']||0;
+    var oilF=r['Oil Forge (L)']||0, oilH=r['Oil HT (L)']||0;
+    var elec=r['Electricity (kWh)']||0;
+    var mn=r['Month']||'';
+    var hasDat=cq>0||fqIn>0;
     fyH+='<tr'+(hasDat?'':' style="color:var(--tx3);"')+'>';
-    fyH+='<td class="mo fw6">'+r.month+'</td>';
-    fyH+='<td>'+fmtN(r.cutQty||0)+'</td>';
-    fyH+='<td>'+(r.cutKg>0?(r.cutKg/1000).toFixed(1):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN((r.forgeQtyIn||0)+(r.pressQtyIn||0))+'</td>';
-    fyH+='<td>'+(((r.forgeKgIn||0)+(r.pressKgIn||0))>0?(((r.forgeKgIn||0)+(r.pressKgIn||0))/1000).toFixed(1):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN((r.forgeQtyJWK||0)+(r.pressQtyJWK||0))+'</td>';
-    fyH+='<td>'+(((r.forgeKgJWK||0)+(r.pressKgJWK||0))>0?(((r.forgeKgJWK||0)+(r.pressKgJWK||0))/1000).toFixed(1):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN(r.dispQty||0)+'</td>';
-    fyH+='<td class="or fw6">'+(r.dispTurnover>0?fmtCurr(r.dispTurnover*100000):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN(r.rmKg||0)+'</td>';
-    fyH+='<td>'+fmtN(r.oilForge||0)+'</td>';
-    fyH+='<td>'+fmtN(r.oilHT||0)+'</td>';
-    fyH+='<td>'+fmtN(r.elecKwh||0)+'</td>';
+    fyH+='<td class="mo fw6">'+mn+'</td>';
+    fyH+='<td>'+fmtN(cq)+'</td>';
+    fyH+='<td>'+(ct>0?ct.toFixed(1):'&mdash;')+'</td>';
+    fyH+='<td>'+fmtN(fqIn)+'</td>';
+    fyH+='<td>'+(ftIn>0?ftIn.toFixed(1):'&mdash;')+'</td>';
+    fyH+='<td>'+fmtN(fqJWK)+'</td>';
+    fyH+='<td>'+(ftJWK>0?ftJWK.toFixed(1):'&mdash;')+'</td>';
+    fyH+='<td>'+fmtN(dq)+'</td>';
+    fyH+='<td class="or fw6">'+(dtov>0?fmtCurr(dtov*100000):'&mdash;')+'</td>';
+    fyH+='<td>'+fmtN(rmkg)+'</td>';
+    fyH+='<td>'+fmtN(oilF)+'</td>';
+    fyH+='<td>'+fmtN(oilH)+'</td>';
+    fyH+='<td>'+fmtN(elec)+'</td>';
     fyH+='</tr>';
   });
   document.getElementById('tb-fy').innerHTML=fyH;
@@ -1288,6 +1301,7 @@ function render(data){
   var stt=document.getElementById('sc-tot-t');if(stt)stt.textContent='';
   var spt=document.getElementById('sc-pro-t');if(spt)spt.textContent='';
   var sbt=document.getElementById('sc-bal-t');if(sbt)sbt.textContent=scBalRMT>0?(scBalRMT/1000).toFixed(1)+' T RM req':'';
+  var srmt=document.getElementById('sc-rm-t');if(srmt)srmt.textContent=scBalRMT>0?(scBalRMT/1000).toFixed(1)+' T':'On Track';
   document.getElementById('sc-badge').textContent=(sc.rows||[]).length+' VFs';
   var scH='';
   var SC_ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
