@@ -38,6 +38,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 /* KPI */
 .kgrid{display:grid;gap:7px;margin-bottom:10px;}
 .k5{grid-template-columns:repeat(5,1fr);}
+.k6{grid-template-columns:repeat(6,1fr);}
 .k4{grid-template-columns:repeat(4,1fr);}
 .k3{grid-template-columns:repeat(3,1fr);}
 .k6{grid-template-columns:repeat(6,1fr);}
@@ -252,7 +253,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 <div id="tab-today" class="main">
 
   <!-- KPI BAR -->
-  <div class="kgrid k5" style="margin-bottom:10px;">
+  <div class="kgrid k6" style="margin-bottom:10px;">
     <div class="kc bl">
       <div class="kl">Balance to Produce</div>
       <div class="kv" id="k-bal">&mdash;</div>
@@ -278,6 +279,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
       <div class="kl">Forged Today</div>
       <div class="kv" id="k-frg">&mdash;</div>
       <div class="ks" id="k-frg-s">Inhouse + JWK</div>
+    </div>
+    <div class="kc rd">
+      <div class="kl">Daily Dispatch Required</div>
+      <div class="kv" id="k-ddr">&mdash;</div>
+      <div class="ks" id="k-ddr-s">pcs/day to clear schedule</div>
     </div>
   </div>
 
@@ -618,6 +624,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
         <thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Sched</th><th>Produced</th><th>Dispatched</th><th>Bal Produce</th><th>RM Req T</th><th>Sched %</th></tr></thead>
         <tbody id="tb-sched"></tbody>
       </table>
+  </div>
+  <div class="card" style="margin-top:8px;">
+    <div class="ch">
+      <div class="ct">Unplanned — Produced or Dispatched Without Schedule</div>
+      <div class="badge b-sl" id="up-badge">&mdash;</div>
+    </div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Band</th><th>VF No</th><th>Customer</th><th>Grade</th><th>Sched</th><th>Produced MTD</th><th>Dispatched MTD</th><th>Bal Produce</th><th>RM Req T</th><th>Status</th><th>%</th></tr></thead>
+      <tbody id="tb-sched-unplanned"></tbody>
+    </table>
     </div>
   </div>
 </div>
@@ -1012,6 +1028,24 @@ function render(data){
   });
   document.getElementById('k-frg').textContent=fmtN(frgIn+frgJWK);
   document.getElementById('k-frg-s').textContent='Inhouse: '+fmtN(frgIn)+' | JWK: '+fmtN(frgJWK);
+  // Daily dispatch required = balance to produce ÷ working days left (26/month, Friday = day off)
+  (function(){
+    var scSumm=(data.schedule||{}).summary||{};
+    var bal=scSumm.totalBalProduce||0;
+    var now=new Date();
+    var daysLeft=0;
+    var d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    var lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    for(var dd=d.getDate();dd<=lastDay;dd++){
+      var wd=new Date(now.getFullYear(),now.getMonth(),dd).getDay();
+      if(wd!==5)daysLeft++; // 5=Friday
+    }
+    var ddr=daysLeft>0?Math.ceil(bal/daysLeft):0;
+    var kd=document.getElementById('k-ddr');
+    if(kd){kd.textContent=ddr>0?fmtN(ddr):'On Track';}
+    var ks=document.getElementById('k-ddr-s');
+    if(ks){ks.textContent=daysLeft+' working days left | '+fmtN(bal)+' pcs balance';}
+  })();
 
   var yest=t.yesterday||{};
   var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC_MAP(),(t.cutting||[]),(yest.cutting||[]));
@@ -1232,6 +1266,7 @@ function render(data){
 
   var cwH='', fwH='', jwH='';
   (wip.rows||[]).forEach(function(r){
+    if(!r.vfNo||r.vfNo==='TOTAL'||r.vfNo.indexOf('GRAND')>=0)return;
     if((r.cutWIP||0)>0) cwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.cutWIP)+'</td><td>'+(r.fgWIP>0?fmtN(r.fgWIP):'&mdash;')+'</td></tr>';
     if((r.fgWIP||0)>0)  fwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.fgWIP)+'</td></tr>';
     if(jwkSet.indexOf(r.vfNo)>=0&&Math.abs(r.closingWIP||0)>0) jwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(Math.abs(r.closingWIP))+'</td></tr>';
@@ -1257,10 +1292,10 @@ function render(data){
   var scH='';
   var SC_ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
   function scBandOrder(b){ var v=SC_ORDER[b]; return (v===undefined||v===null)?99:v; }
-  var scRows=(sc.rows||[]).slice().sort(function(a,b){
+  // Only show scheduled VFs in main table; unplanned below
+  var scRows=(sc.rows||[]).filter(function(r){return (r.schedQty||0)>0;}).slice().sort(function(a,b){
     var bo=scBandOrder(a.band)-scBandOrder(b.band);
     if(bo!==0) return bo;
-    // IN STOCK first within same band
     if(a.hasStock&&!b.hasStock) return -1;
     if(!a.hasStock&&b.hasStock) return 1;
     return (b.balProduce||0)-(a.balProduce||0);
@@ -1282,6 +1317,25 @@ function render(data){
     scH+='</tr>';
   });
   document.getElementById('tb-sched').innerHTML=scH||'<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:16px;">No schedule data</td></tr>';
+  // Unplanned section: produced/dispatched this month but not in schedule
+  var unplanned=(sc.rows||[]).filter(function(r){return (r.schedQty||0)===0&&((r.producedMTD||0)>0||(r.dispatchedMTD||0)>0);});
+  var upH='';
+  unplanned.forEach(function(r){
+    upH+='<tr style="color:var(--tx2);">';
+    upH+='<td>'+bandPill(r.band)+'</td>';
+    upH+='<td class="mo">'+r.vfNo+'</td>';
+    upH+='<td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.customer+'</td>';
+    upH+='<td class="mo">'+r.grade+'</td>';
+    upH+='<td style="color:var(--tx3);">—</td>';
+    upH+='<td>'+fmtN(r.producedMTD||0)+'</td>';
+    upH+='<td>'+fmtN(r.dispatchedMTD||0)+'</td>';
+    upH+='<td>—</td><td>—</td>';
+    upH+='<td><span class="badge b-sl">UNPLANNED</span></td>';
+    upH+='<td>—</td>';
+    upH+='</tr>';
+  });
+  var upEl=document.getElementById('tb-sched-unplanned');
+  if(upEl)upEl.innerHTML=upH;
 
   document.getElementById('out-od').innerHTML=fmtCurr(out.totalOverdue||0);
   document.getElementById('out-od-s').textContent=(out.customers||[]).filter(function(c){return c.overdue>0;}).length+' customers overdue';
