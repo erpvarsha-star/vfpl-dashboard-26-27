@@ -252,17 +252,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 <div id="tab-today" class="main">
 
   <!-- KPI BAR -->
-  <div class="kgrid k5" style="margin-bottom:10px;">
+  <div class="kgrid k6" style="margin-bottom:10px;">
     <div class="kc bl">
       <div class="kl">Balance to Produce</div>
       <div class="kv" id="k-bal">&mdash;</div>
       <div class="kt" id="k-bal-t"></div>
       <div class="ks" id="k-bal-s">pcs this month</div>
-    </div>
-    <div class="kc todo">
-      <div class="kl">Machine Utilisation</div>
-      <div class="kv" style="font-size:13px;color:var(--tx3);">TO DO</div>
-      <div class="ks">Baseline = Dec-2025 (best month)</div>
     </div>
     <div class="kc sl">
       <div class="kl">Electricity Today</div>
@@ -278,6 +273,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
       <div class="kl">Forged Today</div>
       <div class="kv" id="k-frg">&mdash;</div>
       <div class="ks" id="k-frg-s">Inhouse + JWK</div>
+    </div>
+    <div class="kc rd">
+      <div class="kl">Daily Dispatch Required</div>
+      <div class="kv" id="k-ddr">&mdash;</div>
+      <div class="ks" id="k-ddr-s">pcs/day to clear schedule</div>
+    </div>
+    <div class="kc am">
+      <div class="kl">Schedule Done</div>
+      <div class="kv" id="k-schpct">&mdash;</div>
+      <div class="ks">% this month</div>
     </div>
   </div>
 
@@ -1012,6 +1017,19 @@ function render(data){
   });
   document.getElementById('k-frg').textContent=fmtN(frgIn+frgJWK);
   document.getElementById('k-frg-s').textContent='Inhouse: '+fmtN(frgIn)+' | JWK: '+fmtN(frgJWK);
+  (function(){
+    var scSumD=(data.schedule||{}).summary||{};
+    var bal=scSumD.totalBalProduce||0;
+    var now=new Date(),daysLeft=0;
+    var lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    for(var dd=now.getDate();dd<=lastDay;dd++){
+      if(new Date(now.getFullYear(),now.getMonth(),dd).getDay()!==5)daysLeft++;
+    }
+    var ddr=daysLeft>0?Math.ceil(bal/daysLeft):0;
+    var kd=document.getElementById('k-ddr');if(kd)kd.textContent=ddr>0?fmtN(ddr):'On Track';
+    var ks=document.getElementById('k-ddr-s');if(ks)ks.textContent=daysLeft+' working days left | '+fmtN(bal)+' pcs balance';
+    var ksp=document.getElementById('k-schpct');if(ksp)ksp.textContent=(data.mtd&&data.mtd.schedPct||0)+'%';
+  })();
 
   var yest=t.yesterday||{};
   var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC_MAP(),(t.cutting||[]),(yest.cutting||[]));
@@ -1202,15 +1220,18 @@ function render(data){
   if(mmBody) mmBody.innerHTML=mmH||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:16px;">No data — run pull first</td></tr>';
 
   var fyH='';
+  // FY Monthly: field names match FY_MONTHLY sheet headers exactly
   fy.forEach(function(r){
     var mn=r['Month']||'';
-    var cq=r['Cut Qty']||0,ct=r['Cut Tons']||0;
+    var cq=r['Cut Qty']||0, ct=r['Cut Tons']||0;
     var fqIn=(r['Forge Qty (Inhouse)']||0)+(r['Press Qty (Inhouse)']||0);
     var ftIn=(r['Forge Tons (Inhouse)']||0)+(r['Press Tons (Inhouse)']||0);
     var fqJWK=(r['Forge Qty (JWK)']||0)+(r['Press Qty (JWK)']||0);
     var ftJWK=(r['Forge Tons (JWK)']||0)+(r['Press Tons (JWK)']||0);
-    var dq=r['Dispatch Qty']||0,dtov=r['Dispatch Turnover (Rs L)']||0;
-    var rmkg=r['RM Inward (kg)']||0,oilF=r['Oil Forge (L)']||0,oilH=r['Oil HT (L)']||0,elKwh=r['Electricity (kWh)']||0;
+    var dq=r['Dispatch Qty']||0, dtov=r['Dispatch Turnover (Rs L)']||0;
+    var rmkg=r['RM Inward (kg)']||0;
+    var oilF=r['Oil Forge (L)']||0, oilH=r['Oil HT (L)']||0;
+    var elKwh=r['Electricity (kWh)']||0;
     var hasDat=cq>0||fqIn>0;
     fyH+='<tr'+(hasDat?'':' style="color:var(--tx3);"')+'>';
     fyH+='<td class="mo fw6">'+mn+'</td>';
@@ -1240,6 +1261,7 @@ function render(data){
 
   var cwH='', fwH='', jwH='';
   (wip.rows||[]).forEach(function(r){
+    if(!r.vfNo||r.vfNo==='TOTAL'||r.vfNo.indexOf('GRAND')>=0)return;
     if((r.cutWIP||0)>0) cwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.cutWIP)+'</td><td>'+(r.fgWIP>0?fmtN(r.fgWIP):'&mdash;')+'</td></tr>';
     if((r.fgWIP||0)>0)  fwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.fgWIP)+'</td></tr>';
     if(jwkSet.indexOf(r.vfNo)>=0&&Math.abs(r.closingWIP||0)>0) jwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(Math.abs(r.closingWIP))+'</td></tr>';
@@ -1254,9 +1276,9 @@ function render(data){
   document.getElementById('sc-pro').textContent=fmtN(ss.totalProduced||0);
   document.getElementById('sc-bal').textContent=fmtN(ss.totalBalProduce||0);
   document.getElementById('sc-pct').textContent=(ss.totalSchedQty>0?Math.round(ss.totalProduced/ss.totalSchedQty*100):0)+'%';
-  // Schedule RM required (from SCHEDULE_INTELLIGENCE col 10)
-  var scTotRM=0;
-  (sc.rows||[]).filter(function(r){return (r.schedQty||0)>0;}).forEach(function(r){scTotRM+=(r.rmRequired||0);});
+  // Schedule RM required from SCHEDULE_INTELLIGENCE (pre-calculated by sheet)
+  var scSum=sc.summary||{};
+  var scTotRM=scSum.totalRMRequired||0;
   var stt=document.getElementById('sc-tot-t');if(stt)stt.textContent='';
   var spt=document.getElementById('sc-pro-t');if(spt)spt.textContent='';
   var sbt=document.getElementById('sc-bal-t');if(sbt)sbt.textContent=scTotRM>0?(scTotRM/1000).toFixed(1)+' T RM req':'';
@@ -1307,26 +1329,30 @@ function render(data){
   });
   document.getElementById('tb-out').innerHTML=outH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:16px;">No outstanding data</td></tr>';
 
-  var stG=steel.grades||[];
-  var stIn=0,stCon=0,stBal=0,stVal=0;
-  stG.forEach(function(g){stIn+=g['Inward (kg)']||0;stCon+=g['Consumed (kg)']||0;stBal+=g['Balance (kg)']||0;stVal+=g['Value (₹L)']||0;});
-  document.getElementById('st-in').textContent=(stIn/1000).toFixed(1)+' T';
-  document.getElementById('st-bal').textContent=(stBal/1000).toFixed(1)+' T';
-  document.getElementById('st-val').innerHTML='₹'+stVal.toFixed(1)+' L est.';
-  document.getElementById('st-rate').innerHTML='₹'+(data.rm_rate||'—')+'/kg';
-  document.getElementById('st-con').textContent=(stCon/1000).toFixed(1)+' T';
+  // Steel totals from cache (pre-computed by GS from grade rows)
+  document.getElementById('st-in').textContent=((steel.totalInwardKg||0)/1000).toFixed(1)+' T';
+  document.getElementById('st-bal').textContent=((steel.totalBalanceKg||0)/1000).toFixed(1)+' T';
+  document.getElementById('st-val').innerHTML='&#8377;'+(steel.totalValueL||0).toFixed(1)+' L est.';
+  document.getElementById('st-rate').innerHTML='&#8377;'+(data.rm_rate||'&mdash;')+'/kg';
+  document.getElementById('st-con').textContent=((steel.totalConsumedKg||0)/1000).toFixed(1)+' T';
   var stH='';
-  stG.forEach(function(g){
+  // Grade field names match STEEL_STOCK sheet headers exactly
+  (steel.grades||[]).forEach(function(g){
     var bal=g['Balance (kg)']||0;
+    var inw=g['Inward (kg)']||0;
+    var con=g['Consumed (kg)']||0;
+    var val=g['Value (₹L)']||0;
+    var daysStock=g['Days Stock']||0;
+    var status=g['Status']||'';
     stH+='<tr>';
     stH+='<td>'+g['Grade']+'</td>';
     stH+='<td>'+fmtN(g['Opening (kg)']||0)+'</td>';
-    stH+='<td>'+fmtN(g['Inward (kg)']||0)+'</td>';
-    stH+='<td>'+fmtN(g['Consumed (kg)']||0)+'</td>';
+    stH+='<td>'+fmtN(inw)+'</td>';
+    stH+='<td>'+fmtN(con)+'</td>';
     stH+='<td class="fw6" style="color:'+(bal>0?'var(--gn)':'var(--rd)')+';">'+fmtN(bal)+'</td>';
-    stH+='<td class="mo">'+(bal>0?(bal/1000).toFixed(2):'—')+'</td>';
-    stH+='<td class="mo">Rs '+(data.rm_rate||0)+'/kg</td>';
-    stH+='<td class="mo">'+((g['Value (₹L)']||0)>0?(g['Value (₹L)']).toFixed(1)+'L':'—')+'</td>';
+    stH+='<td class="mo">'+(bal>0?(bal/1000).toFixed(2):'&mdash;')+'</td>';
+    stH+='<td class="mo">&#8377;'+(data.rm_rate||0)+'/kg</td>';
+    stH+='<td class="mo">'+(val>0?val.toFixed(1)+'L':'&mdash;')+'</td>';
     stH+='</tr>';
   });
   document.getElementById('tb-steel').innerHTML=stH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:16px;">No steel data</td></tr>';
@@ -1449,7 +1475,7 @@ function renderMargins(){
     bH+='<div class="kc" style="border-top-color:'+col+'"><div class="kl" style="color:'+col+';">Band '+b+'</div><div class="kv">'+cnt+'</div><div class="ks">parts</div></div>';
   });
   document.getElementById('band-kpis').innerHTML=bH;
-  document.getElementById('mg-rm').innerHTML='RM ₹'+(mg.rmAvgRate||'—')+'/kg';
+  document.getElementById('mg-rm').innerHTML='RM &#8377;'+(mg.rmAvgRate||'&mdash;')+'/kg';
   var mgH='';
   rows.forEach(function(r){
     var col=BAND_COLORS[r.band]||'#888';
