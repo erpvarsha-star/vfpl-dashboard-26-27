@@ -732,7 +732,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 // Date: 16-Apr-2026 23:30 IST
 // ONLY the JS is rewritten. All HTML/CSS above is Yash's original.
 // ═══════════════════════════════════════════════════════
-var WEB_APP = 'https://script.google.com/macros/s/AKfycbxK-_HBrq1I2Glo4m8maHT5upAQUX8qZyOixoFwwJ7vus-pT1LP2MF3fQGtHCHD6p4lbw/exec';
+var WEB_APP = 'https://script.google.com/macros/s/AKfycbx8BvUoAMVFovekpqY-IE9BAcs6706uMbL0jTu9VIB8UJ5E3Cbu2Vsp1DGYHtx5AVjKSg/exec';
 var OWNER_PIN = '1234';
 var D = {};
 var PW = {};
@@ -896,18 +896,18 @@ function render(data){
   document.getElementById('m-tov').innerHTML=fmtCurr((mtd.turnoverL||0)*100000);
   document.getElementById('m-tov-s').textContent=mtd.month||'';
   document.getElementById('m-own').textContent=fmtN(mtd.ownForgedPcs||0);
-  document.getElementById('m-own-s').textContent=((mtd.ownForgedTons||0).toFixed(1))+' T';
+  document.getElementById('m-own-s').textContent=(Number(mtd.ownForgedTons||0).toFixed(1))+' T';
   document.getElementById('m-jwk').textContent=fmtN(mtd.jwkForgedPcs||0);
-  document.getElementById('m-jwk-s').textContent=((mtd.jwkForgedTons||0).toFixed(1))+' T';
+  document.getElementById('m-jwk-s').textContent=(Number(mtd.jwkForgedTons||0).toFixed(1))+' T';
   document.getElementById('m-cut').textContent=fmtN(mtd.cutQty||0);
-  document.getElementById('m-cut-s').textContent=((mtd.cutTons||0).toFixed(1))+' T';
+  document.getElementById('m-cut-s').textContent=(Number(mtd.cutTons||0).toFixed(1))+' T';
   document.getElementById('m-sch').textContent=(mtd.schedPct||0)+'%';
   document.getElementById('m-sch-s').textContent='of target done';
   document.getElementById('m-oil').textContent=fmtN((mtd.oilForgeL||0)+(mtd.oilHTL||0))+' L';
 
   // Electricity with cost
   var elecKwh=mtd.elecKwh||0;
-  var finTons=mtd.ownForgedTons||0;
+  var finTons=Number(mtd.ownForgedTons||0);
   document.getElementById('m-elec').textContent=fmtN(elecKwh);
   document.getElementById('m-elec-perkg').textContent=finTons>0?'₹'+((elecKwh*ELEC_RATE)/(finTons*1000)).toFixed(2)+'/kg':'—';
   document.getElementById('m-clab').textContent=mtd.contractCostL?'₹'+Number(mtd.contractCostL).toFixed(1)+' L':'—';
@@ -915,7 +915,7 @@ function render(data){
   var mss=document.getElementById('m-sal-src');if(mss)mss.textContent=mtd.salaryActualL?'actual':'';
   document.getElementById('m-contr').textContent=mtd.contractorActualL?'₹'+Number(mtd.contractorActualL).toFixed(1)+' L':'—';
   var mcs=document.getElementById('m-contr-src');if(mcs)mcs.textContent='';
-  document.getElementById('m-rm').textContent='₹'+(data.rm_rate||0).toFixed(1)+'/kg';
+  document.getElementById('m-rm').textContent='₹'+Number(data.rm_rate||0).toFixed(1)+'/kg';
   document.getElementById('m-rej').textContent=fmtN(mtd.vendorRejPcs||0)+' pcs';
   var mtri=document.getElementById('m-tr-in');if(mtri)mtri.textContent=mtd.transportInboundL?'₹'+mtd.transportInboundL+' L':'—';
   var mtro=document.getElementById('m-tr-out');if(mtro)mtro.textContent=mtd.transportOutboundL?'₹'+mtd.transportOutboundL+' L':'—';
@@ -945,7 +945,7 @@ function render(data){
   var mc3s=document.getElementById('mtd-jw-s');if(mc3s)mc3s.textContent='Laxmi+Kalyani';
 
   // Machine monthly production
-  var pmH='';(data.prod_monthly||[]).forEach(function(r){if(!r.machine)return;pmH+='<tr><td style="text-align:left">'+r.dept+'</td><td style="text-align:left;font-weight:600">'+r.machine+'</td><td style="text-align:left">'+r.type+'</td><td>'+fmtN(r.monthTotal)+'</td><td>'+(r.monthTons||0).toFixed(2)+'</td></tr>';});
+  var pmH='';(data.prod_monthly||[]).forEach(function(r){if(!r.machine)return;pmH+='<tr><td style="text-align:left">'+r.dept+'</td><td style="text-align:left;font-weight:600">'+r.machine+'</td><td style="text-align:left">'+r.type+'</td><td>'+fmtN(r.monthTotal)+'</td><td>'+Number(r.monthTons||0).toFixed(2)+'</td></tr>';});
   document.getElementById('tb-mach-monthly').innerHTML=pmH||'<tr><td colspan="5" style="text-align:center;color:var(--tx3)">No data</td></tr>';
   var mmb=document.getElementById('mach-monthly-badge');if(mmb)mmb.textContent=(data.prod_monthly||[]).length+' rows';
 
@@ -997,10 +997,10 @@ function render(data){
   // ── STEEL TAB ──
   document.getElementById('st-in').textContent=((steel.totalInwardKg||0)/1000).toFixed(1)+' T';
   document.getElementById('st-bal').textContent=((steel.totalBalanceKg||0)/1000).toFixed(1)+' T';
-  document.getElementById('st-val').textContent='₹'+(steel.totalValueL||0).toFixed(1)+' L est.';
-  document.getElementById('st-rate').textContent='₹'+(data.rm_rate||0).toFixed(1);
+  document.getElementById('st-val').textContent='₹'+Number(steel.totalValueL||0).toFixed(1)+' L est.';
+  document.getElementById('st-rate').textContent='₹'+Number(data.rm_rate||0).toFixed(1);
   document.getElementById('st-con').textContent=((steel.totalConsumedKg||0)/1000).toFixed(1)+' T';
-  var stH='';(steel.grades||[]).forEach(function(g){var gr=g['Grade']||'';if(!gr)return;var bal=Number(g['Balance (kg)']||0);stH+='<tr'+(bal<=0?' style="background:var(--rdb)"':'')+'><td style="text-align:left;font-weight:600">'+gr+'</td><td>'+fmtN(g['Opening (kg)']||0)+'</td><td>'+fmtN(g['Inward (kg)']||0)+'</td><td>'+fmtN(g['Consumed (kg)']||0)+'</td><td style="font-weight:700">'+(bal<0?'<span style="color:var(--rd)">'+fmtN(bal)+'</span>':fmtN(bal))+'</td><td>'+(bal/1000).toFixed(2)+'</td><td>'+(data.rm_rate||0).toFixed(1)+'</td><td>'+(Number(g['Value (₹L)'])||0).toFixed(1)+'</td></tr>';});
+  var stH='';(steel.grades||[]).forEach(function(g){var gr=g['Grade']||'';if(!gr)return;var bal=Number(g['Balance (kg)']||0);stH+='<tr'+(bal<=0?' style="background:var(--rdb)"':'')+'><td style="text-align:left;font-weight:600">'+gr+'</td><td>'+fmtN(g['Opening (kg)']||0)+'</td><td>'+fmtN(g['Inward (kg)']||0)+'</td><td>'+fmtN(g['Consumed (kg)']||0)+'</td><td style="font-weight:700">'+(bal<0?'<span style="color:var(--rd)">'+fmtN(bal)+'</span>':fmtN(bal))+'</td><td>'+(bal/1000).toFixed(2)+'</td><td>'+Number(data.rm_rate||0).toFixed(1)+'</td><td>'+(Number(g['Value (₹L)'])||0).toFixed(1)+'</td></tr>';});
   document.getElementById('tb-steel').innerHTML=stH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3)">No data</td></tr>';
 
   // ── 57F4 TAB ──
@@ -1091,11 +1091,11 @@ function renderAlerts(){
 // ═══ MARGINS (same layout as original) ═══
 function renderMargins(){
   var mg=D.margins||{};var rows=mg.rows||[];
-  document.getElementById('mg-rm').textContent='RM ₹'+(mg.rmAvgRate||0).toFixed(1)+'/kg';
+  document.getElementById('mg-rm').textContent='RM ₹'+Number(mg.rmAvgRate||0).toFixed(1)+'/kg';
   var bc={};rows.forEach(function(r){bc[r.band]=(bc[r.band]||0)+1;});
   var bk='';['A+','A','A-','B+','B','B-','C'].forEach(function(b){bk+='<div class="kc" style="border-top:3px solid '+bandBg(b)+'"><div class="kl">'+b+'</div><div class="kv">'+(bc[b]||0)+'</div><div class="ks">parts</div></div>';});
   document.getElementById('band-kpis').innerHTML=bk;
-  var h='';rows.forEach(function(r){var nc=r.netPerKg<0?'color:var(--rd);font-weight:700':'color:var(--gn)';h+='<tr><td style="text-align:left">'+bandTag(r.band)+'</td><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.grade+'</td><td>'+(r.convPerKg||0).toFixed(1)+'</td><td style="'+nc+'">'+(r.netPerKg||0).toFixed(1)+'</td><td>'+(r.dispTons||0).toFixed(2)+'</td><td>'+(r.turnoverL||0).toFixed(1)+'</td><td style="'+(r.netRealL<0?'color:var(--rd)':'')+'">'+((r.netRealL||0)).toFixed(1)+'</td></tr>';});
+  var h='';rows.forEach(function(r){var nc=r.netPerKg<0?'color:var(--rd);font-weight:700':'color:var(--gn)';h+='<tr><td style="text-align:left">'+bandTag(r.band)+'</td><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.grade+'</td><td>'+Number(r.convPerKg||0).toFixed(1)+'</td><td style="'+nc+'">'+Number(r.netPerKg||0).toFixed(1)+'</td><td>'+Number(r.dispTons||0).toFixed(2)+'</td><td>'+Number(r.turnoverL||0).toFixed(1)+'</td><td style="'+(r.netRealL<0?'color:var(--rd)':'')+'">'+Number(r.netRealL||0).toFixed(1)+'</td></tr>';});
   document.getElementById('tb-margin').innerHTML=h||'<tr><td colspan="9" style="text-align:center;color:var(--tx3)">No dispatch data</td></tr>';
 }
 
