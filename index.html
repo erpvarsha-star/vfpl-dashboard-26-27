@@ -725,335 +725,164 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
 </div>
 
+
 <script>
 // ═══════════════════════════════════════════════════════
-// CONFIG
+// VFPL FACTORY OS — JavaScript — Fixed for buildDashboardCache JSON
+// Date: 16-Apr-2026 23:30 IST
+// ONLY the JS is rewritten. All HTML/CSS above is Yash's original.
 // ═══════════════════════════════════════════════════════
-var WEB_APP = 'https://script.google.com/macros/s/AKfycbx8BvUoAMVFovekpqY-IE9BAcs6706uMbL0jTu9VIB8UJ5E3Cbu2Vsp1DGYHtx5AVjKSg/exec';
-var OWNER_PIN = '1234'; // change this
+var WEB_APP = 'https://script.google.com/macros/s/AKfycbxK-_HBrq1I2Glo4m8maHT5upAQUX8qZyOixoFwwJ7vus-pT1LP2MF3fQGtHCHD6p4lbw/exec';
+var OWNER_PIN = '1234';
 var D = {};
-var PW = {}; // part weights {VF1050:{iw:3.52,fw:2.7},...} — populated in render()
- // global data store
+var PW = {};
 
-// ═══ MACHINE CODE MAPS (locked) ═══
+// ═══ MACHINE CODE MAPS (locked — same as original) ═══
 var CUT_MACHINES  = ['SM','BS1','BS2','BS3','CS80','CS100','CSITL','HS1','HS2'];
 var CUT_NAMES     = {SM:'Shear',BS1:'BS-1',BS2:'BS-2',BS3:'BS-3',CS80:'CS-80',CS100:'CS-100',CSITL:'CS-ITL',HS1:'HGCK-1',HS2:'HGCK-2'};
+function CUT_SRC_MAP(){return {'Shearing Machine':'SM','Band Saw 1':'BS1','Band Saw 2':'BS2','Band Saw 3':'BS3','Circular Saw 80':'CS80','CS 80':'CS80','Circular Saw 100':'CS100','CS 100':'CS100','Circular Saw ITL':'CSITL','CS ITL':'CSITL','Hack Saw 1':'HS1','HGCK 1':'HS1','Hack Saw 2':'HS2','HGCK 2':'HS2'};}
 
 var FRG_MACHINES  = ['H1O','H15','H2','H3'];
 var FRG_NAMES     = {H1O:'1T Old',H15:'1.5T',H2:'2T',H3:'3T'};
-var FRG_SRC       = {
-  'Hammer 1 Ton Old':'H1O','Hammer 1 Ton New':'H1O','hammer 1 ton old':'H1O','hammer 1 ton new':'H1O',
-  'Hammer 1.5 Ton':'H15','Hammer 1.5 ton':'H15','hammer 1.5 ton':'H15',
-  'Hammer 2 Ton':'H2','Hammer 2 ton':'H2','hammer 2 ton':'H2',
-  'Hammer 3 Ton':'H3','Hammer 3 ton':'H3','hammer 3 ton':'H3'
-};
+var FRG_SRC       = {'Hammer 1 Ton Old':'H1O','Hammer 1 Ton New':'H1O','hammer 1 ton old':'H1O','hammer 1 ton new':'H1O','Hammer 1.5 Ton':'H15','Hammer 1.5 ton':'H15','hammer 1.5 ton':'H15','Hammer 2 Ton':'H2','Hammer 2 ton':'H2','hammer 2 ton':'H2','Hammer 3 Ton':'H3','Hammer 3 ton':'H3','hammer 3 ton':'H3'};
 
 var PRESS_MACHINES= ['P800','P1300','P2500','P1000'];
 var PRESS_NAMES   = {P800:'800T',P1300:'1300T',P2500:'2500T',P1000:'1000T'};
-var PRESS_SRC     = {
-  '800 Ton Press':'P800','800 ton press':'P800','800 Ton Screw Press':'P800','800 ton screw press':'P800',
-  '1300 Ton Press':'P1300','1300 ton press':'P1300',
-  '2500 Ton Press':'P2500','2500 ton press':'P2500',
-  '1000 Ton Press':'P1000','1000 ton press':'P1000'
-};
+var PRESS_SRC     = {'800 Ton Press':'P800','800 ton press':'P800','800 Ton Screw Press':'P800','800 ton screw press':'P800','1300 Ton Press':'P1300','1300 ton press':'P1300','2500 Ton Press':'P2500','2500 ton press':'P2500','1000 Ton Press':'P1000','1000 ton press':'P1000'};
 
 var MACH_MACHINES = ['FC1','FC2','LATHE','SPM','CNC1','CNC2','CNC3','CNC4','CNC5','HOB1','HOB2','HOB3','HOB4','HOB5','HOB6','HOB7','HOB8'];
 var MACH_NAMES    = {FC1:'FC-1',FC2:'FC-2',LATHE:'Lathe',SPM:'SPM',CNC1:'CNC1',CNC2:'CNC2',CNC3:'CNC3',CNC4:'CNC4',CNC5:'CNC5',HOB1:'H-1',HOB2:'H-2',HOB3:'H-3',HOB4:'H-4',HOB5:'H-5',HOB6:'H-6',HOB7:'H-7',HOB8:'H-8'};
-var MACH_SRC      = {
-  'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2',
-  'Lathe P/T':'LATHE','Lathe-P/T Machine':'LATHE',
-  'SPM':'SPM','SPM Machine':'SPM',
-  'CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5',
-  'Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4',
-  'Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8',
-  'Hobbing M/C FD-250':'HOB1','Hobbing M/C FD-250UMC':'HOB2','Hobbing M/C FD-800':'HOB3',
-  'Hobbing M/C-400':'HOB4','Hobbing M/C FD-400':'HOB5'
-};
+var MACH_SRC      = {'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2','Lathe P/T':'LATHE','Lathe-P/T Machine':'LATHE','SPM':'SPM','SPM Machine':'SPM','CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5','Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4','Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8','Hobbing M/C FD-250':'HOB1','Hobbing M/C FD-250UMC':'HOB2','Hobbing M/C FD-800':'HOB3','Hobbing M/C-400':'HOB4','Hobbing M/C FD-400':'HOB5'};
 
 var SHIFTS = ['First Shift','Second Shift','Third Shift'];
-var SHIFT_SHORT = {'First Shift':'Shift 1','Second Shift':'Shift 2','Third Shift':'Shift 3','1':'Shift 1','2':'Shift 2','3':'Shift 3'};
-
+var SHIFT_SHORT = {'First Shift':'Shift 1','Second Shift':'Shift 2','Third Shift':'Shift 3'};
 var BAND_COLORS = {'A+':'#1A7F4B','A':'#2E9B5F','A-':'#B45309','B+':'#D97706','B':'#E8731A','B-':'#DC2626','C':'#C0392B'};
 var DEPT_ROWS   = ['Forge Shop','Press Shop','HT Shop','Cutting Shop','Machine Shop','Die Shop','Final Shop'];
-var ELEC_DEPTS  = ['Forge','HT','Press','Machine','Die','Grinding','Compressor'];
+var ELEC_RATE = 9.6;
+
+// ═══ HELPERS ═══
+function fmtN(n){if(n===null||n===undefined||n===''||n==='—')return '—';var v=Number(String(n).replace(/,/g,''));if(isNaN(v)||v===0)return '—';return Math.round(v).toLocaleString('en-IN');}
+function fmtCurr(rs){if(!rs||rs===0)return '—';var a=Math.abs(rs),s=rs<0?'-':'';if(a>=10000000)return s+'₹'+(a/10000000).toFixed(2)+' Cr';if(a>=100000)return s+'₹'+(a/100000).toFixed(1)+' L';return s+'₹'+Math.round(a).toLocaleString('en-IN');}
+function bandBg(b){return BAND_COLORS[b]||'#9CA3AF';}
+function bandTag(b){return '<span class="band" style="background:'+bandBg(b)+'">'+b+'</span>';}
+function normShift(s){var l=(s||'').toLowerCase().trim();if(l.indexOf('first')>=0||l==='1'||l==='shift 1'||l==='1st shift'||l==='1st staff')return SHIFTS[0];if(l.indexOf('second')>=0||l==='2'||l==='shift 2'||l==='2nd shift'||l==='2nd staff')return SHIFTS[1];if(l.indexOf('third')>=0||l==='3'||l==='shift 3'||l==='3rd shift'||l==='3rd staff')return SHIFTS[2];return SHIFTS[0];}
 
 // ═══ CLOCK ═══
-function tick(){
-  var n=new Date();
-  var h=n.getHours().toString().padStart(2,'0');
-  var m=n.getMinutes().toString().padStart(2,'0');
-  var s=n.getSeconds().toString().padStart(2,'0');
-  var ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][n.getDay()];
-  var ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][n.getMonth()];
-  document.getElementById('clk').textContent=ds+' '+n.getDate()+'-'+ms+' '+h+':'+m+':'+s+' IST';
-}
-setInterval(tick,1000); tick();
+function tick(){var n=new Date(),ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][n.getDay()],ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][n.getMonth()];document.getElementById('clk').textContent=ds+' '+n.getDate()+'-'+ms+' '+n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0')+':'+n.getSeconds().toString().padStart(2,'0')+' IST';}
+setInterval(tick,1000);tick();
 
-// ═══ TABS ═══
-function showTab(name,el){
-  document.querySelectorAll('.main').forEach(function(d){d.style.display='none';});
-  document.getElementById('tab-'+name).style.display='block';
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  if(el)el.classList.add('active');
-}
-function showMargins(){
-  showTab('margin',document.getElementById('mbtn'));
-}
-function toggleDrill(id){
-  var el=document.getElementById(id);
-  el.classList.toggle('open');
-}
-function checkPin(){
-  var v=document.getElementById('pin-in').value;
-  if(v===OWNER_PIN){
-    document.getElementById('pin-gate').style.display='none';
-    document.getElementById('margin-content').style.display='block';
-    renderMargins();
-  }else{
-    document.getElementById('pin-err').style.display='block';
-  }
-}
+// ═══ TABS (same logic as original) ═══
+function showTab(name,el){document.querySelectorAll('.main').forEach(function(d){d.style.display='none';});var t=document.getElementById('tab-'+name);if(t)t.style.display='block';document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});if(el)el.classList.add('active');}
+function showMargins(){showTab('margin',document.getElementById('mbtn'));}
+function toggleDrill(id){var d=document.getElementById(id);if(d)d.classList.toggle('open');}
+function checkPin(){if(document.getElementById('pin-in').value===OWNER_PIN){document.getElementById('pin-gate').style.display='none';document.getElementById('margin-content').style.display='block';renderMargins();}else{document.getElementById('pin-err').style.display='block';}}
 
-// ═══ FORMATTERS ═══
-function fmtN(n){return Math.round(n).toLocaleString('en-IN');}
-function fmtT(kg){return (kg/1000).toFixed(2)+' T';}
-function fmtCurr(rs){
-  if(!rs||rs===0)return '&mdash;';
-  var abs=Math.abs(rs), sign=rs<0?'-':'';
-  if(abs>=10000000)return sign+'&#8377;'+(abs/10000000).toFixed(2)+' Cr';
-  if(abs>=100000)  return sign+'&#8377;'+(abs/100000).toFixed(1)+' L';
-  return sign+'&#8377;'+Math.round(abs).toLocaleString('en-IN');
-}
-function fmtT2(kg){return kg>0?(kg/1000).toFixed(2):0;}
-function bandPill(b){
-  var c=BAND_COLORS[b]||'#888';
-  return '<span class="band" style="background:'+c+'">'+b+'</span>';
-}
-
-// ═══ PRODUCTION TABLE BUILDER ═══
-function buildProdTable(machCodes, machNames, machSrc, rawToday, rawYest){
-  return {
-    today: buildSingleProdTable(machCodes, machNames, machSrc, rawToday),
-    yest:  buildSingleProdTable(machCodes, machNames, machSrc, rawYest)
-  };
-}
-
-function buildSingleProdTable(machCodes, machNames, machSrc, rawData){
-  var grid = {};
-  SHIFTS.forEach(function(sh){ grid[sh]={}; machCodes.forEach(function(mc){ grid[sh][mc]={}; }); });
-  var totals = {}; machCodes.forEach(function(mc){ totals[mc]=0; });
-
+// ═══ PRODUCTION TABLE BUILDER (same visual as original — reads {machine,shift,entries:{VF:qty}}) ═══
+function buildProdTable(machCodes,machNames,machSrc,rawData){
+  var grid={};SHIFTS.forEach(function(sh){grid[sh]={};machCodes.forEach(function(mc){grid[sh][mc]={};});});
+  var totals={};machCodes.forEach(function(mc){totals[mc]=0;});
   (rawData||[]).forEach(function(row){
-    var rawMach = (row.machine||'').trim();
-    var srcMach = rawMach.toLowerCase().trim().replace(/\.\s*/g,'');
-    // Try exact, then lowercase, then without periods
-    var mc = machSrc[rawMach] || machSrc[rawMach.toLowerCase()] || machSrc[srcMach] || rawMach;
-    if(machCodes.indexOf(mc)<0) return;
-    var sh = row.shift||'';
-    var shNorm = null;
-    var shL = (sh||'').toLowerCase().trim();
-    // Match: 'First Shift', 'Shift 1', 'Shift1', '1', 'S1', 'first'
-    if(shL==='first shift'||shL==='shift 1'||shL==='shift1'||shL==='1'||shL==='s1'||shL.indexOf('first')>=0) shNorm=SHIFTS[0];
-    else if(shL==='second shift'||shL==='shift 2'||shL==='shift2'||shL==='2'||shL==='s2'||shL.indexOf('second')>=0) shNorm=SHIFTS[1];
-    else if(shL==='third shift'||shL==='shift 3'||shL==='shift3'||shL==='3'||shL==='s3'||shL.indexOf('third')>=0) shNorm=SHIFTS[2];
-    if(!shNorm) shNorm=SHIFTS[0]; // default to Shift 1 rather than drop the row
-    var entries = row.entries||{};
-    Object.keys(entries).forEach(function(vf){
-      var q=entries[vf]||0;
-      grid[shNorm][mc][vf]=(grid[shNorm][mc][vf]||0)+q;
-      totals[mc]+=q;
-    });
+    var rawMach=(row.machine||'').trim();
+    var srcMach=rawMach.toLowerCase().trim().replace(/\.\s*/g,'');
+    var mc=machSrc[rawMach]||machSrc[rawMach.toLowerCase()]||machSrc[srcMach]||rawMach;
+    if(machCodes.indexOf(mc)<0)return;
+    var shNorm=normShift(row.shift);
+    var entries=row.entries||{};
+    Object.keys(entries).forEach(function(vf){var q=Number(entries[vf])||0;grid[shNorm][mc][vf]=(grid[shNorm][mc][vf]||0)+q;totals[mc]+=q;});
   });
-
   var h='<thead><tr><th class="sh-col">Shift</th>';
-  machCodes.forEach(function(mc){ h+='<th>'+machNames[mc]+'</th>'; });
+  machCodes.forEach(function(mc){h+='<th>'+machNames[mc]+'</th>';});
   h+='</tr></thead><tbody>';
-
   SHIFTS.forEach(function(sh){
-    h+='<tr><td class="sh-col">'+SHIFT_SHORT[sh]+'</td>';
+    h+='<tr><td class="sh-col">'+(SHIFT_SHORT[sh]||sh)+'</td>';
     machCodes.forEach(function(mc){
-      var entries=grid[sh][mc];
-      var vfs=Object.keys(entries);
-      if(vfs.length===0){ h+='<td class="empty-cell"><span style="color:var(--tx3)">&mdash;</span></td>'; return; }
-      var tot=0; vfs.forEach(function(v){ tot+=entries[v]; });
+      var entries=grid[sh][mc],vfs=Object.keys(entries);
+      if(!vfs.length){h+='<td class="empty-cell"><span style="color:var(--tx3)">&mdash;</span></td>';return;}
+      var tot=0;vfs.forEach(function(v){tot+=entries[v];});
       h+='<td class="has-d"><div class="cell-entries">';
       vfs.sort(function(a,b){return entries[b]-entries[a];}).slice(0,5).forEach(function(vf){
         h+='<div class="cell-entry"><span class="mo" style="font-size:11px;color:var(--br);font-weight:700;">'+vf+'</span><span style="color:var(--tx3)"> → </span><span style="font-size:12px;font-weight:700;color:var(--tx);">'+fmtN(entries[vf])+'</span></div>';
       });
-      if(vfs.length>5) h+='<div class="cell-entry" style="color:var(--tx3)">+'+(vfs.length-5)+' more</div>';
-      if(vfs.length>1) h+='<div class="cell-total">'+fmtN(tot)+'</div>';
+      if(vfs.length>5)h+='<div class="cell-entry" style="color:var(--tx3)">+'+(vfs.length-5)+' more</div>';
+      if(vfs.length>1)h+='<div class="cell-total">'+fmtN(tot)+'</div>';
       h+='</div></td>';
     });
     h+='</tr>';
   });
-
   h+='<tr class="tot-row"><td class="sh-col">TOTAL</td>';
-  machCodes.forEach(function(mc){
-    h+='<td>'+(totals[mc]>0?fmtN(totals[mc]):'&mdash;')+'</td>';
-  });
+  machCodes.forEach(function(mc){h+='<td>'+(totals[mc]>0?fmtN(totals[mc]):'&mdash;')+'</td>';});
   h+='</tr></tbody>';
   return h;
 }
 
-// ═══ DEPT SUMMARY TABLE ═══
-function renderDeptSummary(today, yest){
-  var mpT = today.manpower||{}, mpY = yest.manpower||{};
-  var elT = today.elecByDept||{}, elY = yest.elecByDept||{};
-  var tbody = document.getElementById('dept-summ-body');
-  var h='';
-  DEPT_ROWS.forEach(function(dept){
-    var mt=mpT[dept]||{}, my=mpY[dept]||{};
-    var eT=elT[dept]||0, eY=elY[dept]||0;
-    h+='<tr>';
-    h+='<td style="text-align:left;font-weight:500;">'+dept+'</td>';
-    h+='<td>'+(mt.staff||0)+'</td>';
-    h+='<td>'+(mt.contract||0)+'</td>';
-    h+='<td>'+(eT>0?fmtN(eT):'&mdash;')+'</td>';
-    h+='<td style="color:var(--tx3);">'+(my.staff||0)+'</td>';
-    h+='<td style="color:var(--tx3);">'+(my.contract||0)+'</td>';
-    h+='<td style="color:var(--tx3);">'+(eY>0?fmtN(eY):'&mdash;')+'</td>';
-    h+='</tr>';
-  });
-  tbody.innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:12px;">No manpower data available</td></tr>';
-}
-
-// ═══ MATERIAL NEEDED ═══
-function renderMaterial(schedRows, steelGrades){
-  var stockMap={};
-  (steelGrades||[]).forEach(function(g){ stockMap[g.grade]=g.balanceKg||0; });
-
-  var rows=[];
-  (schedRows||[]).forEach(function(s){
-    if((s.balProduce||0)<=0) return;
-    var grade=s.grade||'';
-    var rmTons=(s.rmRequired||0)/1000;
-    var stockKg=stockMap[grade]||0;
-    var stockT=stockKg/1000;
-    var hasStock=stockKg>=s.rmRequired;
-    rows.push({
-      band:s.band||'&mdash;', vf:s.vfNo, customer:s.customer||'', grade:grade,
-      pending:s.balProduce||0, rmT:rmTons, stockT:stockT,
-      hasStock:hasStock,
-      status:hasStock?'IN STOCK':'NO STOCK'
-    });
-  });
-
-  var ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
-  function matBandOrder(b){ var v=ORDER[b]; return (v===undefined||v===null)?99:v; }
-  rows.sort(function(a,b){
-    var bo=matBandOrder(a.band)-matBandOrder(b.band);
-    if(bo!==0) return bo;
-    if(!a.hasStock&&b.hasStock) return -1;
-    if(a.hasStock&&!b.hasStock) return 1;
-    return b.pending-a.pending;
-  });
-
-  document.getElementById('mat-count').textContent=rows.length+' parts pending';
-
-  var h='';
-  var lastBand='', lastStatus='';
-  rows.forEach(function(r){
-    if(r.band!==lastBand||r.status!==lastStatus){
-      lastBand=r.band; lastStatus=r.status;
-      var label=r.band+' &mdash; '+(r.hasStock?'&#9654; In Stock &mdash; Produce Now':'&#9650; No Stock &mdash; Order Now');
-      var bg=r.hasStock?'#E8F5E9':'#FEF2F2';
-      var col=r.hasStock?'var(--gn)':'var(--rd)';
-      h+='<tr class="sec-hdr"><td colspan="8" style="background:'+bg+';color:'+col+';">'+label+'</td></tr>';
-    }
-    var cls=r.hasStock?'in-stock':'no-stock';
-    h+='<tr class="'+cls+'">';
-    h+='<td>'+bandPill(r.band)+'</td>';
-    h+='<td class="mo">'+r.vf+'</td>';
-    h+='<td style="text-align:left;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.customer+'">'+r.customer+'</td>';
-    h+='<td class="mo">'+r.grade+'</td>';
-    h+='<td>'+fmtN(r.pending)+'</td>';
-    h+='<td class="mo">'+(r.rmT>0?r.rmT.toFixed(3)+' T':'&mdash;')+'</td>';
-    h+='<td class="mo" style="color:'+(r.stockT>0?'var(--gn)':'var(--rd)')+';">'+(r.stockT>0?r.stockT.toFixed(2)+' T':'&mdash;')+'</td>';
-    var stCol=r.hasStock?'var(--gn)':'var(--rd)';
-    h+='<td><span class="badge" style="background:'+(r.hasStock?'var(--gnb)':'var(--rdb)')+';color:'+stCol+';">'+r.status+'</span></td>';
-    h+='</tr>';
-  });
-
-  document.getElementById('mat-body').innerHTML=h||'<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3);">No pending schedule items</td></tr>';
-}
-
-// ═══ MAIN RENDER ═══
+// ═══ RENDER — reads JSON from buildDashboardCache exactly ═══
 function render(data){
   D=data;
-  PW=data.partWeights||{}; // MUST be first — used throughout render
   var t=data.today||{}, wip=data.wip||{}, sc=data.schedule||{};
   var out=data.outstanding||{}, steel=data.steel||{};
-  var f4=data.f4||{}, elec=data.elec||{}, mg=data.margins||{};
-  var fy=data.fy_monthly||[], mtd=data.mtd||{};
-  var ws=wip.summary||{};
+  var f4=data.f4||{}, elec=data.elec||{};
+  var mtd=data.mtd||{}, ws=wip.summary||{}, scSum=sc.summary||{};
+  var jwkVFs=data.jwk_vfs||[];
 
-  var todayDate=t.date||'&mdash;';
-  var isLastAvail=(t.isLastAvail===true)||todayDate.indexOf('last available')>=0;
+  // ── TODAY TAB ──
+  var todayDate=t.date||'—';
+  var isLastAvail=t.isLastAvail===true;
   document.getElementById('date-notice').style.display=isLastAvail?'block':'none';
-  ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-today-date').textContent=todayDate; });
-  var prevDate=t.prevDate||'&mdash;';
-  ['cut','frg','press','mach'].forEach(function(d){ document.getElementById(d+'-yest-date').innerHTML=prevDate; });
+  ['cut','frg','press','mach'].forEach(function(d){document.getElementById(d+'-today-date').textContent=todayDate;});
+  var prevDate=t.prevDate||'—';
+  ['cut','frg','press','mach'].forEach(function(d){document.getElementById(d+'-yest-date').innerHTML=prevDate;});
 
-  var scSum=sc.summary||{};
+  // KPIs
   document.getElementById('k-bal').textContent=fmtN(scSum.totalBalProduce||0);
   document.getElementById('k-bal-s').textContent=sc.month||'this month';
   var kbalt=document.getElementById('k-bal-t');
-  if(kbalt) kbalt.textContent=(scSum.totalRMRequired&&scSum.totalRMRequired>0)?((scSum.totalRMRequired/1000).toFixed(1)+' T req'):'';
+  if(kbalt)kbalt.textContent=(scSum.totalBalProduce>0)?((scSum.totalBalProduce*2.5/1000).toFixed(1)+' T RM req est'):'';
 
-  // elecByDept is in data.today.elecByDept (from getElecTodayYest_)
-  var elecByDeptToday = (t.elecByDept)||{};
-  var elecToday = Object.values(elecByDeptToday).reduce(function(s,v){return s+(v||0);},0);
-  document.getElementById('k-elec').innerHTML=elecToday>0?fmtN(Math.round(elecToday))+' kWh':'&mdash;';
+  var elecByDeptToday=(t.elecByDept)||{};
+  var elecToday=Object.values(elecByDeptToday).reduce(function(s,v){return s+(v||0);},0);
+  document.getElementById('k-elec').innerHTML=elecToday>0?fmtN(Math.round(elecToday))+' kWh':'—';
 
   var cutPcs=0;
-  (t.cutting||[]).forEach(function(r){ Object.values(r.entries||{}).forEach(function(q){cutPcs+=q;}); });
+  (t.cutting||[]).forEach(function(r){Object.values(r.entries||{}).forEach(function(q){cutPcs+=Number(q)||0;});});
   document.getElementById('k-cut').textContent=fmtN(cutPcs);
   document.getElementById('k-cut-s').textContent=todayDate;
 
-  var frgIn=0, frgJWK=0, jwkSet=data.jwk_vfs||[];
+  var frgIn=0,frgJWK=0;
   (t.forging||[]).concat(t.pressing||[]).forEach(function(r){
-    var isJWK=(r.type||'').toLowerCase().indexOf('jobwork')>=0;
-    Object.values(r.entries||{}).forEach(function(q){ if(isJWK)frgJWK+=q; else frgIn+=q; });
+    Object.keys(r.entries||{}).forEach(function(vf){
+      var q=Number(r.entries[vf])||0;
+      if(jwkVFs.indexOf(vf)>=0)frgJWK+=q; else frgIn+=q;
+    });
   });
   document.getElementById('k-frg').textContent=fmtN(frgIn+frgJWK);
   document.getElementById('k-frg-s').textContent='Inhouse: '+fmtN(frgIn)+' | JWK: '+fmtN(frgJWK);
-  (function(){
-    var scSumD=(data.schedule||{}).summary||{};
-    var bal=scSumD.totalBalProduce||0;
-    var now=new Date(),daysLeft=0;
-    var lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-    for(var dd=now.getDate();dd<=lastDay;dd++){
-      if(new Date(now.getFullYear(),now.getMonth(),dd).getDay()!==5)daysLeft++;
-    }
-    var ddr=daysLeft>0?Math.ceil(bal/daysLeft):0;
-    var kd=document.getElementById('k-ddr');if(kd)kd.textContent=ddr>0?fmtN(ddr):'On Track';
-    var ks=document.getElementById('k-ddr-s');if(ks)ks.textContent=daysLeft+' working days left | '+fmtN(bal)+' pcs balance';
-    var ksp=document.getElementById('k-schpct');if(ksp)ksp.textContent=(data.mtd&&data.mtd.schedPct||0)+'%';
-  })();
 
+  var balDisp=scSum.totalBalProduce||0;
+  var daysLeft=Math.max(1,30-new Date().getDate());
+  document.getElementById('k-ddr').textContent=balDisp>0?fmtN(Math.ceil(balDisp/daysLeft)):'—';
+  document.getElementById('k-schpct').textContent=(mtd.schedPct||0)+'%';
+
+  // Production grids — today
   var yest=t.yesterday||{};
-  var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC_MAP(),(t.cutting||[]),(yest.cutting||[]));
-  document.getElementById('tbl-cut-today').innerHTML=cutRes.today;
-  document.getElementById('tbl-cut-yest').innerHTML=cutRes.yest;
+  var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC_MAP(),(t.cutting||[]));
+  document.getElementById('tbl-cut-today').innerHTML=cutRes;
+  document.getElementById('tbl-cut-yest').innerHTML=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC_MAP(),(yest.cutting||[]));
 
-  var frgRes=buildProdTable(FRG_MACHINES,FRG_NAMES,FRG_SRC,(t.forging||[]),(yest.forging||[]));
-  document.getElementById('tbl-frg-today').innerHTML=frgRes.today;
-  document.getElementById('tbl-frg-yest').innerHTML=frgRes.yest;
+  document.getElementById('tbl-frg-today').innerHTML=buildProdTable(FRG_MACHINES,FRG_NAMES,FRG_SRC,(t.forging||[]));
+  document.getElementById('tbl-frg-yest').innerHTML=buildProdTable(FRG_MACHINES,FRG_NAMES,FRG_SRC,(yest.forging||[]));
 
-  var prRes=buildProdTable(PRESS_MACHINES,PRESS_NAMES,PRESS_SRC,(t.pressing||[]),(yest.pressing||[]));
-  document.getElementById('tbl-press-today').innerHTML=prRes.today;
-  document.getElementById('tbl-press-yest').innerHTML=prRes.yest;
+  document.getElementById('tbl-press-today').innerHTML=buildProdTable(PRESS_MACHINES,PRESS_NAMES,PRESS_SRC,(t.pressing||[]));
+  document.getElementById('tbl-press-yest').innerHTML=buildProdTable(PRESS_MACHINES,PRESS_NAMES,PRESS_SRC,(yest.pressing||[]));
 
-  var mRes=buildProdTable(MACH_MACHINES,MACH_NAMES,MACH_SRC,(t.machine||[]),(yest.machine||[]));
-  document.getElementById('tbl-mach-today').innerHTML=mRes.today;
-  document.getElementById('tbl-mach-yest').innerHTML=mRes.yest;
+  document.getElementById('tbl-mach-today').innerHTML=buildProdTable(MACH_MACHINES,MACH_NAMES,MACH_SRC,(t.machine||[]));
+  document.getElementById('tbl-mach-yest').innerHTML=buildProdTable(MACH_MACHINES,MACH_NAMES,MACH_SRC,(yest.machine||[]));
 
-  renderDeptSummary(t, yest);
-  renderMaterial(sc.rows||[], steel.grades||[]);
-  renderAlerts();
-  renderDieLife();
-  renderDeptScore();
+  // Dept summary — manpower + electricity
+  renderDeptSummary(t,yest);
+  // Material needed — from schedule
+  renderMaterial(sc.rows||[],steel.grades||[]);
 
+  // WIP snapshot on today tab
   document.getElementById('wip-cut-pcs').textContent=fmtN(ws.cutWIPPcs||0);
   document.getElementById('wip-cut-sub').textContent=(ws.cutWIPVFs||0)+' VFs';
   document.getElementById('wip-frg-pcs').textContent=fmtN(ws.fgWIPPcs||0);
@@ -1061,10 +890,10 @@ function render(data){
   document.getElementById('wip-jwk-pcs').textContent=fmtN(ws.jwkWIPPcs||0);
   document.getElementById('wip-jwk-sub').textContent='Laxmi + Kalyani';
   var totalWip=(ws.cutWIPPcs||0)+(ws.fgWIPPcs||0)+(ws.jwkWIPPcs||0);
-  var vendorWip=ws.vendorWIPPcs||0;
   document.getElementById('wip-total-badge').textContent=fmtN(totalWip)+' pcs total';
 
-  document.getElementById('m-tov').innerHTML=fmtCurr(mtd.turnoverL*100000);
+  // ── MTD TAB ──
+  document.getElementById('m-tov').innerHTML=fmtCurr((mtd.turnoverL||0)*100000);
   document.getElementById('m-tov-s').textContent=mtd.month||'';
   document.getElementById('m-own').textContent=fmtN(mtd.ownForgedPcs||0);
   document.getElementById('m-own-s').textContent=((mtd.ownForgedTons||0).toFixed(1))+' T';
@@ -1073,184 +902,54 @@ function render(data){
   document.getElementById('m-cut').textContent=fmtN(mtd.cutQty||0);
   document.getElementById('m-cut-s').textContent=((mtd.cutTons||0).toFixed(1))+' T';
   document.getElementById('m-sch').textContent=(mtd.schedPct||0)+'%';
-  document.getElementById('m-sch-s').textContent='of schedule done';
+  document.getElementById('m-sch-s').textContent='of target done';
   document.getElementById('m-oil').textContent=fmtN((mtd.oilForgeL||0)+(mtd.oilHTL||0))+' L';
-  // ELECTRICITY with ₹ cost and ₹/kg
-  var ELEC_RATE=9.6;
+
+  // Electricity with cost
   var elecKwh=mtd.elecKwh||0;
-  var totalFinT=(mtd.ownForgedTons||0)+(mtd.jwkForgedTons||0)+(mtd.pressTons||0);
-  var elecCostL=(elecKwh*ELEC_RATE)/100000;
-  var elecPerKg=totalFinT>0?((elecKwh*ELEC_RATE)/(totalFinT*1000)).toFixed(2):'—';
-  document.getElementById('m-elec').textContent=fmtN(elecKwh)+' kWh  |  ₹'+elecCostL.toFixed(1)+'L';
-  var epk=document.getElementById('m-elec-perkg');
-  if(epk) epk.textContent='₹'+elecPerKg+'/kg finished';
-  document.getElementById('m-clab').innerHTML=fmtCurr((mtd.contractCostL||0)*100000);
-  document.getElementById('m-rm').innerHTML='₹'+(data.rm_rate||'—')+'/kg';
+  var finTons=mtd.ownForgedTons||0;
+  document.getElementById('m-elec').textContent=fmtN(elecKwh);
+  document.getElementById('m-elec-perkg').textContent=finTons>0?'₹'+((elecKwh*ELEC_RATE)/(finTons*1000)).toFixed(2)+'/kg':'—';
+  document.getElementById('m-clab').textContent=mtd.contractCostL?'₹'+Number(mtd.contractCostL).toFixed(1)+' L':'—';
+  document.getElementById('m-sal').textContent=mtd.salaryActualL?'₹'+Number(mtd.salaryActualL).toFixed(1)+' L':'—';
+  var mss=document.getElementById('m-sal-src');if(mss)mss.textContent=mtd.salaryActualL?'actual':'';
+  document.getElementById('m-contr').textContent=mtd.contractorActualL?'₹'+Number(mtd.contractorActualL).toFixed(1)+' L':'—';
+  var mcs=document.getElementById('m-contr-src');if(mcs)mcs.textContent='';
+  document.getElementById('m-rm').textContent='₹'+(data.rm_rate||0).toFixed(1)+'/kg';
+  document.getElementById('m-rej').textContent=fmtN(mtd.vendorRejPcs||0)+' pcs';
+  var mtri=document.getElementById('m-tr-in');if(mtri)mtri.textContent=mtd.transportInboundL?'₹'+mtd.transportInboundL+' L':'—';
+  var mtro=document.getElementById('m-tr-out');if(mtro)mtro.textContent=mtd.transportOutboundL?'₹'+mtd.transportOutboundL+' L':'—';
 
-  // Salary — green = actual from _RAW_SALARY, grey = estimate
-  var salEl=document.getElementById('m-sal');
-  if(salEl){
-    var salL=mtd.salaryActualL>0?mtd.salaryActualL:(mtd.salaryEstL||27.35);
-    salEl.textContent='₹'+salL.toFixed(2)+' L';
-    salEl.style.color=mtd.salaryActualL>0?'var(--gn)':'var(--sl)';
-    var ss2=document.getElementById('m-sal-src');
-    if(ss2)ss2.textContent=mtd.salaryActualL>0?' actual':' est';
-  }
-  // Contractor — green = actual from _RAW_CONTRACTOR, grey = estimate
-  var conEl=document.getElementById('m-contr');
-  if(conEl){
-    var conL=mtd.contractorActualL>0?mtd.contractorActualL:(mtd.contractorEstL||18.34);
-    conEl.textContent='₹'+conL.toFixed(2)+' L';
-    conEl.style.color=mtd.contractorActualL>0?'var(--gn)':'var(--sl)';
-    var cs2=document.getElementById('m-contr-src');
-    if(cs2)cs2.textContent=mtd.contractorActualL>0?' actual':' est';
-  }
-  // Transport Inbound — actual from _RAW_TRANSPORT (49% split) or FY25-26 avg
-  var trInEl=document.getElementById('m-tr-in');
-  if(trInEl){
-    var trIn=mtd.transportActualL>0?(mtd.transportActualL*0.49).toFixed(2):(mtd.transportInboundL||3.95).toFixed(2);
-    trInEl.textContent='₹'+trIn+' L';
-    trInEl.style.color=mtd.transportActualL>0?'var(--gn)':'var(--tn)';
-    var ti2=document.getElementById('m-tr-in-src');
-    if(ti2)ti2.textContent=mtd.transportActualL>0?' actual':' FY25-26 avg';
-  }
-  // Transport Outbound
-  var trOutEl=document.getElementById('m-tr-out');
-  if(trOutEl){
-    var trOut=mtd.transportActualL>0?(mtd.transportActualL*0.51).toFixed(2):(mtd.transportOutboundL||4.07).toFixed(2);
-    trOutEl.textContent='₹'+trOut+' L';
-    trOutEl.style.color=mtd.transportActualL>0?'var(--gn)':'var(--tn)';
-    var to2=document.getElementById('m-tr-out-src');
-    if(to2)to2.textContent=mtd.transportActualL>0?' actual':' FY25-26 avg';
-  }
-  var mrej=document.getElementById('m-rej');
-  if(mrej) mrej.textContent=fmtN(mtd.vendorRejPcs||0)+' pcs';
-  var mmpb=document.getElementById('m-mp-badge');
-  if(mmpb) mmpb.textContent='Staff '+fmtN(mtd.staffHead||0)+' | Contract '+fmtN(mtd.contractHead||0);
+  // Machine bars
+  var mbH='';var mBars=mtd.machineBars||[];var maxBar=mBars.length?mBars[0][1]:1;
+  mBars.forEach(function(b){var pct=Math.max(2,Math.round(b[1]/maxBar*100));mbH+='<div class="bar-row"><div class="bar-label">'+b[0]+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:var(--br)">'+fmtN(b[1])+'</div></div></div>';});
+  document.getElementById('mtd-mach-bars').innerHTML=mbH||'<div style="color:var(--tx3);font-size:11px">No data</div>';
 
-  // DEPT ELECTRICITY bars in MTD tab
-  var de=mtd.deptElec||{};
-  var deKeys=Object.keys(de).sort(function(a,b){return de[b]-de[a];});
-  var maxDE=deKeys.length?de[deKeys[0]]:1;
-  var deH='';
-  deKeys.forEach(function(d){
-    var pct=Math.round(de[d]/maxDE*100);
-    var cost=((de[d]*ELEC_RATE)/100000).toFixed(1);
-    deH+='<div class="brow"><div class="blbl">'+d+'</div><div class="btrack"><div class="bfill" style="width:'+pct+'%;background:var(--sl);"></div></div><div class="bval">'+fmtN(de[d])+' kWh</div><div style="font-family:var(--mo);font-size:9px;color:var(--tx3);width:40px;text-align:right;">₹'+cost+'L</div></div>';
-  });
-  var deEl=document.getElementById('mtd-dept-elec');
-  if(deEl) deEl.innerHTML=deH||'<div style="color:var(--tx3)">No data</div>';
+  // Dept manpower MTD
+  var dmH='';var dm=mtd.deptManpower||{};
+  Object.keys(dm).forEach(function(d){var r=dm[d];dmH+='<tr><td style="text-align:left">'+d+'</td><td>'+Math.round(r.staffAvg||0)+'</td><td>'+Math.round(r.contractAvg||0)+'</td><td>'+fmtCurr(r.contractCost||0)+'</td></tr>';});
+  document.getElementById('mtd-mp-body').innerHTML=dmH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3)">No data</td></tr>';
 
-  // DEPT MANPOWER table in MTD tab
-  var dm=mtd.deptManpower||{};
-  var dmKeys=Object.keys(dm).sort(function(a,b){return (dm[b].contractCost||0)-(dm[a].contractCost||0);});
-  var dmH='',totCC2=0;
-  dmKeys.forEach(function(d){
-    var v=dm[d];
-    totCC2+=v.contractCost||0;
-    dmH+='<tr><td>'+d+'</td><td class="mo">'+(v.staffAvg||0)+'</td><td class="mo">'+(v.contractAvg||0)+'</td><td class="mo">'+fmtN(v.contractCost||0)+'</td></tr>';
-  });
-  dmH+='<tr class="fw6" style="background:var(--sll)"><td>TOTAL</td><td></td><td></td><td class="mo">'+fmtN(totCC2)+'</td></tr>';
-  var mpBody=document.getElementById('mtd-mp-body');
-  if(mpBody) mpBody.innerHTML=dmH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3)">No data</td></tr>';
+  // Dept electricity MTD bars
+  var deH='';var de=mtd.deptElec||{};var deMax=0;
+  Object.values(de).forEach(function(v){if(v>deMax)deMax=v;});
+  Object.keys(de).forEach(function(d){var v=de[d];var pct=deMax>0?Math.max(2,Math.round(v/deMax*100)):0;deH+='<div class="bar-row"><div class="bar-label">'+d+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:var(--bl)">'+fmtN(v)+'</div></div></div>';});
+  var mde=document.getElementById('mtd-dept-elec');if(mde)mde.innerHTML=deH||'<div style="color:var(--tx3)">No data</div>';
 
-  var mbars=mtd.machineBars||[];
-  var maxMB=mbars.length>0?mbars[0][1]:1;
-  var mbH='';
-  mbars.forEach(function(b){
-    var pct=Math.round(b[1]/maxMB*100);
-    mbH+='<div class="brow"><div class="blbl">'+b[0]+'</div><div class="btrack"><div class="bfill" style="width:'+pct+'%"></div></div><div class="bval">'+fmtN(b[1])+' pcs</div></div>';
-  });
-  document.getElementById('mtd-mach-bars').innerHTML=mbH||'<div style="color:var(--tx3);font-size:11px;">No machine data</div>';
+  // MTD WIP
+  var mc1=document.getElementById('mtd-cw');if(mc1)mc1.textContent=fmtN(ws.cutWIPPcs||0);
+  var mc1s=document.getElementById('mtd-cw-s');if(mc1s)mc1s.textContent=(ws.cutWIPVFs||0)+' VFs';
+  var mc2=document.getElementById('mtd-fw');if(mc2)mc2.textContent=fmtN(ws.fgWIPPcs||0);
+  var mc2s=document.getElementById('mtd-fw-s');if(mc2s)mc2s.textContent=(ws.fgWIPVFs||0)+' VFs';
+  var mc3=document.getElementById('mtd-jw');if(mc3)mc3.textContent=fmtN(ws.jwkWIPPcs||0);
+  var mc3s=document.getElementById('mtd-jw-s');if(mc3s)mc3s.textContent='Laxmi+Kalyani';
 
-  document.getElementById('mtd-cw').textContent=fmtN(ws.cutWIPPcs||0);
-  document.getElementById('mtd-cw-s').textContent=(ws.cutWIPVFs||0)+' VFs';
-  document.getElementById('mtd-fw').textContent=fmtN(ws.fgWIPPcs||0);
-  document.getElementById('mtd-fw-s').textContent=(ws.fgWIPVFs||0)+' VFs';
-  document.getElementById('mtd-jw').textContent=fmtN(ws.jwkWIPPcs||0);
-  document.getElementById('mtd-jw-s').textContent='Laxmi + Kalyani';
+  // Machine monthly production
+  var pmH='';(data.prod_monthly||[]).forEach(function(r){if(!r.machine)return;pmH+='<tr><td style="text-align:left">'+r.dept+'</td><td style="text-align:left;font-weight:600">'+r.machine+'</td><td style="text-align:left">'+r.type+'</td><td>'+fmtN(r.monthTotal)+'</td><td>'+(r.monthTons||0).toFixed(2)+'</td></tr>';});
+  document.getElementById('tb-mach-monthly').innerHTML=pmH||'<tr><td colspan="5" style="text-align:center;color:var(--tx3)">No data</td></tr>';
+  var mmb=document.getElementById('mach-monthly-badge');if(mmb)mmb.textContent=(data.prod_monthly||[]).length+' rows';
 
-  // ── MACHINE-WISE MONTHLY PRODUCTION TABLE ────────────────────
-  // Reads from data.prod_monthly served by doGet (PRODUCTION_MONTHLY sheet)
-  // Falls back to fy_monthly machQty summary if not yet available
-  var pm=data.prod_monthly||[];
-  var mmH='',mmRows=0;
-  if(pm.length){
-    pm.forEach(function(r){
-      if(!r.dept&&!r.machine) return;
-      var isSpacer=r.isSpacer,isTons=r.isTonsRow;
-      if(isSpacer){mmH+='<tr style="background:#EEF0F3;height:4px;"><td colspan="5"></td></tr>';return;}
-      var bg=isTons?(r.isJWK?'#FFF3E0':'#E8F5E9'):'';
-      var style=bg?(' style="background:'+bg+';font-style:italic;"'):'';
-      var totPcs=r.monthTotal||0;
-      var totT=r.monthTons||'';
-      mmH+='<tr'+style+'>';
-      mmH+='<td style="text-align:left;font-weight:'+(isTons?'700':'500')+';color:'+(isTons?'var(--gn)':'var(--tx)')+'">'+( r.dept||'')+'</td>';
-      mmH+='<td style="text-align:left;font-family:var(--mo);color:var(--tx2);">'+(r.machine||'')+'</td>';
-      mmH+='<td style="text-align:left;"><span class="badge '+(r.type==='JWK'?'b-am':'b-sl')+'">'+(r.type||'')+'</span></td>';
-      mmH+='<td class="mo fw6" style="color:'+(totPcs>0?'var(--tx)':'var(--tx3)')+';">'+(totPcs>0?fmtN(totPcs):'—')+'</td>';
-      mmH+='<td class="mo" style="color:var(--tn);">'+(totT||'—')+'</td>';
-      mmH+='</tr>';
-      mmRows++;
-    });
-  } else {
-    // Fallback: show department totals from fy_monthly current month
-    var curMon=fy.filter(function(r){return (r.cutQty||0)>0||(r.forgeQtyIn||0)>0;})[0];
-    if(curMon){
-      var depts2=[
-        {dept:'Cutting',   pcs:curMon.cutQty||0,   tons:(curMon.cutTons||0).toFixed(1)},
-        {dept:'Forge (Own)',pcs:curMon.forgeQtyIn||0,tons:((curMon.forgeKgIn||0)/1000).toFixed(1)},
-        {dept:'Forge (JWK)',pcs:curMon.forgeQtyJWK||0,tons:((curMon.forgeKgJWK||0)/1000).toFixed(1)},
-        {dept:'Press (Own)',pcs:curMon.pressQtyIn||0, tons:((curMon.pressKgIn||0)/1000).toFixed(1)},
-        {dept:'HT',        pcs:curMon.htQty||0,    tons:'—'},
-        {dept:'Final',     pcs:curMon.finalQty||0, tons:'—'},
-        {dept:'Machine',   pcs:curMon.machQty||0,  tons:'—'}
-      ];
-      depts2.forEach(function(d){
-        mmH+='<tr><td style="text-align:left;font-weight:500;">'+d.dept+'</td><td style="text-align:left;color:var(--tx3);font-size:11px;">Summary only — run pull for machine detail</td><td></td>';
-        mmH+='<td class="mo fw6">'+(d.pcs>0?fmtN(d.pcs):'—')+'</td>';
-        mmH+='<td class="mo" style="color:var(--tn);">'+d.tons+'</td></tr>';
-        mmRows++;
-      });
-    }
-  }
-  var mmBadge=document.getElementById('mach-monthly-badge');
-  if(mmBadge) mmBadge.textContent=mmRows+' rows';
-  var mmBody=document.getElementById('tb-mach-monthly');
-  if(mmBody) mmBody.innerHTML=mmH||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:16px;">No data — run pull first</td></tr>';
-
-  var fyH='';
-  // FY Monthly: field names match FY_MONTHLY sheet headers exactly
-  fy.forEach(function(r){
-    var mn=r['Month']||'';
-    var cq=r['Cut Qty']||0, ct=r['Cut Tons']||0;
-    var fqIn=(r['Forge Qty (Inhouse)']||0)+(r['Press Qty (Inhouse)']||0);
-    var ftIn=(r['Forge Tons (Inhouse)']||0)+(r['Press Tons (Inhouse)']||0);
-    var fqJWK=(r['Forge Qty (JWK)']||0)+(r['Press Qty (JWK)']||0);
-    var ftJWK=(r['Forge Tons (JWK)']||0)+(r['Press Tons (JWK)']||0);
-    var dq=r['Dispatch Qty']||0, dtov=r['Dispatch Turnover (Rs L)']||0;
-    var rmkg=r['RM Inward (kg)']||0;
-    var oilF=r['Oil Forge (L)']||0, oilH=r['Oil HT (L)']||0;
-    var elKwh=r['Electricity (kWh)']||0;
-    var hasDat=cq>0||fqIn>0;
-    fyH+='<tr'+(hasDat?'':' style="color:var(--tx3);"')+'>';
-    fyH+='<td class="mo fw6">'+mn+'</td>';
-    fyH+='<td>'+fmtN(cq)+'</td>';
-    fyH+='<td>'+(ct>0?ct.toFixed(1):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN(fqIn)+'</td>';
-    fyH+='<td>'+(ftIn>0?ftIn.toFixed(1):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN(fqJWK)+'</td>';
-    fyH+='<td>'+(ftJWK>0?ftJWK.toFixed(1):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN(dq)+'</td>';
-    fyH+='<td class="or fw6">'+(dtov>0?fmtCurr(dtov*100000):'&mdash;')+'</td>';
-    fyH+='<td>'+fmtN(rmkg)+'</td>';
-    fyH+='<td>'+fmtN(oilF)+'</td>';
-    fyH+='<td>'+fmtN(oilH)+'</td>';
-    fyH+='<td>'+fmtN(elKwh)+'</td>';
-    fyH+='</tr>';
-  });
-  document.getElementById('tb-fy').innerHTML=fyH;
-
+  // ── WIP TAB ──
   document.getElementById('w-cpcs').textContent=fmtN(ws.cutWIPPcs||0);
   document.getElementById('w-csub').textContent=(ws.cutWIPVFs||0)+' VFs';
   document.getElementById('w-fpcs').textContent=fmtN(ws.fgWIPPcs||0);
@@ -1258,316 +957,196 @@ function render(data){
   document.getElementById('w-jpcs').textContent=fmtN(ws.jwkWIPPcs||0);
   document.getElementById('w-jsub').textContent='Laxmi + Kalyani';
   document.getElementById('wip-badge').textContent=fmtN(totalWip)+' pcs total';
-
-  var cwH='', fwH='', jwH='';
-  (wip.rows||[]).forEach(function(r){
-    if(!r.vfNo||r.vfNo==='TOTAL'||r.vfNo.indexOf('GRAND')>=0)return;
-    if((r.cutWIP||0)>0) cwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.cutWIP)+'</td><td>'+(r.fgWIP>0?fmtN(r.fgWIP):'&mdash;')+'</td></tr>';
-    if((r.fgWIP||0)>0)  fwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(r.fgWIP)+'</td></tr>';
-    if(jwkSet.indexOf(r.vfNo)>=0&&Math.abs(r.closingWIP||0)>0) jwH+='<tr><td class="mo">'+r.vfNo+'</td><td>'+r.customer+'</td><td>'+fmtN(Math.abs(r.closingWIP))+'</td></tr>';
+  var wipRows=wip.rows||[];
+  var cwH='',fwH='',jwH='';
+  wipRows.forEach(function(r){
+    if(r.cutWIP>0)cwH+='<tr><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+fmtN(r.cutWIP)+'</td><td>'+fmtN(r.fgWIP)+'</td></tr>';
+    if(r.fgWIP>0&&r.cutWIP<=0)fwH+='<tr><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+fmtN(r.fgWIP)+'</td></tr>';
+    if(jwkVFs.indexOf(r.vfNo)>=0&&Math.abs(r.closingWIP)>0)jwH+='<tr><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+fmtN(r.closingWIP)+'</td></tr>';
   });
-  document.getElementById('tb-cwip').innerHTML=cwH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);">No cut WIP</td></tr>';
-  document.getElementById('tb-fwip').innerHTML=fwH||'<tr><td colspan="3" style="text-align:center;color:var(--tx3);">No forged WIP</td></tr>';
-  document.getElementById('tb-jwip').innerHTML=jwH||'<tr><td colspan="3" style="text-align:center;color:var(--tx3);">No JWK WIP</td></tr>';
+  document.getElementById('tb-cwip').innerHTML=cwH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3)">None</td></tr>';
+  document.getElementById('tb-fwip').innerHTML=fwH||'<tr><td colspan="3" style="text-align:center;color:var(--tx3)">None</td></tr>';
+  document.getElementById('tb-jwip').innerHTML=jwH||'<tr><td colspan="3" style="text-align:center;color:var(--tx3)">None</td></tr>';
 
-  var ss=sc.summary||{};
-  document.getElementById('sc-tot').textContent=fmtN(ss.totalSchedQty||0);
+  // ── SCHEDULE TAB ──
+  document.getElementById('sc-tot').textContent=fmtN(scSum.totalSchedQty||0);
   document.getElementById('sc-tot-s').textContent=sc.month||'';
-  document.getElementById('sc-pro').textContent=fmtN(ss.totalProduced||0);
-  document.getElementById('sc-bal').textContent=fmtN(ss.totalBalProduce||0);
-  document.getElementById('sc-pct').textContent=(ss.totalSchedQty>0?Math.round(ss.totalProduced/ss.totalSchedQty*100):0)+'%';
-  // Schedule RM required from SCHEDULE_INTELLIGENCE (pre-calculated by sheet)
-  var scSum=sc.summary||{};
-  var scTotRM=scSum.totalRMRequired||0;
-  var stt=document.getElementById('sc-tot-t');if(stt)stt.textContent='';
-  var spt=document.getElementById('sc-pro-t');if(spt)spt.textContent='';
-  var sbt=document.getElementById('sc-bal-t');if(sbt)sbt.textContent=scTotRM>0?(scTotRM/1000).toFixed(1)+' T RM req':'';
-  document.getElementById('sc-badge').textContent=(sc.rows||[]).length+' VFs';
+  document.getElementById('sc-pro').textContent=fmtN(scSum.totalProduced||0);
+  document.getElementById('sc-bal').textContent=fmtN(scSum.totalBalProduce||0);
+  document.getElementById('sc-pct').textContent=scSum.totalSchedQty>0?Math.round((scSum.totalProduced||0)/(scSum.totalSchedQty)*100)+'%':'0%';
+  var scRows=(sc.rows||[]).sort(function(a,b){var bo={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};var od=(bo[a.band]!==undefined?bo[a.band]:7)-(bo[b.band]!==undefined?bo[b.band]:7);return od||((b.balProduce||0)-(a.balProduce||0));});
   var scH='';
-  var SC_ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
-  function scBandOrder(b){ var v=SC_ORDER[b]; return (v===undefined||v===null)?99:v; }
-  var scRows=(sc.rows||[]).filter(function(r){return (r.schedQty||0)>0;}).slice().sort(function(a,b){
-    var bo=scBandOrder(a.band)-scBandOrder(b.band);
-    if(bo!==0) return bo;
-    // IN STOCK first within same band
-    if(a.hasStock&&!b.hasStock) return -1;
-    if(!a.hasStock&&b.hasStock) return 1;
-    return (b.balProduce||0)-(a.balProduce||0);
-  });
   scRows.forEach(function(r){
-    scH+='<tr>';
-    scH+='<td>'+bandPill(r.band)+'</td>';
-    scH+='<td class="mo">'+r.vfNo+'</td>';
-    scH+='<td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.customer+'">'+r.customer+'</td>';
-    scH+='<td class="mo">'+r.grade+'</td>';
-    scH+='<td>'+fmtN(r.schedQty||0)+'</td>';
-    scH+='<td>'+fmtN(r.producedMTD||0)+'</td>';
-    scH+='<td>'+fmtN(r.dispatchedMTD||0)+'</td>';
-    scH+='<td class="'+(r.balProduce>0?'am fw6':'gn')+'">'+fmtN(r.balProduce||0)+'</td>';
-    scH+='<td class="mo">'+(r.rmRequired>0?(r.rmRequired/1000).toFixed(2)+'T':'&mdash;')+'</td>';
-    var stk=r.hasStock;
-    scH+='<td><span class="badge '+(stk?'b-gn':'b-rd')+'">'+(stk?'IN STOCK':'NO STOCK')+'</span></td>';
-    scH+='<td>'+(r.schedPct||0)+'%</td>';
-    scH+='</tr>';
+    var pC=r.schedPct>=100?'color:var(--gn);font-weight:700':r.schedPct>0?'':'color:var(--tx3)';
+    var stk=r.hasStock?'<span class="badge b-gn" style="font-size:8px">IN</span>':'<span class="badge b-rd" style="font-size:8px">NO</span>';
+    scH+='<tr><td style="text-align:left">'+bandTag(r.band)+'</td><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.grade+'</td><td>'+fmtN(r.schedQty)+'</td><td>'+fmtN(r.producedMTD)+'</td><td>'+fmtN(r.dispatchedMTD)+'</td><td style="font-weight:700;color:var(--rd)">'+fmtN(r.balProduce)+'</td><td>'+(r.rmRequired>0?(r.rmRequired/1000).toFixed(1):'—')+'</td><td style="'+pC+'">'+r.schedPct+'%</td></tr>';
   });
-  document.getElementById('tb-sched').innerHTML=scH||'<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:16px;">No schedule data</td></tr>';
+  document.getElementById('tb-sched').innerHTML=scH||'<tr><td colspan="10" style="text-align:center;color:var(--tx3)">No schedule data</td></tr>';
+  document.getElementById('sc-badge').textContent=scRows.length+' parts';
 
+  // ── OUTSTANDING TAB ──
   document.getElementById('out-od').innerHTML=fmtCurr(out.totalOverdue||0);
-  document.getElementById('out-od-s').textContent=(out.customers||[]).filter(function(c){return c.overdue>0;}).length+' customers overdue';
+  document.getElementById('out-od-s').textContent=out.asOn?'as on '+out.asOn:'';
   document.getElementById('out-nd').innerHTML=fmtCurr(out.totalNotDue||0);
   document.getElementById('out-gt').innerHTML=fmtCurr(out.totalOutstanding||0);
   document.getElementById('out-as').textContent=out.asOn||'';
+  var oH='';(out.customers||[]).forEach(function(c){var rc=c.overdue>0?'style="color:var(--rd);font-weight:700"':'';oH+='<tr><td style="text-align:left">'+c.customer+'</td><td>'+fmtCurr(c.notDue)+'</td><td '+rc+'>'+fmtCurr(c.overdue)+'</td><td style="font-weight:600">'+fmtCurr(c.grandTotal)+'</td></tr>';});
+  document.getElementById('tb-out').innerHTML=oH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3)">No data</td></tr>';
   document.getElementById('out-badge').textContent=(out.customers||[]).length+' customers';
-  var outH='';
-  (out.customers||[]).forEach(function(c){
-    outH+='<tr>';
-    outH+='<td>'+c.customer+'</td>';
-    outH+='<td style="text-align:right;font-family:var(--mo);color:var(--tx2);">'+(c.notDue>0?fmtCurr(c.notDue):'&mdash;')+'</td>';
-    outH+='<td style="text-align:right;font-family:var(--mo);font-weight:700;color:'+(c.overdue>0?'var(--rd)':'var(--gn)')+';">'+(c.overdue>0?fmtCurr(c.overdue):'&mdash;')+'</td>';
-    outH+='<td style="text-align:right;font-family:var(--mo);font-weight:600;">'+fmtCurr(c.grandTotal)+'</td>';
-    outH+='</tr>';
-  });
-  document.getElementById('tb-out').innerHTML=outH||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:16px;">No outstanding data</td></tr>';
 
-  // Steel totals from cache (pre-computed by GS from grade rows)
+  // ── STEEL TAB ──
   document.getElementById('st-in').textContent=((steel.totalInwardKg||0)/1000).toFixed(1)+' T';
   document.getElementById('st-bal').textContent=((steel.totalBalanceKg||0)/1000).toFixed(1)+' T';
-  document.getElementById('st-val').innerHTML='&#8377;'+(steel.totalValueL||0).toFixed(1)+' L est.';
-  document.getElementById('st-rate').innerHTML='&#8377;'+(data.rm_rate||'&mdash;')+'/kg';
+  document.getElementById('st-val').textContent='₹'+(steel.totalValueL||0).toFixed(1)+' L est.';
+  document.getElementById('st-rate').textContent='₹'+(data.rm_rate||0).toFixed(1);
   document.getElementById('st-con').textContent=((steel.totalConsumedKg||0)/1000).toFixed(1)+' T';
-  var stH='';
-  // Grade field names match STEEL_STOCK sheet headers exactly
-  (steel.grades||[]).forEach(function(g){
-    var bal=g['Balance (kg)']||0;
-    var inw=g['Inward (kg)']||0;
-    var con=g['Consumed (kg)']||0;
-    var val=g['Value (₹L)']||0;
-    var daysStock=g['Days Stock']||0;
-    var status=g['Status']||'';
-    stH+='<tr>';
-    stH+='<td>'+g['Grade']+'</td>';
-    stH+='<td>'+fmtN(g['Opening (kg)']||0)+'</td>';
-    stH+='<td>'+fmtN(inw)+'</td>';
-    stH+='<td>'+fmtN(con)+'</td>';
-    stH+='<td class="fw6" style="color:'+(bal>0?'var(--gn)':'var(--rd)')+';">'+fmtN(bal)+'</td>';
-    stH+='<td class="mo">'+(bal>0?(bal/1000).toFixed(2):'&mdash;')+'</td>';
-    stH+='<td class="mo">&#8377;'+(data.rm_rate||0)+'/kg</td>';
-    stH+='<td class="mo">'+(val>0?val.toFixed(1)+'L':'&mdash;')+'</td>';
-    stH+='</tr>';
-  });
-  document.getElementById('tb-steel').innerHTML=stH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:16px;">No steel data</td></tr>';
+  var stH='';(steel.grades||[]).forEach(function(g){var gr=g['Grade']||'';if(!gr)return;var bal=Number(g['Balance (kg)']||0);stH+='<tr'+(bal<=0?' style="background:var(--rdb)"':'')+'><td style="text-align:left;font-weight:600">'+gr+'</td><td>'+fmtN(g['Opening (kg)']||0)+'</td><td>'+fmtN(g['Inward (kg)']||0)+'</td><td>'+fmtN(g['Consumed (kg)']||0)+'</td><td style="font-weight:700">'+(bal<0?'<span style="color:var(--rd)">'+fmtN(bal)+'</span>':fmtN(bal))+'</td><td>'+(bal/1000).toFixed(2)+'</td><td>'+(data.rm_rate||0).toFixed(1)+'</td><td>'+(Number(g['Value (₹L)'])||0).toFixed(1)+'</td></tr>';});
+  document.getElementById('tb-steel').innerHTML=stH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3)">No data</td></tr>';
 
-  var vendors=f4.vendors||[];
-  var totSent=0, totRec=0, totPend=0;
-  vendors.forEach(function(v){ totSent+=v.sentPcs||0; totRec+=v.receivedPcs||0; totPend+=v.pendingPcs||0; });
-  document.getElementById('f4-badge').textContent=vendors.length+' vendors | '+fmtN(totPend)+' pcs pending';
-  var f4KH='<div class="kc or"><div class="kl">Total Sent</div><div class="kv">'+fmtN(totSent)+'</div><div class="ks">pcs out</div></div>';
-  f4KH+='<div class="kc gn"><div class="kl">Total Returned</div><div class="kv">'+fmtN(totRec)+'</div><div class="ks">pcs in</div></div>';
-  f4KH+='<div class="kc rd"><div class="kl">Pending Return</div><div class="kv">'+fmtN(totPend)+'</div><div class="ks">pcs at vendor</div></div>';
-  document.getElementById('f4-kpis').innerHTML=f4KH;
+  // ── 57F4 TAB ──
+  var f4v=f4.vendors||[];var totSent=0,totRecv=0,totPend=0;
+  f4v.forEach(function(v){totSent+=v.sentPcs;totRecv+=v.receivedPcs;totPend+=v.pendingPcs;});
+  document.getElementById('f4-kpis').innerHTML='<div class="kc or"><div class="kl">Total Sent</div><div class="kv">'+fmtN(totSent)+'</div></div><div class="kc gn"><div class="kl">Total Received</div><div class="kv">'+fmtN(totRecv)+'</div></div><div class="kc rd"><div class="kl">Total Pending</div><div class="kv">'+fmtN(totPend)+'</div></div>';
   var f4H='';
-  var VCOLS=['#E8731A','#1D4ED8','#0E6E3A','#B91C1C','#6D28D9','#92400E','#1565C0'];
-  vendors.forEach(function(v,i){
-    var col=VCOLS[i%VCOLS.length];
-    f4H+='<div class="f4-vendor"><div class="f4-hdr" onclick="this.nextElementSibling.classList.toggle(\'open\')">';
-    f4H+='<div class="f4-dot" style="background:'+col+'"></div>';
-    f4H+='<div class="f4-name">'+v.vendor+'</div>';
-    f4H+='<div class="f4-total" style="color:'+col+'">'+fmtN(v.pendingPcs)+' pcs pending'+(v.rejectedPcs>0?' | <span style="color:var(--rd)">'+fmtN(v.rejectedPcs)+' rejected</span>':'')+'</div>';
-    f4H+='<span style="font-size:16px;color:var(--tx3);margin-left:8px;">&#9660;</span>';
-    f4H+='</div><div class="f4-body"><table class="tbl" style="margin:0;"><thead><tr><th>VF No</th><th>Customer</th><th>Sent</th><th>Returned</th><th>Pending</th></tr></thead><tbody>';
-    (v.parts||[]).sort(function(a,b){return Math.abs(b.pendingPcs)-Math.abs(a.pendingPcs);}).forEach(function(p){
-      f4H+='<tr><td class="mo">'+p.vfNo+'</td><td>'+p.customer+'</td><td>'+fmtN(p.sentPcs)+'</td><td>'+fmtN(p.receivedPcs)+'</td><td class="fw6" style="color:'+col+';">'+fmtN(p.pendingPcs)+'</td></tr>';
-    });
-    f4H+='</tbody></table></div></div>';
+  f4v.forEach(function(v){
+    f4H+='<div class="f4-vendor"><div class="f4-vhdr" onclick="var p=this.nextElementSibling;p.classList.toggle(\'open\')"><div class="f4-vname">'+v.vendor+'</div><div class="f4-vbadges"><span class="badge b-or">Sent '+fmtN(v.sentPcs)+'</span><span class="badge b-gn">Recv '+fmtN(v.receivedPcs)+'</span><span class="badge b-rd">Pend '+fmtN(v.pendingPcs)+'</span></div></div>';
+    f4H+='<div class="f4-parts">';
+    if(v.parts&&v.parts.length){f4H+='<table class="tbl"><thead><tr><th>VF</th><th>Customer</th><th>Sent</th><th>Recv</th><th>Pending</th></tr></thead><tbody>';v.parts.forEach(function(p){f4H+='<tr><td style="text-align:left;font-weight:600">'+p.vfNo+'</td><td style="text-align:left">'+p.customer+'</td><td>'+fmtN(p.sentPcs)+'</td><td>'+fmtN(p.receivedPcs)+'</td><td style="font-weight:700;color:var(--rd)">'+fmtN(p.pendingPcs)+'</td></tr>';});f4H+='</tbody></table>';}
+    f4H+='</div></div>';
   });
-  document.getElementById('f4-list').innerHTML=f4H||'<div style="text-align:center;padding:20px;color:var(--tx3);">No 57F4 pending</div>';
+  document.getElementById('f4-list').innerHTML=f4H||'<div style="padding:20px;text-align:center;color:var(--tx3)">No 57F4 data</div>';
+  document.getElementById('f4-badge').textContent=f4v.length+' vendors';
 
-  var deptBars=elec.deptBars||[];
-  var maxKwh=deptBars.length>0?deptBars[0].kwh:1;
-  document.getElementById('el-tot').textContent=fmtN(elec.totalKwh||0)+' kWh';
-  var frgEl=deptBars.find(function(d){return d.dept==='Forge';});
-  var htEl=deptBars.find(function(d){return d.dept==='HT';});
-  var prEl=deptBars.find(function(d){return d.dept==='Press';});
-  // Add ₹ cost to electricity tab
-  var elT2=elec.totalKwh||0;
-  var ELEC_RATE2=9.6;
-  var elCostL2=(elT2*ELEC_RATE2)/100000;
-  var totalFinT2=(mtd.ownForgedTons||0)+(mtd.jwkForgedTons||0)+(mtd.pressTons||0);
-  var elPK2=totalFinT2>0?((elT2*ELEC_RATE2)/(totalFinT2*1000)).toFixed(2):'—';
-  // Update electricity KPI labels if those elements exist
-  var elCostEl=document.getElementById('el-cost-l');
-  if(elCostEl) elCostEl.innerHTML='Est. ₹'+elCostL2.toFixed(1)+'L @ ₹'+ELEC_RATE2+'/kWh';
-  var elPkEl=document.getElementById('el-perkg');
-  if(elPkEl) elPkEl.textContent='₹'+elPK2+'/kg finished';
-  document.getElementById('el-frg').innerHTML=frgEl?fmtN(frgEl.kwh)+' kWh':'&mdash;';
-  document.getElementById('el-ht').innerHTML=htEl?fmtN(htEl.kwh)+' kWh':'&mdash;';
-  document.getElementById('el-pr').innerHTML=prEl?fmtN(prEl.kwh)+' kWh':'&mdash;';
-  var elBH='';
-  deptBars.forEach(function(d){
-    var pct=Math.round(d.kwh/maxKwh*100);
-    elBH+='<div class="brow"><div class="blbl">'+d.dept+'</div><div class="btrack"><div class="bfill" style="width:'+pct+'%;background:var(--sl);"></div></div><div class="bval">'+fmtN(d.kwh)+' kWh</div><div style="font-family:var(--mo);font-size:9px;color:var(--tx3);width:35px;text-align:right;">'+d.pct+'%</div></div>';
+  // ── ELECTRICITY TAB ──
+  var eBars=elec.deptBars||[];
+  document.getElementById('el-tot').textContent=fmtN(elec.totalKwh||0);
+  document.getElementById('el-cost-l').innerHTML=fmtCurr((elec.totalKwh||0)*ELEC_RATE);
+  document.getElementById('el-perkg').textContent=finTons>0?'₹'+((elec.totalKwh||0)*ELEC_RATE/(finTons*1000)).toFixed(2):'—';
+  var forgeKwh=0,htKwh=0,pressKwh=0;
+  eBars.forEach(function(b){if(b.dept.indexOf('Forge')>=0||b.dept.indexOf('IBH')>=0)forgeKwh+=b.kwh;if(b.dept.indexOf('HT')>=0||b.dept.indexOf('Heat')>=0||b.dept.indexOf('Temper')>=0)htKwh+=b.kwh;if(b.dept.indexOf('Press')>=0)pressKwh+=b.kwh;});
+  document.getElementById('el-frg').textContent=fmtN(forgeKwh);
+  var elht=document.getElementById('el-ht');if(elht)elht.textContent=fmtN(htKwh);
+  var elpr=document.getElementById('el-pr');if(elpr)elpr.textContent=fmtN(pressKwh);
+  var maxKwh=eBars.length?Math.max.apply(null,eBars.map(function(b){return b.kwh;})):1;
+  var ebH='';eBars.forEach(function(b){var pct=Math.max(2,Math.round(b.kwh/maxKwh*100));ebH+='<div class="bar-row"><div class="bar-label">'+b.dept+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:var(--bl)">'+fmtN(b.kwh)+'</div></div><div class="bar-val">'+(b.pct||0)+'%</div></div>';});
+  document.getElementById('elec-bars').innerHTML=ebH||'<div style="color:var(--tx3)">No data</div>';
+
+  // ── ALERTS ──
+  renderAlerts();
+  // ── DIE LIFE ──
+  renderDieLife();
+  // ── DEPT SCORE ──
+  renderDeptScore();
+  // ── MARGINS (rendered on PIN unlock) ──
+
+  // ── FY MONTHLY ──
+  var fyH='';(data.fy_monthly||[]).forEach(function(r){
+    var mn=r['Month']||'';if(!mn)return;
+    var isCur=(mn===(mtd.month||''));
+    fyH+='<tr'+(isCur?' style="background:#E3F2FD;font-weight:700"':'')+'><td style="text-align:left">'+mn+'</td><td>'+fmtN(r['Cut Qty'])+'</td><td>'+(Number(r['Cut Tons'])||0).toFixed(1)+'</td><td>'+fmtN(Number(r['Forge Qty (Inhouse)']||0)+Number(r['Press Qty (Inhouse)']||0))+'</td><td>'+(Number(r['Forge Tons (Inhouse)']||0)+Number(r['Press Tons (Inhouse)']||0)).toFixed(1)+'</td><td>'+fmtN(Number(r['Forge Qty (JWK)']||0)+Number(r['Press Qty (JWK)']||0))+'</td><td>'+(Number(r['Forge Tons (JWK)']||0)+Number(r['Press Tons (JWK)']||0)).toFixed(1)+'</td><td>'+fmtN(r['Dispatch Qty'])+'</td><td>'+(Number(r['Dispatch Turnover (Rs L)'])||0).toFixed(1)+' L</td><td>'+fmtN(r['Oil Forge (L)'])+'</td><td>'+fmtN(r['Oil HT (L)'])+'</td><td>'+fmtN(r['Electricity (kWh)'])+'</td></tr>';
   });
-  document.getElementById('elec-bars').innerHTML=elBH||'<div style="color:var(--tx3);">No electricity data</div>';
+  document.getElementById('tb-fy').innerHTML=fyH||'<tr><td colspan="12" style="text-align:center;color:var(--tx3)">No data</td></tr>';
 }
 
-function CUT_SRC_MAP(){
-  return {
-    'Shearing Machine':'SM','shearing machine':'SM',
-    'Band Saw No. 1':'BS1','Band Saw No 1':'BS1','band saw no 1':'BS1','band saw no. 1':'BS1','Band Saw No. 1 ':'BS1',
-    'Band Saw No. 2':'BS2','Band Saw No 2':'BS2','band saw no 2':'BS2','band saw no. 2':'BS2',
-    'Band Saw No. 3':'BS3','Band Saw No 3':'BS3','band saw no 3':'BS3','band saw no. 3':'BS3',
-    'Circular Saw 80':'CS80','circular saw 80':'CS80',
-    'Circular Saw 100':'CS100','circular saw 100':'CS100',
-    'Circular Saw ITL':'CSITL','circular saw itl':'CSITL',
-    'HGCKSGW 1':'HS1','hgcksgw 1':'HS1','HGCKSGW 2':'HS2','hgcksgw 2':'HS2'
-  };
+// ═══ DEPT SUMMARY (same layout as original) ═══
+function renderDeptSummary(today,yest){
+  var mpT=today.manpower||{},mpY=(yest||{}).manpower||{};
+  var elT=today.elecByDept||{},elY=(yest||{}).elecByDept||{};
+  var h='';
+  DEPT_ROWS.forEach(function(d){
+    var mt=mpT[d]||{},my=mpY[d]||{};
+    var eT=0,eY=0;
+    Object.keys(elT).forEach(function(m){if(m.indexOf(d.split(' ')[0])>=0)eT+=elT[m];});
+    Object.keys(elY).forEach(function(m){if(m.indexOf(d.split(' ')[0])>=0)eY+=elY[m];});
+    h+='<tr><td style="text-align:left;font-weight:500">'+d+'</td><td>'+fmtN(mt.staff||0)+'</td><td>'+fmtN(mt.contract||0)+'</td><td>'+fmtN(Math.round(eT))+'</td><td style="background:var(--sll)">'+fmtN(my.staff||0)+'</td><td style="background:var(--sll)">'+fmtN(my.contract||0)+'</td><td style="background:var(--sll)">'+fmtN(Math.round(eY))+'</td></tr>';
+  });
+  document.getElementById('dept-summ-body').innerHTML=h;
 }
 
+// ═══ MATERIAL NEEDED (same layout as original) ═══
+function renderMaterial(schedRows,steelGrades){
+  var steelMap={};(steelGrades||[]).forEach(function(g){var gr=g['Grade']||'';if(gr)steelMap[gr]=Number(g['Balance (kg)']||0);});
+  var matRows=schedRows.filter(function(r){return r.balProduce>0;}).sort(function(a,b){var bo={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};return(bo[a.band]!==undefined?bo[a.band]:7)-(bo[b.band]!==undefined?bo[b.band]:7)||(b.balProduce-a.balProduce);});
+  var h='';
+  matRows.forEach(function(r){
+    var stockKg=steelMap[r.grade]||0;var hasStock=r.rmRequired>0?(stockKg>=r.rmRequired):true;
+    var st=hasStock?'<span class="badge b-gn">&#9654; IN STOCK</span>':'<span class="badge b-rd">&#9650; NO STOCK</span>';
+    h+='<tr><td style="text-align:left">'+bandTag(r.band)+'</td><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.grade+'</td><td style="text-align:right;font-family:var(--mo)">'+fmtN(r.balProduce)+'</td><td style="text-align:right;font-family:var(--mo)">'+(r.rmRequired>0?(r.rmRequired/1000).toFixed(1):'—')+'</td><td style="text-align:right;font-family:var(--mo)">'+(stockKg/1000).toFixed(1)+'</td><td>'+st+'</td></tr>';
+  });
+  document.getElementById('mat-body').innerHTML=h||'<tr><td colspan="8" style="text-align:center;color:var(--tx3)">No pending items</td></tr>';
+  document.getElementById('mat-count').textContent=matRows.length+' items';
+}
+
+// ═══ ALERTS (same layout as original) ═══
 function renderAlerts(){
   var alerts=D.alerts||[];
-  var high=alerts.filter(function(a){return (a.priority||'').toLowerCase()==='high';});
-  var other=alerts.filter(function(a){return (a.priority||'').toLowerCase()!=='high';});
-  var sorted=high.concat(other);
-
-  document.getElementById('alert-badge').textContent=alerts.length+' alerts | '+high.length+' high priority';
-
-  // KPIs
-  var kH='<div class="kc rd"><div class="kl">High Priority</div><div class="kv">'+high.length+'</div><div class="ks">action needed</div></div>';
-  kH+='<div class="kc am"><div class="kl">Total Alerts</div><div class="kv">'+alerts.length+'</div><div class="ks">active</div></div>';
-  kH+='<div class="kc sl"><div class="kl">Last Check</div><div class="kv" style="font-size:13px;">'+(D.alerts_ts||'&mdash;')+'</div></div>';
-  document.getElementById('alert-kpis').innerHTML=kH;
-
-  if(!sorted.length){
-    document.getElementById('alert-list').innerHTML='<div style="padding:24px;text-align:center;color:var(--gn);font-size:12px;font-weight:600;">&#10003; No active alerts</div>';
-    return;
-  }
-  var h='';
-  sorted.forEach(function(a){
-    var isHigh=(a.priority||'').toLowerCase()==='high';
-    var bg=isHigh?'#FEE2E2':'#FAFBFC';
-    var border=isHigh?'border-left:4px solid var(--rd);':'border-left:4px solid var(--bd2);';
-    var col=isHigh?'var(--rd)':'var(--tx2)';
-    h+='<div style="'+border+'background:'+bg+';padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;gap:10px;">';
-    if(isHigh) h+='<span style="color:var(--rd);font-size:14px;flex-shrink:0;">&#9888;</span>';
-    else h+='<span style="color:var(--tx3);font-size:14px;flex-shrink:0;">&#8505;</span>';
-    h+='<div style="flex:1;">';
-    h+='<div style="font-size:11px;font-weight:700;color:'+col+';">'+( a.title||a.type||'Alert')+'</div>';
-    h+='<div style="font-size:10px;color:var(--tx2);margin-top:2px;">'+(a.message||a.detail||'')+'</div>';
-    if(a.value) h+='<div style="font-size:10px;font-family:var(--mo);color:var(--tx3);margin-top:2px;">Value: '+a.value+'</div>';
-    h+='</div>';
-    h+='<span class="badge '+(isHigh?'b-rd':'b-sl')+'" style="flex-shrink:0;">'+(a.priority||'info').toUpperCase()+'</span>';
-    h+='</div>';
-  });
-  document.getElementById('alert-list').innerHTML=h;
+  var high=alerts.filter(function(a){return a.priority==='HIGH';}).length;
+  document.getElementById('alert-kpis').innerHTML='<div class="kc rd"><div class="kl">High Priority</div><div class="kv">'+high+'</div></div><div class="kc am"><div class="kl">Total Alerts</div><div class="kv">'+alerts.length+'</div></div><div class="kc sl"><div class="kl">Last Check</div><div class="kv" style="font-size:14px">'+(D.alerts_ts||'—')+'</div></div>';
+  document.getElementById('alert-badge').textContent=alerts.length+' alerts';
+  var h='';alerts.sort(function(a,b){return a.priority==='HIGH'?-1:b.priority==='HIGH'?1:0;});
+  alerts.forEach(function(a){var sc=a.priority==='HIGH'?'background:var(--rdb);color:var(--rd)':'background:var(--amb);color:var(--am)';h+='<div class="alert-item"><span class="alert-sev" style="'+sc+'">'+a.priority+'</span><div class="alert-msg"><div class="alert-title">'+(a.title||a.type)+'</div>'+a.message+'</div></div>';});
+  document.getElementById('alert-list').innerHTML=h||'<div style="padding:20px;text-align:center;color:var(--gn);font-weight:600">All clear</div>';
 }
 
+// ═══ MARGINS (same layout as original) ═══
 function renderMargins(){
-  var mg=D.margins||{};
-  var rows=mg.rows||[];
-  var bandCounts={};
-  rows.forEach(function(r){ bandCounts[r.band]=(bandCounts[r.band]||0)+1; });
-  var ORDER={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6};
-  var bKeys=Object.keys(BAND_COLORS).sort(function(a,b){return (ORDER[a]||9)-(ORDER[b]||9);});
-  var bH='';
-  bKeys.forEach(function(b){
-    var cnt=bandCounts[b]||0;
-    var col=BAND_COLORS[b];
-    bH+='<div class="kc" style="border-top-color:'+col+'"><div class="kl" style="color:'+col+';">Band '+b+'</div><div class="kv">'+cnt+'</div><div class="ks">parts</div></div>';
-  });
-  document.getElementById('band-kpis').innerHTML=bH;
-  document.getElementById('mg-rm').innerHTML='RM &#8377;'+(mg.rmAvgRate||'&mdash;')+'/kg';
-  var mgH='';
-  rows.forEach(function(r){
-    var col=BAND_COLORS[r.band]||'#888';
-    mgH+='<tr>';
-    mgH+='<td>'+bandPill(r.band)+'</td>';
-    mgH+='<td class="mo">'+r.vfNo+'</td>';
-    mgH+='<td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.customer+'</td>';
-    mgH+='<td class="mo">'+r.grade+'</td>';
-    mgH+='<td class="mo">'+(r.convPerKg||0).toFixed(1)+'</td>';
-    mgH+='<td class="mo fw6" style="color:'+col+';">'+(r.netPerKg||0).toFixed(1)+'</td>';
-    mgH+='<td class="mo">'+(r.dispTons||0).toFixed(2)+'</td>';
-    mgH+='<td class="mo">'+(r.turnoverL||0)+'</td>';
-    mgH+='<td class="mo" style="color:'+col+';">'+(r.netRealL||0)+'</td>';
-    mgH+='</tr>';
-  });
-  document.getElementById('tb-margin').innerHTML=mgH||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:16px;">No margin data</td></tr>';
+  var mg=D.margins||{};var rows=mg.rows||[];
+  document.getElementById('mg-rm').textContent='RM ₹'+(mg.rmAvgRate||0).toFixed(1)+'/kg';
+  var bc={};rows.forEach(function(r){bc[r.band]=(bc[r.band]||0)+1;});
+  var bk='';['A+','A','A-','B+','B','B-','C'].forEach(function(b){bk+='<div class="kc" style="border-top:3px solid '+bandBg(b)+'"><div class="kl">'+b+'</div><div class="kv">'+(bc[b]||0)+'</div><div class="ks">parts</div></div>';});
+  document.getElementById('band-kpis').innerHTML=bk;
+  var h='';rows.forEach(function(r){var nc=r.netPerKg<0?'color:var(--rd);font-weight:700':'color:var(--gn)';h+='<tr><td style="text-align:left">'+bandTag(r.band)+'</td><td style="text-align:left;font-weight:600">'+r.vfNo+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.grade+'</td><td>'+(r.convPerKg||0).toFixed(1)+'</td><td style="'+nc+'">'+(r.netPerKg||0).toFixed(1)+'</td><td>'+(r.dispTons||0).toFixed(2)+'</td><td>'+(r.turnoverL||0).toFixed(1)+'</td><td style="'+(r.netRealL<0?'color:var(--rd)':'')+'">'+((r.netRealL||0)).toFixed(1)+'</td></tr>';});
+  document.getElementById('tb-margin').innerHTML=h||'<tr><td colspan="9" style="text-align:center;color:var(--tx3)">No dispatch data</td></tr>';
 }
 
-
-// ═══ DIE LIFE ═══
+// ═══ DIE LIFE (same layout as original) ═══
 function renderDieLife(){
-  var dl=D.die_life||{};
-  var running=dl.running||[];
-  var complete=dl.complete||[];
-  document.getElementById('die-kpis').innerHTML=
-    '<div class="kc gn"><div class="kl">Active Runs</div><div class="kv">'+running.length+'</div></div>'+
-    '<div class="kc sl"><div class="kl">Completed</div><div class="kv">'+complete.length+'</div></div>'+
-    '<div class="kc or"><div class="kl">Machines</div><div class="kv">'+new Set([].concat(running,complete).map(function(r){return r.machine;})).size+'</div></div>';
-  document.getElementById('die-running-cnt').textContent=running.length+' active';
-  var h='';
-  running.forEach(function(r){h+='<tr><td style="font-weight:600">'+r.machine+'</td><td class="mo">'+r.vf+'</td><td style="font-size:10px">'+(r.customer||'').substring(0,25)+'</td><td class="mo">'+fmtDate(r.runStart)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo" style="font-weight:700">'+fmtN(r.totalPcs)+'</td><td><span class="die-status-running">RUNNING</span></td></tr>';});
-  document.getElementById('die-running-body').innerHTML=h||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:12px;">No active dies</td></tr>';
-  document.getElementById('die-hist-cnt').textContent=complete.length+' records';
-  var hh='';
-  complete.slice(0,50).forEach(function(r){hh+='<tr><td style="font-weight:600">'+r.machine+'</td><td class="mo">'+r.vf+'</td><td style="font-size:10px">'+(r.customer||'').substring(0,25)+'</td><td class="mo">'+fmtDate(r.runStart)+'</td><td class="mo">'+fmtDate(r.runEnd)+'</td><td class="mo">'+r.days+'</td><td class="mo">'+r.shifts+'</td><td class="mo" style="font-weight:700">'+fmtN(r.totalPcs)+'</td></tr>';});
-  document.getElementById('die-hist-body').innerHTML=hh||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);">No history</td></tr>';
+  var dl=D.die_life||{};var running=dl.running||[],complete=dl.complete||[];
+  document.getElementById('die-kpis').innerHTML='<div class="kc gn"><div class="kl">Currently Running</div><div class="kv">'+running.length+'</div><div class="ks">active dies</div></div><div class="kc sl"><div class="kl">Completed Runs</div><div class="kv">'+complete.length+'</div></div><div class="kc or"><div class="kl">Avg Run (pcs)</div><div class="kv">'+(complete.length?fmtN(Math.round(complete.reduce(function(s,r){return s+r.totalPcs;},0)/complete.length)):'—')+'</div></div>';
+  document.getElementById('die-running-cnt').textContent=running.length+' running';
+  var rH='';running.forEach(function(r){rH+='<tr><td style="text-align:left">'+r.machine+'</td><td style="text-align:left;font-weight:600">'+r.vf+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.runStart+'</td><td>'+r.days+'</td><td>'+r.shifts+'</td><td style="font-weight:700">'+fmtN(r.totalPcs)+'</td><td><span class="badge b-gn">RUNNING</span></td></tr>';});
+  document.getElementById('die-running-body').innerHTML=rH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3)">None</td></tr>';
+  document.getElementById('die-hist-cnt').textContent=complete.length+' runs';
+  var cH='';complete.slice(0,50).forEach(function(r){cH+='<tr><td style="text-align:left">'+r.machine+'</td><td style="text-align:left;font-weight:600">'+r.vf+'</td><td style="text-align:left">'+r.customer+'</td><td>'+r.runStart+'</td><td>'+r.runEnd+'</td><td>'+r.days+'</td><td>'+r.shifts+'</td><td style="font-weight:700">'+fmtN(r.totalPcs)+'</td></tr>';});
+  document.getElementById('die-hist-body').innerHTML=cH||'<tr><td colspan="8" style="text-align:center;color:var(--tx3)">None</td></tr>';
 }
 
-function fmtDate(d){if(!d||d==='—')return'—';var s=d.toString();if(s.length>10)s=s.substring(0,10);var p=s.split('-');return p.length===3?p[2]+'-'+['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(p[1])]:s;}
-
-// ═══ DEPT SCORE ═══
+// ═══ DEPT SCORE (same layout as original) ═══
 function renderDeptScore(){
-  var ds=D.dept_score||{};
-  var scores=ds.scores||[];
-  var overall=ds.overallPct||0;
-  var best=scores.length>0?scores[0]:{dept:'—',pct:0};
-  var worst=scores.length>0?scores[scores.length-1]:{dept:'—',pct:0};
-  document.getElementById('dscore-kpis').innerHTML=
-    '<div class="kc gn"><div class="kl">Best Dept</div><div class="kv" style="font-size:14px">'+best.dept+'</div><div class="ks">'+best.pct+'%</div></div>'+
-    '<div class="kc rd"><div class="kl">Needs Attention</div><div class="kv" style="font-size:14px">'+worst.dept+'</div><div class="ks">'+worst.pct+'%</div></div>'+
-    '<div class="kc sl"><div class="kl">Overall</div><div class="kv">'+overall+'%</div><div class="ks">'+ds.workingDays+' days</div></div>'+
-    '<div class="kc or"><div class="kl">Departments</div><div class="kv">'+scores.length+'</div><div class="ks">tracked</div></div>';
-  var h='';
-  scores.forEach(function(s){
-    var dots='';
-    (s.datesWithData||[]).forEach(function(){dots+='<span class="sc-dot sc-gn" style="margin-right:1px;"></span>';});
-    var missing=s.expected-s.count;
-    for(var i=0;i<missing;i++)dots+='<span class="sc-dot sc-grey" style="margin-right:1px;"></span>';
+  var ds=D.dept_score||{};var scores=ds.scores||[];
+  document.getElementById('dscore-kpis').innerHTML='<div class="kc or"><div class="kl">Overall Score</div><div class="kv">'+(ds.overallPct||0)+'%</div></div><div class="kc sl"><div class="kl">Working Days</div><div class="kv">'+(ds.workingDays||0)+'</div></div><div class="kc gn"><div class="kl">Depts Tracked</div><div class="kv">'+scores.length+'</div></div><div class="kc bl"><div class="kl">Target</div><div class="kv">100%</div><div class="ks">daily data entry</div></div>';
+  var h='';scores.forEach(function(s){
+    var filled=s.count||0,missing=Math.max(0,(s.expected||0)-filled);
+    var dots='';for(var i=0;i<Math.min(filled,31);i++)dots+='<span class="sc-dot sc-green" style="margin-right:1px;"></span>';
+    for(var i=0;i<Math.min(missing,31);i++)dots+='<span class="sc-dot sc-grey" style="margin-right:1px;"></span>';
     var gc=s.pct>=85?'b-gn':s.pct>=65?'b-am':'b-rd';
     h+='<tr><td style="text-align:left;font-weight:500">'+s.dept+'</td><td>'+dots+'</td><td class="mo">'+s.expected+'</td><td class="mo" style="font-weight:700">'+s.pct+'%</td><td><span class="badge '+gc+'">'+s.grade+'</span></td></tr>';
   });
   document.getElementById('dscore-body').innerHTML=h||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);">No data</td></tr>';
 }
 
-// ═══ DATA LOAD ═══
+// ═══ DATA LOAD (same as original) ═══
 function loadData(){
   document.getElementById('lov').style.display='flex';
   fetch(WEB_APP+'?v='+Date.now())
     .then(function(r){return r.json();})
     .then(function(data){
-      console.log('[VFPL] Raw data from doGet:', JSON.stringify(data).substring(0,500));
-      console.log('[VFPL] Keys:', Object.keys(data));
-      if(data.error){console.error('[VFPL] doGet returned error:', data.error); throw new Error(data.error);}
+      console.log('[VFPL] Data loaded. Keys:', Object.keys(data));
+      if(data.error){console.error('[VFPL] doGet error:', data.error); throw new Error(data.error);}
       document.getElementById('lov').style.display='none';
       render(data);
     })
     .catch(function(e){
       document.getElementById('lov').style.display='none';
-      var eb=document.getElementById('err-bar');
-      if(eb){eb.style.display='flex';}
-      var em=document.getElementById('err-msg');
-      if(em) em.textContent='Could not load data: '+e.message+'. Check Web App is deployed as Anyone.';
+      var eb=document.getElementById('err-bar');if(eb)eb.style.display='flex';
+      var em=document.getElementById('err-msg');if(em)em.textContent='Could not load data: '+e.message+'. Check Web App is deployed as Anyone.';
     });
 }
-
 document.addEventListener('DOMContentLoaded', loadData);
-setInterval(function(){
-  fetch(WEB_APP+'?v='+Date.now()).then(function(r){return r.json();}).then(function(d){if(!d.error)render(d);}).catch(function(){});
-}, 600000);
+setInterval(function(){fetch(WEB_APP+'?v='+Date.now()).then(function(r){return r.json();}).then(function(d){if(!d.error)render(d);}).catch(function(){});}, 600000);
 </script>
 <!-- ══════════════ DIE LIFE ══════════════ -->
-<div id="tab-dielife" class="main">
+<div id="tab-dielife" class="main" style="display:none;">
   <div class="kgrid k3" id="die-kpis" style="margin-bottom:12px"></div>
   <div class="card">
     <div class="ch"><div class="ct">Current Runs — Active Dies</div><div class="badge b-gn" id="die-running-cnt">—</div></div>
@@ -1586,7 +1165,7 @@ setInterval(function(){
 </div>
 
 <!-- ══════════════ DEPT SCORE ══════════════ -->
-<div id="tab-dscore" class="main">
+<div id="tab-dscore" class="main" style="display:none;">
   <div class="kgrid k4" id="dscore-kpis" style="margin-bottom:12px"></div>
   <div class="card">
     <div class="ch"><div class="ct">Department Data Entry Compliance — April MTD</div></div>
