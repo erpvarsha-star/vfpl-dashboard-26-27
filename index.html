@@ -1211,10 +1211,18 @@ function render(data){
   document.getElementById('s-row-count').textContent=sSorted.length+' VFs';
 
   // ─── OUTSTANDING ───
-  document.getElementById('o-od').textContent=fmtCr(out.totalOverdue||0);
+  // Gross overdue = sum of POSITIVE overdue values only
+  // Customer credits (negative overdue) are shown separately, not netted off
+  var grossOverdue=0, creditBal=0;
+  (out.customers||[]).forEach(function(c){
+    var v=N(c.overdue);
+    if(v>0) grossOverdue+=v;
+    else if(v<0) creditBal+=Math.abs(v);
+  });
+  document.getElementById('o-od').textContent=fmtCr(grossOverdue);
   document.getElementById('o-nd').textContent=fmtCr(out.totalNotDue||0);
   document.getElementById('o-tot').textContent=fmtCr(out.totalOutstanding||0);
-  document.getElementById('o-asn').textContent=out.asOn||'—';
+  document.getElementById('o-asn').textContent=(out.asOn||'—')+(creditBal>0?' · ₹'+(creditBal/100000).toFixed(1)+'L customer credits':'');
   var oRows='';
   (out.customers||[]).forEach(function(c){
     var ndVal=N(c.notDue), odVal=N(c.overdue);
