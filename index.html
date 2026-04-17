@@ -266,8 +266,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 <!-- ═══════════════ TODAY TAB ═══════════════ -->
 <div id="tab-today" class="main">
 
-  <!-- KPI BAR -->
-  <div class="kgrid k5" style="margin-bottom:10px;">
+  <!-- KPI BAR — 6 tiles: Balance / Sched% / Cut / Forge / Press / Elec -->
+  <div class="kgrid k6" style="margin-bottom:10px;">
     <div class="kc bl">
       <div class="kl">Balance to Produce</div>
       <div class="kv" id="k-bal">&mdash;</div>
@@ -279,20 +279,28 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
       <div class="kv" id="k-schpct">&mdash;</div>
       <div class="ks">% of monthly target</div>
     </div>
-    <div class="kc sl">
-      <div class="kl">Electricity Today</div>
-      <div class="kv" id="k-elec">&mdash;</div>
-      <div class="ks" id="k-elec-s">kWh — all departments</div>
-    </div>
     <div class="kc or">
       <div class="kl">Cut Today</div>
       <div class="kv" id="k-cut">&mdash;</div>
+      <div class="kt" id="k-cut-t"></div>
       <div class="ks" id="k-cut-s">&mdash;</div>
     </div>
     <div class="kc gn">
-      <div class="kl">Forged Today</div>
+      <div class="kl">Forge Today</div>
       <div class="kv" id="k-frg">&mdash;</div>
-      <div class="ks" id="k-frg-s">Inhouse + JWK</div>
+      <div class="kt" id="k-frg-t"></div>
+      <div class="ks" id="k-frg-s">Forge Shop only</div>
+    </div>
+    <div class="kc pu">
+      <div class="kl">Press Today</div>
+      <div class="kv" id="k-prs">&mdash;</div>
+      <div class="kt" id="k-prs-t"></div>
+      <div class="ks" id="k-prs-s">Press Shop only</div>
+    </div>
+    <div class="kc sl">
+      <div class="kl">Electricity Today</div>
+      <div class="kv" id="k-elec">&mdash;</div>
+      <div class="ks" id="k-elec-s">kWh &mdash; all depts</div>
     </div>
   </div>
 
@@ -524,10 +532,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
     <div class="kc sl"><div class="kl">Grand Total Outstanding</div><div class="kv" id="o-tot">&mdash;</div><div class="ks">all customers</div></div>
   </div>
   <div class="card card-last">
-    <div class="ch"><div class="ct">Customer-wise Outstanding</div><div class="badge b-sl" id="o-row-count">&mdash;</div></div>
+    <div class="ch">
+      <div class="ct">Customer-wise Outstanding</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span class="badge" style="background:rgba(29,78,216,0.05);color:var(--bl);border:1px solid rgba(29,78,216,0.2);">Not Due = future</span>
+        <span class="badge" style="background:rgba(185,28,28,0.07);color:var(--rd);border:1px solid rgba(185,28,28,0.2);">Overdue = past due</span>
+        <span class="badge b-sl" id="o-row-count">&mdash;</span>
+      </div>
+    </div>
     <div class="scroll-x">
       <table class="tbl">
-        <thead><tr><th class="lf">Customer</th><th>Not Due</th><th>Overdue</th><th>Grand Total</th></tr></thead>
+        <thead><tr><th class="lf">Customer</th><th style="background:#EFF4FB;color:var(--bl);">Not Due</th><th style="background:#FEF1F2;color:var(--rd);">Overdue</th><th>Grand Total</th></tr></thead>
         <tbody id="o-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
       </table>
     </div>
@@ -992,23 +1007,73 @@ function render(data){
 
   document.getElementById('k-schpct').textContent=fmtPct(mtd.schedPct||0);
 
+  // ─── Electricity Today: use today.elecByDept, fall back to avg of MTD / working days ───
   var elecToday=Object.values(t.elecByDept||{}).reduce(function(s,v){return s+N(v);},0);
+  if(elecToday===0){
+    // Fallback: estimate from MTD dept sum divided by working days so far
+    var mtdDeptElec=mtd.deptElec||{};
+    var mtdSum=Object.values(mtdDeptElec).reduce(function(s,v){return s+N(v);},0);
+    var workDays=Math.max(1, new Date().getDate());
+    if(mtdSum>0){
+      elecToday=Math.round(mtdSum/workDays);
+      document.getElementById('k-elec-s').textContent='kWh (est from MTD avg)';
+    } else {
+      document.getElementById('k-elec-s').textContent='kWh — not yet posted';
+    }
+  } else {
+    document.getElementById('k-elec-s').textContent='kWh — all depts';
+  }
   document.getElementById('k-elec').textContent=elecToday>0?fmtN(Math.round(elecToday))+' kWh':'—';
 
+  // ─── Tons ratios from FY_MONTHLY for current month ───
+  var fyCur=null; fy.forEach(function(r){if(r['Month']===mtd.month)fyCur=r;});
+  var cutKgPerPc=0, frgKgPerPc=0, prsKgPerPc=0;
+  if(fyCur){
+    var cq=N(fyCur['Cut Qty']), ct=N(fyCur['Cut Tons']);
+    var fqI=N(fyCur['Forge Qty (Inhouse)']), ftI=N(fyCur['Forge Tons (Inhouse)']);
+    var fqJ=N(fyCur['Forge Qty (JWK)']),     ftJ=N(fyCur['Forge Tons (JWK)']);
+    var pqI=N(fyCur['Press Qty (Inhouse)']), ptI=N(fyCur['Press Tons (Inhouse)']);
+    var pqJ=N(fyCur['Press Qty (JWK)']),     ptJ=N(fyCur['Press Tons (JWK)']);
+    if(cq>0)          cutKgPerPc=(ct*1000)/cq;
+    if((fqI+fqJ)>0)   frgKgPerPc=((ftI+ftJ)*1000)/(fqI+fqJ);
+    if((pqI+pqJ)>0)   prsKgPerPc=((ptI+ptJ)*1000)/(pqI+pqJ);
+  }
+
+  // ─── Cut Today ───
   var cutPcs=0;
   (t.cutting||[]).forEach(function(r){Object.values(r.entries||{}).forEach(function(q){cutPcs+=N(q);});});
   document.getElementById('k-cut').textContent=fmtN(cutPcs);
-  document.getElementById('k-cut-s').textContent=todayDate;
+  var cutTons=(cutPcs*cutKgPerPc)/1000;
+  document.getElementById('k-cut-t').textContent=cutPcs>0 && cutTons>0 ? cutTons.toFixed(2)+' T' : '';
+  document.getElementById('k-cut-s').textContent=cutPcs>0 ? todayDate : 'not yet posted';
 
+  // ─── Forge Today (Forge Shop only) ───
   var frgIn=0, frgJWK=0;
-  (t.forging||[]).concat(t.pressing||[]).forEach(function(r){
+  (t.forging||[]).forEach(function(r){
     Object.keys(r.entries||{}).forEach(function(vf){
       var q=N(r.entries[vf]);
       if(jwkSet.indexOf(vf)>=0) frgJWK+=q; else frgIn+=q;
     });
   });
-  document.getElementById('k-frg').textContent=fmtN(frgIn+frgJWK);
-  document.getElementById('k-frg-s').textContent='Inhouse: '+fmtN(frgIn)+' | JWK: '+fmtN(frgJWK);
+  var frgTotal=frgIn+frgJWK;
+  document.getElementById('k-frg').textContent=fmtN(frgTotal);
+  var frgTons=(frgTotal*frgKgPerPc)/1000;
+  document.getElementById('k-frg-t').textContent=frgTotal>0 && frgTons>0 ? frgTons.toFixed(2)+' T' : '';
+  document.getElementById('k-frg-s').textContent=frgTotal>0 ? ('Own: '+fmtN(frgIn)+' | JWK: '+fmtN(frgJWK)) : 'not yet posted';
+
+  // ─── Press Today (Press Shop only) ───
+  var prsIn=0, prsJWK=0;
+  (t.pressing||[]).forEach(function(r){
+    Object.keys(r.entries||{}).forEach(function(vf){
+      var q=N(r.entries[vf]);
+      if(jwkSet.indexOf(vf)>=0) prsJWK+=q; else prsIn+=q;
+    });
+  });
+  var prsTotal=prsIn+prsJWK;
+  document.getElementById('k-prs').textContent=fmtN(prsTotal);
+  var prsTons=(prsTotal*prsKgPerPc)/1000;
+  document.getElementById('k-prs-t').textContent=prsTotal>0 && prsTons>0 ? prsTons.toFixed(2)+' T' : '';
+  document.getElementById('k-prs-s').textContent=prsTotal>0 ? ('Own: '+fmtN(prsIn)+' | JWK: '+fmtN(prsJWK)) : 'not yet posted';
 
   var yest=t.yesterday||{};
   var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC,t.cutting||[],yest.cutting||[]);
@@ -1048,20 +1113,36 @@ function render(data){
   document.getElementById('m-sch').textContent=fmtPct(mtd.schedPct||0);
   document.getElementById('m-disp').textContent=fmtN(mtd.dispQty||0);
   document.getElementById('m-rej').textContent=fmtN(mtd.vendorRejPcs||0);
-  document.getElementById('m-elec').textContent=mtd.elecKwh>0?fmtN(mtd.elecKwh):'—';
+  // MTD electricity — FY_MONTHLY col often empty; fall back to deptElec sum
+  var mtdElec=N(mtd.elecKwh);
+  if(mtdElec===0){
+    mtdElec=Object.values(mtd.deptElec||{}).reduce(function(s,v){return s+N(v);},0);
+  }
+  document.getElementById('m-elec').textContent=mtdElec>0?fmtN(Math.round(mtdElec)):'—';
   document.getElementById('m-oilf').textContent=fmtN(mtd.oilForgeL||0);
   document.getElementById('m-oilh').textContent=fmtN(mtd.oilHTL||0);
 
-  // MTD Manpower table
+  // MTD Manpower table — use mtd.deptManpower if populated, else today.manpower as live snapshot
   var mpDept=mtd.deptManpower||{};
+  var usingLive=false;
+  if(Object.keys(mpDept).length===0){
+    // Fallback: use today's headcount as current snapshot
+    mpDept={};
+    Object.keys(t.manpower||{}).forEach(function(d){
+      var m=t.manpower[d]||{};
+      mpDept[d]={staffAvg:N(m.staff),contractAvg:N(m.contract),contractCost:0};
+    });
+    usingLive=true;
+  }
   var mpRows='';
-  Object.keys(mpDept).forEach(function(d){
+  Object.keys(mpDept).sort().forEach(function(d){
     var r=mpDept[d]||{};
     var staff=N(r.staffAvg), contract=N(r.contractAvg), cost=N(r.contractCost);
     if(staff===0&&contract===0&&cost===0)return;
     mpRows+='<tr><td class="lf">'+d+'</td><td>'+staff+'</td><td>'+contract+'</td><td>'+(staff+contract)+'</td><td>'+(cost>0?(cost/100000).toFixed(2):'—')+'</td></tr>';
   });
-  document.getElementById('m-mp-body').innerHTML=mpRows||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">Manpower summary tab is empty &mdash; data flows from DAILY_MANPOWER. See Manpower tab for live data.</td></tr>';
+  var mpHeader=usingLive?'<tr><td colspan="5" style="text-align:center;color:var(--am);padding:8px;font-size:10px;background:var(--amb);">Showing today\'s live headcount (MANPOWER_SUMMARY tab not populated)</td></tr>':'';
+  document.getElementById('m-mp-body').innerHTML=mpHeader+(mpRows||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No manpower data</td></tr>');
 
   // MTD Top machines
   var bars=mtd.machineBars||[];
@@ -1136,10 +1217,11 @@ function render(data){
   document.getElementById('o-asn').textContent=out.asOn||'—';
   var oRows='';
   (out.customers||[]).forEach(function(c){
+    var ndVal=N(c.notDue), odVal=N(c.overdue);
     oRows+='<tr><td class="lf">'+safeText(c.customer)+'</td>'+
-      '<td>'+fmtCr(c.notDue)+'</td>'+
-      '<td style="color:'+(N(c.overdue)>0?'var(--rd)':'inherit')+';font-weight:'+(N(c.overdue)>0?'700':'normal')+';">'+fmtCr(c.overdue)+'</td>'+
-      '<td>'+fmtCr(c.grandTotal)+'</td></tr>';
+      '<td style="background:'+(ndVal>0?'rgba(29,78,216,0.05)':'transparent')+';color:var(--tx2);">'+fmtCr(ndVal)+'</td>'+
+      '<td style="background:'+(odVal>0?'rgba(185,28,28,0.07)':'transparent')+';color:'+(odVal>0?'var(--rd)':'var(--tx3)')+';font-weight:'+(odVal>0?'700':'normal')+';">'+fmtCr(odVal)+'</td>'+
+      '<td style="font-weight:600;">'+fmtCr(c.grandTotal)+'</td></tr>';
   });
   document.getElementById('o-body').innerHTML=oRows||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:14px;">No outstanding</td></tr>';
   document.getElementById('o-row-count').textContent=(out.customers||[]).length+' customers';
