@@ -7,12 +7,21 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!--
   VFPL FACTORY OPERATING SYSTEM — FY 2026-27
-  Built by DashboardArchitect on 17-Apr-2026 02:45 IST
+  Originally built: 17-Apr-2026 02:45 IST
+  Session 18 updates: 17-Apr-2026 13:00 IST
   Owner: Yash Munot, Varsha Forgings Pvt Ltd, Aurangabad
   Single-file HTML. No external deps except Google Fonts.
-  Data source: Apps Script Web App (doGet → merged DASHBOARD_CACHE JSON)
+  Data source: Apps Script Web App (doGet → merged DASHBOARD_CACHE JSON, 5 cells)
   Web App URL: see WEB_APP constant below.
   Refresh: 60-second auto-fetch + manual refresh button.
+
+  Session 18 adds:
+   - Machine Utilization KPI on Today tab (today vs Dec-25 baseline)
+   - Exact tonnage from COSTING_BANDS (cache.tons_summary) — FY ratio is fallback
+   - 5 new tabs: Planner, Data Gaps, Collection, Vendor Rej, Cost Summary (PIN)
+   - Print-to-PDF button per tab
+   - Mobile optimisation for Today production grids
+   - Sparklines under MTD KPIs (6-month trend)
 -->
 <style>
 :root{
@@ -26,6 +35,74 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
+
+/* ═══ SESSION 18 ADDITIONS ═══ */
+
+/* Print button */
+.print-btn{background:var(--sll);color:var(--sld);border:1px solid var(--bd2);padding:4px 10px;font-size:10px;font-weight:600;border-radius:3px;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;transition:all .15s;margin-left:8px;}
+.print-btn:hover{background:var(--sl);color:#fff;}
+
+/* Sparkline */
+.spark{display:inline-block;height:20px;width:70px;vertical-align:middle;margin-top:2px;}
+.spark-line{fill:none;stroke:var(--br);stroke-width:1.5;}
+.spark-base{fill:none;stroke:var(--bd2);stroke-width:.7;stroke-dasharray:2,2;}
+.spark-dot{fill:var(--br);}
+
+/* Utilization KPI */
+.kc.ut{border-top-color:var(--pu);}
+
+/* Session-18 tab rows (horizontal scroll on desktop, preserve) */
+
+/* Print-specific CSS — hides chrome, expands content */
+@media print{
+  .hdr, .tabs, .refresh-btn, .print-btn, .upd, .clk, .live, .fy-badge, .err-banner, .date-notice, #lov, .mobile-hint{display:none !important;}
+  body{background:#fff !important;font-size:10px !important;}
+  .main{display:block !important; padding:0 !important; margin:0 !important; max-width:100% !important; page-break-after:always;}
+  .main:last-child{page-break-after:auto;}
+  .card{border:1px solid #999 !important; box-shadow:none !important; page-break-inside:avoid;}
+  .kc{border:1px solid #999 !important; padding:6px 8px !important;}
+  .kv{font-size:16px !important;}
+  .kl{font-size:8px !important;}
+  .ks, .kt{font-size:9px !important;}
+  .tbl{font-size:9px !important;}
+  .tbl th, .tbl td{padding:3px 5px !important;}
+  .prod-tbl{font-size:9px !important;}
+  .prod-tbl th, .prod-tbl td{padding:3px 5px !important;}
+  .scroll-x, .prod-scroll{overflow:visible !important;}
+  a{color:#000 !important; text-decoration:none !important;}
+  /* Tab title visible in print */
+  .main::before{content:attr(data-print-title); display:block; font-size:14px; font-weight:700; margin-bottom:6px; padding-bottom:4px; border-bottom:2px solid #333; color:#333;}
+}
+
+/* Mobile optimisation for Today production grids */
+@media (max-width: 767px){
+  .hdr{height:auto; padding:8px 12px; flex-wrap:wrap;}
+  .logo img{height:28px;}
+  .logo-name{font-size:12px;}
+  .logo-sub{font-size:8px;}
+  .hdr-r{gap:6px; flex-wrap:wrap;}
+  .clk, .upd{font-size:9px;}
+  .tabs{padding:0 8px;}
+  .tab{padding:8px 9px; font-size:9px;}
+  .main{padding:8px 10px;}
+  .kgrid{gap:5px;}
+  .k3,.k4,.k5,.k6,.k7{grid-template-columns:repeat(2, 1fr);}
+  .kc{padding:6px 8px;}
+  .kv{font-size:16px;}
+  .kl{font-size:9px;}
+  .ks{font-size:10px;}
+  
+  /* Stack production grids as per-machine cards */
+  .prod-scroll{overflow-x:auto;}
+  .prod-tbl{font-size:10px;}
+  .prod-tbl th, .prod-tbl td{padding:3px 4px; min-width:60px;}
+  .dept-hdr{font-size:10px; padding:6px 8px;}
+  .dh-date{font-size:9px;}
+  .mobile-hint{display:block !important; font-size:9px; color:var(--tx3); padding:4px 8px; text-align:center; background:var(--sll); border-radius:3px; margin-bottom:4px;}
+}
+.mobile-hint{display:none;}
+
+/* ═══ END SESSION 18 CSS ═══ */
 
 /* HEADER */
 .hdr{background:var(--wh);border-bottom:3px solid var(--br);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:200;box-shadow:0 2px 6px rgba(0,0,0,.06);}
@@ -237,6 +314,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="hdr-r">
     <span class="fy-badge">FY 2026-27</span>
     <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">&#x21bb; Refresh</button>
+    <button class="print-btn" onclick="printActiveTab()" title="Print current tab">&#128196; Print</button>
     <div class="upd" id="upd">&mdash;</div>
     <div class="live"><div class="pulse"></div>Live</div>
     <div class="clk" id="clk">&mdash;</div>
@@ -258,16 +336,23 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="tab" onclick="showTab('transport',this)">Transport</div>
   <div class="tab" onclick="showTab('alerts',this)">&#9888; Alerts</div>
   <div class="tab" onclick="showTab('dielife',this)">Die Life</div>
+  <div class="tab" onclick="showTab('planner',this)">Planner</div>
+  <div class="tab" onclick="showTab('gaps',this)">Data Gaps</div>
+  <div class="tab" onclick="showTab('collection',this)">Collection</div>
+  <div class="tab" onclick="showTab('vrej',this)">Vendor Rej</div>
   <div class="tab" onclick="showTab('dscore',this)">Dept Score</div>
   <div class="tab" id="mbtn" onclick="showMargins()">&#9679; Margins</div>
+  <div class="tab" id="cbtn" onclick="showCostSum()">&#9679; Cost Summary</div>
   <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
 </div>
 
 <!-- ═══════════════ TODAY TAB ═══════════════ -->
-<div id="tab-today" class="main">
+<div id="tab-today" class="main" data-print-title="TODAY / LAST DAY — VFPL Factory OS">
 
-  <!-- KPI BAR — 6 tiles: Balance / Sched% / Cut / Forge / Press / Elec -->
-  <div class="kgrid k6" style="margin-bottom:10px;">
+  <div class="mobile-hint">Tip: rotate phone landscape for wider production grids</div>
+
+  <!-- KPI BAR — 7 tiles: Balance / Sched% / Utilization / Cut / Forge / Press / Elec -->
+  <div class="kgrid k7" style="margin-bottom:10px;">
     <div class="kc bl">
       <div class="kl">Balance to Produce</div>
       <div class="kv" id="k-bal">&mdash;</div>
@@ -278,6 +363,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
       <div class="kl">Schedule Achievement</div>
       <div class="kv" id="k-schpct">&mdash;</div>
       <div class="ks">% of monthly target</div>
+    </div>
+    <div class="kc ut">
+      <div class="kl">Machine Utilization</div>
+      <div class="kv" id="k-util">&mdash;</div>
+      <div class="ks" id="k-util-s">vs Dec-25 baseline</div>
     </div>
     <div class="kc or">
       <div class="kl">Cut Today</div>
@@ -451,18 +541,18 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ MTD TAB ═══════════════ -->
-<div id="tab-mtd" class="main" style="display:none;">
+<div id="tab-mtd" class="main" style="display:none;" data-print-title="MONTH TO DATE — VFPL Factory OS">
   <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Turnover MTD</div><div class="kv" id="m-tov">&mdash;</div><div class="ks" id="m-tov-s">&mdash;</div></div>
-    <div class="kc gn"><div class="kl">Own MTD (Forge+Press)</div><div class="kv" id="m-own">&mdash;</div><div class="ks" id="m-own-s">&mdash;</div></div>
-    <div class="kc bl"><div class="kl">JWK MTD (Forge+Press)</div><div class="kv" id="m-jwk">&mdash;</div><div class="ks" id="m-jwk-s">&mdash;</div></div>
-    <div class="kc sl"><div class="kl">Cut MTD</div><div class="kv" id="m-cut">&mdash;</div><div class="ks" id="m-cut-s">&mdash;</div></div>
+    <div class="kc or"><div class="kl">Turnover MTD</div><div class="kv" id="m-tov">&mdash;</div><div class="ks" id="m-tov-s">&mdash;</div><svg class="spark" id="sp-tov"></svg></div>
+    <div class="kc gn"><div class="kl">Own MTD (Forge+Press)</div><div class="kv" id="m-own">&mdash;</div><div class="ks" id="m-own-s">&mdash;</div><svg class="spark" id="sp-own"></svg></div>
+    <div class="kc bl"><div class="kl">JWK MTD (Forge+Press)</div><div class="kv" id="m-jwk">&mdash;</div><div class="ks" id="m-jwk-s">&mdash;</div><svg class="spark" id="sp-jwk"></svg></div>
+    <div class="kc sl"><div class="kl">Cut MTD</div><div class="kv" id="m-cut">&mdash;</div><div class="ks" id="m-cut-s">&mdash;</div><svg class="spark" id="sp-cut"></svg></div>
     <div class="kc am"><div class="kl">Schedule Achievement</div><div class="kv" id="m-sch">&mdash;</div><div class="ks">% of plan</div></div>
   </div>
   <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc pu"><div class="kl">Dispatch Qty</div><div class="kv" id="m-disp">&mdash;</div><div class="ks">pcs sent</div></div>
+    <div class="kc pu"><div class="kl">Dispatch Qty</div><div class="kv" id="m-disp">&mdash;</div><div class="ks">pcs sent</div><svg class="spark" id="sp-disp"></svg></div>
     <div class="kc rd"><div class="kl">Vendor Rejection</div><div class="kv" id="m-rej">&mdash;</div><div class="ks">pcs failed</div></div>
-    <div class="kc sl"><div class="kl">Electricity</div><div class="kv" id="m-elec">&mdash;</div><div class="ks">kWh consumed</div></div>
+    <div class="kc sl"><div class="kl">Electricity</div><div class="kv" id="m-elec">&mdash;</div><div class="ks">kWh consumed</div><svg class="spark" id="sp-elec"></svg></div>
     <div class="kc gn"><div class="kl">Oil — Forge</div><div class="kv" id="m-oilf">&mdash;</div><div class="ks">litres</div></div>
     <div class="kc bl"><div class="kl">Oil — HT</div><div class="kv" id="m-oilh">&mdash;</div><div class="ks">litres</div></div>
   </div>
@@ -486,7 +576,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ WIP TAB ═══════════════ -->
-<div id="tab-wip" class="main" style="display:none;">
+<div id="tab-wip" class="main" style="display:none;" data-print-title="WIP — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
     <div class="kc or"><div class="kl">Cut WIP &mdash; Own</div><div class="kv" id="w-cut">&mdash;</div><div class="ks" id="w-cut-s">VFs</div></div>
     <div class="kc gn"><div class="kl">Forged WIP &mdash; Own</div><div class="kv" id="w-frg">&mdash;</div><div class="ks" id="w-frg-s">VFs</div></div>
@@ -505,7 +595,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ SCHEDULE TAB ═══════════════ -->
-<div id="tab-sched" class="main" style="display:none;">
+<div id="tab-sched" class="main" style="display:none;" data-print-title="SCHEDULE — VFPL Factory OS">
   <div class="kgrid k5" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">Total Schedule</div><div class="kv" id="s-tot">&mdash;</div><div class="ks" id="s-tot-s">pcs target</div></div>
     <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv" id="s-prod">&mdash;</div><div class="ks">pcs done</div></div>
@@ -525,7 +615,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ OUTSTANDING ═══════════════ -->
-<div id="tab-outstanding" class="main" style="display:none;">
+<div id="tab-outstanding" class="main" style="display:none;" data-print-title="OUTSTANDING — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="o-od">&mdash;</div><div class="ks" id="o-asn">&mdash;</div></div>
     <div class="kc am"><div class="kl">Not Due</div><div class="kv" id="o-nd">&mdash;</div><div class="ks">future receivables</div></div>
@@ -550,7 +640,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ STEEL ═══════════════ -->
-<div id="tab-steel" class="main" style="display:none;">
+<div id="tab-steel" class="main" style="display:none;" data-print-title="STEEL STOCK — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">Total Stock Balance</div><div class="kv" id="st-bal">&mdash;</div><div class="ks">kg across grades</div></div>
     <div class="kc or"><div class="kl">Stock Value</div><div class="kv" id="st-val">&mdash;</div><div class="ks">at avg purchase rate</div></div>
@@ -569,7 +659,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ 57F4 ═══════════════ -->
-<div id="tab-f4" class="main" style="display:none;">
+<div id="tab-f4" class="main" style="display:none;" data-print-title="57F4 — VFPL Factory OS">
   <div class="card card-last">
     <div class="ch"><div class="ct">57F4 Vendor Reconciliation &mdash; Sent vs Received</div><div class="badge b-sl" id="f4-count">&mdash;</div></div>
     <div id="f4-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;</div></div>
@@ -577,7 +667,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ ELEC ═══════════════ -->
-<div id="tab-elec" class="main" style="display:none;">
+<div id="tab-elec" class="main" style="display:none;" data-print-title="ELECTRICITY — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">Total kWh MTD</div><div class="kv" id="e-tot">&mdash;</div><div class="ks">all departments</div></div>
     <div class="kc or"><div class="kl">Highest Dept</div><div class="kv" id="e-top">&mdash;</div><div class="ks" id="e-top-s">&mdash;</div></div>
@@ -590,7 +680,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ MANPOWER ═══════════════ -->
-<div id="tab-manpower" class="main" style="display:none;">
+<div id="tab-manpower" class="main" style="display:none;" data-print-title="MANPOWER — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">Total Staff Today</div><div class="kv" id="mp-staff">&mdash;</div><div class="ks">company HC</div></div>
     <div class="kc gn"><div class="kl">Total Contract Today</div><div class="kv" id="mp-contract">&mdash;</div><div class="ks">contract HC</div></div>
@@ -622,7 +712,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ OIL ═══════════════ -->
-<div id="tab-oil" class="main" style="display:none;">
+<div id="tab-oil" class="main" style="display:none;" data-print-title="OIL — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc or"><div class="kl">Forge Oil Closing</div><div class="kv" id="oil-fc">&mdash;</div><div class="ks">litres in stock</div></div>
     <div class="kc bl"><div class="kl">HT Oil Closing</div><div class="kv" id="oil-hc">&mdash;</div><div class="ks">litres in stock</div></div>
@@ -637,7 +727,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ TRANSPORT ═══════════════ -->
-<div id="tab-transport" class="main" style="display:none;">
+<div id="tab-transport" class="main" style="display:none;" data-print-title="TRANSPORT — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">FY Total Transport</div><div class="kv" id="tr-tot">&mdash;</div><div class="ks">incl GST</div></div>
     <div class="kc or"><div class="kl">This Month</div><div class="kv" id="tr-mtd">&mdash;</div><div class="ks" id="tr-mtd-s">&mdash;</div></div>
@@ -656,7 +746,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ ALERTS ═══════════════ -->
-<div id="tab-alerts" class="main" style="display:none;">
+<div id="tab-alerts" class="main" style="display:none;" data-print-title="ALERTS — VFPL Factory OS">
   <div class="card card-last">
     <div class="ch"><div class="ct">Active Alerts &mdash; High Priority First</div><div class="badge b-rd" id="al-count">&mdash;</div></div>
     <div id="al-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;</div></div>
@@ -664,7 +754,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ DIE LIFE ═══════════════ -->
-<div id="tab-dielife" class="main" style="display:none;">
+<div id="tab-dielife" class="main" style="display:none;" data-print-title="DIE LIFE — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc gn"><div class="kl">Running Dies</div><div class="kv" id="dl-run">&mdash;</div><div class="ks">currently active</div></div>
     <div class="kc sl"><div class="kl">Completed Runs</div><div class="kv" id="dl-cmp">&mdash;</div><div class="ks">historical</div></div>
@@ -690,8 +780,81 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
 </div>
 
+<!-- ═══════════════ PLANNER (Session 18) ═══════════════ -->
+<div id="tab-planner" class="main" style="display:none;" data-print-title="PRODUCTION PLANNER — VFPL Factory OS">
+  <div class="kgrid k4" style="margin-bottom:10px;">
+    <div class="kc or"><div class="kl">Total Units Loaded</div><div class="kv" id="pl-units">&mdash;</div><div class="ks">in planner</div></div>
+    <div class="kc rd"><div class="kl">No-Stock RM</div><div class="kv" id="pl-nostock">&mdash;</div><div class="ks">blocked VFs</div></div>
+    <div class="kc am"><div class="kl">Partial Stock</div><div class="kv" id="pl-partial">&mdash;</div><div class="ks">caution VFs</div></div>
+    <div class="kc gn"><div class="kl">Ready to Run</div><div class="kv" id="pl-ready">&mdash;</div><div class="ks">stock OK</div></div>
+  </div>
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Unit-wise Loading Sequence &mdash; Shop Floor Actionable</div><div class="badge b-sl" id="pl-count">&mdash;</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Unit</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Qty Pending</th><th class="lf">RM Status</th><th>Shifts Req</th><th>Target/Shift</th><th class="lf">Supervisor Action</th></tr></thead>
+        <tbody id="pl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DATA GAPS (Session 18) ═══════════════ -->
+<div id="tab-gaps" class="main" style="display:none;" data-print-title="DATA GAPS — VFPL Factory OS">
+  <div class="kgrid k3" style="margin-bottom:10px;">
+    <div class="kc rd"><div class="kl">Total Gaps</div><div class="kv" id="gp-tot">&mdash;</div><div class="ks">to resolve</div></div>
+    <div class="kc am"><div class="kl">Gap Categories</div><div class="kv" id="gp-cats">&mdash;</div><div class="ks">types active</div></div>
+    <div class="kc bl"><div class="kl">High-Impact Items</div><div class="kv" id="gp-high">&mdash;</div><div class="ks">blocking planning</div></div>
+  </div>
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Data Gaps by Category &mdash; DME Daily Checklist</div><div class="badge b-rd" id="gp-count">&mdash;</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Gap Type</th><th class="lf">VF No</th><th class="lf">Issue</th><th class="lf">Impact</th><th class="lf">Fix In</th></tr></thead>
+        <tbody id="gp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ COLLECTION ENGINE (Session 18) ═══════════════ -->
+<div id="tab-collection" class="main" style="display:none;" data-print-title="COLLECTION ENGINE — VFPL Factory OS">
+  <div class="kgrid k3" style="margin-bottom:10px;">
+    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="col-total">&mdash;</div><div class="ks">gross positive ₹</div></div>
+    <div class="kc am"><div class="kl">Customers to Chase</div><div class="kv" id="col-count">&mdash;</div><div class="ks">with overdue</div></div>
+    <div class="kc bl"><div class="kl">Top Overdue</div><div class="kv" id="col-top">&mdash;</div><div class="ks" id="col-top-s">customer</div></div>
+  </div>
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Collection Actions &mdash; One-click Email Templates</div><div class="badge b-rd" id="col-badge">&mdash;</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Customer</th><th>Overdue ₹</th><th>Days</th><th class="lf">Action</th><th class="lf">Copy Email</th></tr></thead>
+        <tbody id="col-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ VENDOR REJECTION (Session 18) ═══════════════ -->
+<div id="tab-vrej" class="main" style="display:none;" data-print-title="VENDOR REJECTION — VFPL Factory OS">
+  <div class="kgrid k3" style="margin-bottom:10px;">
+    <div class="kc rd"><div class="kl">Total Rejections</div><div class="kv" id="vr-pcs">&mdash;</div><div class="ks">pcs (FY MTD)</div></div>
+    <div class="kc am"><div class="kl">Financial Impact</div><div class="kv" id="vr-rs">&mdash;</div><div class="ks">₹ at risk</div></div>
+    <div class="kc sl"><div class="kl">Vendors Involved</div><div class="kv" id="vr-vendors">&mdash;</div><div class="ks">distinct</div></div>
+  </div>
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Vendor Rejection &mdash; Material for Debit-Note Conversations</div><div class="badge b-rd" id="vr-badge">&mdash;</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Vendor</th><th>Pcs Rejected</th><th>Amount ₹</th><th class="lf">Top Reason</th></tr></thead>
+        <tbody id="vr-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════ DEPT SCORE ═══════════════ -->
-<div id="tab-dscore" class="main" style="display:none;">
+<div id="tab-dscore" class="main" style="display:none;" data-print-title="DEPT SCORE — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">Overall Compliance</div><div class="kv" id="ds-pct">&mdash;</div><div class="ks">% of expected entries</div></div>
     <div class="kc gn"><div class="kl">Departments Tracked</div><div class="kv" id="ds-cnt">&mdash;</div><div class="ks">data sources</div></div>
@@ -709,7 +872,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 </div>
 
 <!-- ═══════════════ MARGINS (PIN) ═══════════════ -->
-<div id="tab-margin" class="main" style="display:none;">
+<div id="tab-margin" class="main" style="display:none;" data-print-title="MARGINS — VFPL Factory OS">
   <div id="pin-gate" class="card card-last">
     <div class="pin-gate">
       <div style="font-size:34px;margin-bottom:8px;">&#128274;</div>
@@ -739,8 +902,33 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
 </div>
 
+<!-- ═══════════════ COST SUMMARY (PIN, Session 18) ═══════════════ -->
+<div id="tab-costsum" class="main" style="display:none;" data-print-title="COST SUMMARY — VFPL Factory OS">
+  <div id="cs-pin-gate" class="card card-last">
+    <div class="pin-gate">
+      <div style="font-size:34px;margin-bottom:8px;">&#128274;</div>
+      <div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Cost Summary</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view monthly MIS P&amp;L</div>
+      <input type="password" class="pin-in" id="cs-pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkCostPin()">
+      <button class="pin-btn" onclick="checkCostPin()">UNLOCK</button>
+      <div id="cs-pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN</div>
+    </div>
+  </div>
+  <div id="cs-content" style="display:none;">
+    <div class="card card-last">
+      <div class="ch"><div class="ct">Cost Summary &mdash; Monthly MIS P&amp;L (Owner View)</div><div class="badge b-sl" id="cs-updated">&mdash;</div></div>
+      <div class="scroll-x">
+        <table class="tbl" style="font-size:10px;">
+          <thead><tr id="cs-head"></tr></thead>
+          <tbody id="cs-body"><tr><td colspan="20" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════ FY MONTHLY ═══════════════ -->
-<div id="tab-fy" class="main" style="display:none;">
+<div id="tab-fy" class="main" style="display:none;" data-print-title="FY MONTHLY — VFPL Factory OS">
   <div class="card card-last">
     <div class="ch"><div class="ct">FY 2026-27 &mdash; Monthly Summary (All Metrics)</div></div>
     <div class="scroll-x">
@@ -1233,6 +1421,8 @@ function render(data){
   });
   document.getElementById('o-body').innerHTML=oRows||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:14px;">No outstanding</td></tr>';
   document.getElementById('o-row-count').textContent=(out.customers||[]).length+' customers';
+  // Stash for Session 18 Collection Engine renderer
+  window.__lastOutstandingRows=(out.customers||[]).map(function(c){return {customer:c.customer, name:c.customer, overdue:N(c.overdue), notDue:N(c.notDue), grandTotal:N(c.grandTotal), asOn:c.asOn};});
 
   // ─── STEEL ───
   document.getElementById('st-bal').textContent=fmtN(steel.totalBalanceKg||0);
@@ -1299,6 +1489,9 @@ function render(data){
 
   // ─── FY MONTHLY ───
   renderFY(fy);
+
+  // ─── SESSION 18 — utilization, exact tons, sparklines, 4 new tabs ───
+  try { renderSession18(data); } catch(e) { console.warn('renderSession18 failed:', e); }
 
   // Hide loader
   document.getElementById('lov').classList.add('hide');
@@ -1597,6 +1790,297 @@ function fetchData(silent){
     });
 }
 function manualRefresh(){fetchData(false);}
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION 18 ADDITIONS — all new functions below
+// ═══════════════════════════════════════════════════════════════
+
+// Print active tab
+function printActiveTab(){
+  // Find currently visible .main element and print only it by temporarily
+  // hiding others — CSS @media print handles the layout.
+  window.print();
+}
+
+// Cost Summary PIN gate (same PIN as Margins — 1234)
+function showCostSum(){showTab('costsum',document.getElementById('cbtn'));}
+function checkCostPin(){
+  var v=document.getElementById('cs-pin-in').value;
+  if(v===OWNER_PIN){
+    document.getElementById('cs-pin-gate').style.display='none';
+    document.getElementById('cs-content').style.display='block';
+    renderCostSum(window.D || {});
+  } else {
+    document.getElementById('cs-pin-err').style.display='block';
+  }
+}
+
+// ═══ SPARKLINE — pure SVG, 6-month trend ═══
+function drawSparkline(svgId, values){
+  var svg=document.getElementById(svgId);
+  if(!svg) return;
+  var w=70, h=20, pad=2;
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  svg.innerHTML='';
+  var nums=(values||[]).map(function(v){return N(v);}).filter(function(v){return !isNaN(v);});
+  if(nums.length<2){ return; }
+  var last6=nums.slice(-6);
+  var mn=Math.min.apply(null,last6), mx=Math.max.apply(null,last6);
+  var range=mx-mn||1;
+  var stepX=(w-2*pad)/(last6.length-1);
+  var pts=last6.map(function(v,i){
+    var x=pad+i*stepX;
+    var y=h-pad-((v-mn)/range)*(h-2*pad);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  // baseline (dashed horizontal at min)
+  var base='<line class="spark-base" x1="'+pad+'" y1="'+(h-pad)+'" x2="'+(w-pad)+'" y2="'+(h-pad)+'"/>';
+  var line='<polyline class="spark-line" points="'+pts+'"/>';
+  var lastPt=pts.split(' ').slice(-1)[0].split(',');
+  var dot='<circle class="spark-dot" cx="'+lastPt[0]+'" cy="'+lastPt[1]+'" r="1.6"/>';
+  svg.innerHTML=base+line+dot;
+}
+
+// ═══ SESSION 18 RENDERER — called from main render() ═══
+function renderSession18(data){
+  // Utilization KPI
+  var u=data.utilization||{};
+  var utilEl=document.getElementById('k-util');
+  var utilSub=document.getElementById('k-util-s');
+  if(utilEl){
+    if(u.util_pct!==undefined && u.util_pct!==null){
+      utilEl.textContent=u.util_pct+'%';
+      utilSub.textContent='vs '+(u.baseline_month||'Dec-25')+' ('+fmtN(u.baseline_pcs||0)+' pcs/day)';
+    } else {
+      utilEl.textContent='—';
+      utilSub.textContent='baseline '+(u.baseline_month||'Dec-25')+' (TO DO)';
+    }
+  }
+
+  // Exact tons override — if tons_summary is populated, use it in place of FY ratio
+  var ts=data.tons_summary||{};
+  function applyExactTons(idPrefix, src){
+    if(!src || src.tons===undefined) return;
+    var el=document.getElementById(idPrefix+'-t');
+    if(el && src.pcs>0){
+      el.textContent=src.tons.toFixed(2)+' T '+(src.missingWt>0?'*':'');
+      el.title=src.missingWt>0 ? 'Exact from COSTING_BANDS — '+src.missingWt+' pcs had no weight (excluded)' : 'Exact from COSTING_BANDS';
+    }
+  }
+  applyExactTons('k-cut', ts.cutToday);
+  applyExactTons('k-frg', ts.forgeToday);
+  applyExactTons('k-prs', ts.pressToday);
+
+  // Sparklines from fy_monthly[]
+  var fy=data.fy_monthly||[];
+  var lastN=function(key){return fy.map(function(r){return N(r[key]||0);}).filter(function(v){return v>0;});};
+  drawSparkline('sp-tov',  lastN('Turnover (Rs L)'));
+  drawSparkline('sp-own',  fy.map(function(r){return N(r['Forge Qty (Inhouse)']||0)+N(r['Press Qty (Inhouse)']||0);}).filter(function(v){return v>0;}));
+  drawSparkline('sp-jwk',  fy.map(function(r){return N(r['Forge Qty (JWK)']||0)+N(r['Press Qty (JWK)']||0);}).filter(function(v){return v>0;}));
+  drawSparkline('sp-cut',  lastN('Cut Qty'));
+  drawSparkline('sp-disp', lastN('Dispatch Qty'));
+  drawSparkline('sp-elec', lastN('Electricity (kWh)'));
+
+  // New tabs
+  renderPlanner(data);
+  renderGaps(data);
+  renderCollection(data);
+  renderVrej(data);
+  // Cost Summary only renders after PIN unlock; cache data anyway
+}
+
+// ═══ PLANNER TAB ═══
+// Source: cache.planner (raw rows from PRODUCTION_PLANNER tab, slice(2) — headers stripped)
+function renderPlanner(data){
+  var rows=data.planner||[];
+  // PRODUCTION_PLANNER header (from Apps Script buildProductionPlanner output):
+  // Expected cols: Unit | VF | Customer | Qty Pending | RM Status | Shifts Req | Target/Shift | Supervisor Action
+  // Field order may vary — we render by column order of source sheet.
+  var units=new Set(), nostock=0, partial=0, ready=0;
+  var bodyHTML='';
+  var valid=0;
+  rows.forEach(function(r){
+    if(!r || !r[0]) return;
+    var unit=(r[0]||'').toString().trim();
+    var vf=(r[1]||'').toString().trim();
+    var cust=(r[2]||'').toString().trim();
+    var qty=N(r[3]);
+    var rmSt=(r[4]||'').toString().trim();
+    var shR=(r[5]||'').toString().trim();
+    var tgt=(r[6]||'').toString().trim();
+    var act=(r[7]||'').toString().trim();
+    if(!unit && !vf) return;
+    valid++;
+    if(unit) units.add(unit);
+    var rmL=rmSt.toLowerCase();
+    var rmBadge='<span class="badge b-sl">'+safeText(rmSt)+'</span>';
+    if(rmL.indexOf('no stock')>=0 || rmL.indexOf('🔴')>=0){ rmBadge='<span class="badge b-rd">'+safeText(rmSt)+'</span>'; nostock++; }
+    else if(rmL.indexOf('partial')>=0 || rmL.indexOf('🟡')>=0){ rmBadge='<span class="badge" style="background:var(--amb);color:var(--am);">'+safeText(rmSt)+'</span>'; partial++; }
+    else if(rmL.indexOf('ok')>=0 || rmL.indexOf('🟢')>=0 || rmL.indexOf('in stock')>=0){ rmBadge='<span class="badge b-gn">'+safeText(rmSt)+'</span>'; ready++; }
+    bodyHTML+='<tr>'+
+      '<td class="lf">'+safeText(unit)+'</td>'+
+      '<td class="lf-vf">'+safeText(vf)+'</td>'+
+      '<td class="lf">'+safeText(cust)+'</td>'+
+      '<td>'+(qty>0?fmtN(qty):'—')+'</td>'+
+      '<td class="lf">'+rmBadge+'</td>'+
+      '<td>'+safeText(shR)+'</td>'+
+      '<td>'+safeText(tgt)+'</td>'+
+      '<td class="lf">'+safeText(act)+'</td></tr>';
+  });
+  document.getElementById('pl-units').textContent=units.size||0;
+  document.getElementById('pl-nostock').textContent=nostock;
+  document.getElementById('pl-partial').textContent=partial;
+  document.getElementById('pl-ready').textContent=ready;
+  document.getElementById('pl-count').textContent=valid+' VFs loaded';
+  document.getElementById('pl-body').innerHTML=bodyHTML||'<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">No planner rows &mdash; check PRODUCTION_PLANNER sheet tab</td></tr>';
+}
+
+// ═══ DATA GAPS TAB ═══
+function renderGaps(data){
+  var g=data.data_gaps_summary||{};
+  var rows=g.rows||[];
+  document.getElementById('gp-tot').textContent=g.totalGaps||0;
+  document.getElementById('gp-cats').textContent=Object.keys(g.byType||{}).length;
+  var highCount=rows.filter(function(r){return (r.impact||'').toLowerCase().indexOf('high')>=0;}).length;
+  document.getElementById('gp-high').textContent=highCount;
+  document.getElementById('gp-count').textContent=(g.totalGaps||0)+' active';
+  var byType=g.byType||{};
+  var typeColor={'GAP 1':'b-rd','GAP 2':'b-rd','GAP 3':'b-rd','GAP 4':'b-rd','GAP 5':'b-rd','GAP 6':'b-rd','GAP 7':'b-rd','GAP 8':'b-rd'};
+  var bodyHTML='';
+  rows.forEach(function(r){
+    var sev=(r.impact||'').toLowerCase().indexOf('high')>=0?'<span class="badge b-rd">HIGH</span>':'<span class="badge b-sl">'+(r.impact||'—')+'</span>';
+    bodyHTML+='<tr>'+
+      '<td class="lf"><span class="badge b-sl">'+safeText(r.gapType)+'</span></td>'+
+      '<td class="lf-vf">'+safeText(r.vfNo)+'</td>'+
+      '<td class="lf">'+safeText(r.issue)+'</td>'+
+      '<td class="lf">'+sev+'</td>'+
+      '<td class="lf">'+safeText(r.action)+'</td></tr>';
+  });
+  document.getElementById('gp-body').innerHTML=bodyHTML||'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No active data gaps</td></tr>';
+}
+
+// ═══ COLLECTION ENGINE TAB ═══
+// Source: cache.outstanding.rows (has customer+overdue); we also read cache.collection for email templates
+function renderCollection(data){
+  var outRows=(data.outstanding||{}).rows || []; // may not be present — fallback to RAW_OUTSTANDING indirectly
+  // Try to read from cache.collection first (pre-drafted emails); if not available use outstanding array
+  var collRows=data.collection||[];
+  var emailMap={};
+  collRows.forEach(function(r){
+    if(!r || !r[0]) return;
+    var cust=(r[0]||'').toString().trim();
+    // Assume col[?] has email template — we take last non-empty cell as email body
+    var email='';
+    for(var i=r.length-1;i>=1;i--){
+      if(r[i] && r[i].toString().trim().length>50){ email=r[i].toString().trim(); break; }
+    }
+    if(cust) emailMap[cust]=email;
+  });
+
+  // Build working list — cache.outstanding.customers is the real shape
+  var customers=[];
+  var outSrc = (data.outstanding && data.outstanding.customers) || [];
+  if(outSrc.length){
+    outSrc.forEach(function(r){
+      if(N(r.overdue)>0) customers.push({name:r.customer, overdue:N(r.overdue), asOn:r.asOn, notDue:N(r.notDue)});
+    });
+  } else if(window.__lastOutstandingRows){
+    customers = window.__lastOutstandingRows.filter(function(r){return N(r.overdue)>0;}).map(function(r){return {name:r.customer||r.name, overdue:N(r.overdue), asOn:r.asOn, notDue:N(r.notDue)};});
+  }
+
+  // Sort highest overdue first
+  customers.sort(function(a,b){return b.overdue-a.overdue;});
+
+  var totalOD=customers.reduce(function(s,r){return s+N(r.overdue);},0);
+  document.getElementById('col-total').textContent=fmtCr(totalOD);
+  document.getElementById('col-count').textContent=customers.length;
+  if(customers.length){
+    var top=customers[0];
+    document.getElementById('col-top').textContent=fmtCr(top.overdue);
+    document.getElementById('col-top-s').textContent=top.name.length>22?top.name.slice(0,22)+'…':top.name;
+  } else {
+    document.getElementById('col-top').textContent='—';
+    document.getElementById('col-top-s').textContent='no overdue';
+  }
+  document.getElementById('col-badge').textContent=customers.length+' customers';
+
+  var bodyHTML='';
+  customers.forEach(function(c, idx){
+    var days='—'; // days overdue not currently in cache — left as placeholder
+    var action = c.overdue > 500000 ? '<span class="badge b-rd">URGENT CALL</span>'
+               : c.overdue > 100000 ? '<span class="badge" style="background:var(--amb);color:var(--am);">EMAIL + CALL</span>'
+               : '<span class="badge b-sl">EMAIL</span>';
+    var email = emailMap[c.name] || ('Subject: Payment reminder — overdue balance ₹'+c.overdue.toLocaleString('en-IN')+'\\n\\nDear '+c.name+' team,\\n\\nOur records show an overdue balance of ₹'+c.overdue.toLocaleString('en-IN')+' against your account. Kindly arrange payment at the earliest.\\n\\nRegards,\\nVarsha Forgings Accounts');
+    var emailJs = email.replace(/'/g,"\\\'").replace(/\n/g,'\\n');
+    bodyHTML+='<tr>'+
+      '<td class="lf">'+safeText(c.name)+'</td>'+
+      '<td>'+fmtCr(c.overdue)+'</td>'+
+      '<td>'+days+'</td>'+
+      '<td class="lf">'+action+'</td>'+
+      '<td class="lf"><button onclick="copyEmail(this,\''+emailJs+'\')" style="background:var(--brl);color:var(--brd);border:1px solid var(--br);padding:3px 8px;font-size:10px;border-radius:3px;cursor:pointer;font-weight:600;">&#128203; Copy</button></td></tr>';
+  });
+  document.getElementById('col-body').innerHTML=bodyHTML||'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No customers overdue</td></tr>';
+}
+function copyEmail(btn, text){
+  // Decode any escaped chars we encoded above
+  var plain=text.replace(/\\n/g,'\n').replace(/\\\'/g,"'");
+  navigator.clipboard && navigator.clipboard.writeText ?
+    navigator.clipboard.writeText(plain).then(function(){btn.textContent='\u2713 Copied';setTimeout(function(){btn.innerHTML='&#128203; Copy';},1500);}) :
+    (function(){var ta=document.createElement('textarea');ta.value=plain;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.textContent='\u2713 Copied';setTimeout(function(){btn.innerHTML='&#128203; Copy';},1500);})();
+}
+
+// ═══ VENDOR REJECTION TAB ═══
+function renderVrej(data){
+  var v=data.vendor_rej_summary||{};
+  var rows=v.rows||[];
+  document.getElementById('vr-pcs').textContent=fmtN(v.totalPcs||0);
+  document.getElementById('vr-rs').textContent=fmtCr(v.totalRs||0);
+  document.getElementById('vr-vendors').textContent=rows.length;
+  document.getElementById('vr-badge').textContent=rows.length+' vendors';
+  var bodyHTML='';
+  rows.forEach(function(r){
+    bodyHTML+='<tr>'+
+      '<td class="lf">'+safeText(r.vendor)+'</td>'+
+      '<td>'+fmtN(r.pcs)+'</td>'+
+      '<td>'+fmtCr(r.rs)+'</td>'+
+      '<td class="lf">'+safeText(r.reason||'—')+'</td></tr>';
+  });
+  document.getElementById('vr-body').innerHTML=bodyHTML||'<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No vendor rejections this period</td></tr>';
+}
+
+// ═══ COST SUMMARY TAB (PIN-gated) ═══
+function renderCostSum(data){
+  var c=data.cost_summary_snap||{};
+  var hdrs=c.headers||[];
+  var rows=c.rows||[];
+  document.getElementById('cs-updated').textContent='Updated '+(c.updated_at||'—');
+  var headHTML='';
+  // First column is label, rest are months/values
+  headHTML='<th class="lf">Metric</th>';
+  hdrs.slice(1).forEach(function(h){headHTML+='<th>'+safeText(h)+'</th>';});
+  document.getElementById('cs-head').innerHTML=headHTML;
+  var bodyHTML='';
+  rows.forEach(function(r){
+    var label=r.label||'';
+    var isHeader=label.toUpperCase()===label && label.length>3 && !/\d/.test(label);
+    var isTotal=/total|net|gross/i.test(label);
+    var rowStyle=isHeader?'background:var(--sll);font-weight:700;':(isTotal?'font-weight:700;border-top:2px solid var(--bd2);':'');
+    bodyHTML+='<tr style="'+rowStyle+'"><td class="lf">'+safeText(label)+'</td>';
+    (r.values||[]).forEach(function(v){
+      var disp='';
+      if(v===''||v===null||v===undefined) disp='—';
+      else if(typeof v==='number') disp=v.toLocaleString('en-IN',{maximumFractionDigits:1});
+      else disp=String(v);
+      bodyHTML+='<td>'+disp+'</td>';
+    });
+    bodyHTML+='</tr>';
+  });
+  document.getElementById('cs-body').innerHTML=bodyHTML||'<tr><td colspan="20" style="text-align:center;padding:14px;color:var(--tx3);">COST_SUMMARY sheet tab is empty &mdash; populate it to see P&amp;L</td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// END SESSION 18 ADDITIONS
+// ═══════════════════════════════════════════════════════════════
 
 // Initial fetch + auto-refresh loop
 fetchData(false);
