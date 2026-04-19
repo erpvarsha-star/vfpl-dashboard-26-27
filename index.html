@@ -865,8 +865,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
     <div class="ch"><div class="ct">Vendor Rejection &mdash; Material for Debit-Note Conversations</div><div class="badge b-rd" id="vr-badge">&mdash;</div></div>
     <div class="scroll-x">
       <table class="tbl">
-        <thead><tr><th class="lf">Vendor</th><th>Pcs Rejected</th><th>Amount ₹</th><th class="lf">Top Reason</th></tr></thead>
-        <tbody id="vr-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+        <thead><tr><th class="lf">Vendor</th><th class="lf">VF No</th><th>Pcs Rejected</th><th>Amount ₹</th><th class="lf">Top Reason</th></tr></thead>
+        <tbody id="vr-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2136,19 +2136,22 @@ function copyEmail(btn, text){
 function renderVrej(data){
   var v=data.vendor_rej_summary||{};
   var rows=v.rows||[];
+  var distinctVendors=new Set();
+  rows.forEach(function(r){ if(r.vendor) distinctVendors.add(r.vendor); });
   document.getElementById('vr-pcs').textContent=fmtN(v.totalPcs||0);
   document.getElementById('vr-rs').textContent=fmtCr(v.totalRs||0);
-  document.getElementById('vr-vendors').textContent=rows.length;
-  document.getElementById('vr-badge').textContent=rows.length+' vendors';
+  document.getElementById('vr-vendors').textContent=distinctVendors.size;
+  document.getElementById('vr-badge').textContent=rows.length+' VF rows · '+distinctVendors.size+' vendors';
   var bodyHTML='';
   rows.forEach(function(r){
     bodyHTML+='<tr>'+
       '<td class="lf">'+safeText(r.vendor)+'</td>'+
+      '<td class="lf-vf">'+safeText(r.vfNo||'—')+'</td>'+
       '<td>'+fmtN(r.pcs)+'</td>'+
       '<td>'+fmtCr(r.rs)+'</td>'+
       '<td class="lf">'+safeText(r.reason||'—')+'</td></tr>';
   });
-  document.getElementById('vr-body').innerHTML=bodyHTML||'<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No vendor rejections this period</td></tr>';
+  document.getElementById('vr-body').innerHTML=bodyHTML||'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No vendor rejections this period</td></tr>';
 }
 
 // ═══ COST SUMMARY TAB (PIN-gated) ═══
