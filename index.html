@@ -1302,8 +1302,9 @@ function render(data){
   document.getElementById('tbl-cut-yest').innerHTML=cutRes.yest;
   // ─── Capacity status maps (RED / GREEN / GREY by date|machine|shift) ───
   var shiftStat = data.shift_status || {};
-  var todayKey = t.date ? (function(){ var d=new Date(t.date); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); })() : null;
-  var yestKey  = t.prevDate ? (function(){ var d=new Date(t.prevDate); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); })() : null;
+  function _ddmmm(s){ if(!s) return null; var m=String(s).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/); if(!m) return null; var mm={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}; var mo=mm[m[2].charAt(0).toUpperCase()+m[2].slice(1).toLowerCase()]; if(!mo) return null; return m[3]+'-'+mo+'-'+(m[1].length===1?'0'+m[1]:m[1]); }
+  var todayKey = _ddmmm(t.date);
+  var yestKey  = _ddmmm(t.prevDate);
   var statTodayMap = (todayKey && shiftStat[todayKey]) || {};
   var statYestMap  = (yestKey  && shiftStat[yestKey])  || {};
 
