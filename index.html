@@ -681,11 +681,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 
 <!-- ═══════════════ MANPOWER ═══════════════ -->
 <div id="tab-manpower" class="main" style="display:none;" data-print-title="MANPOWER — VFPL Factory OS">
-  <div class="kgrid k4" style="margin-bottom:10px;">
+  <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc bl"><div class="kl">Total Staff Today</div><div class="kv" id="mp-staff">&mdash;</div><div class="ks">company HC</div></div>
     <div class="kc gn"><div class="kl">Total Contract Today</div><div class="kv" id="mp-contract">&mdash;</div><div class="ks">contract HC</div></div>
     <div class="kc or"><div class="kl">Total HC Today</div><div class="kv" id="mp-total">&mdash;</div><div class="ks">staff + contract</div></div>
+  </div>
+  <div class="kgrid k3" style="margin-bottom:10px;">
     <div class="kc sl"><div class="kl">vs Yesterday</div><div class="kv" id="mp-delta">&mdash;</div><div class="ks" id="mp-delta-s">&mdash;</div></div>
+    <div class="kc rd"><div class="kl">MTD Contract Cost</div><div class="kv" id="mp-cost">&mdash;</div><div class="ks">actual contract spend</div></div>
+    <div class="kc pu" style="background:linear-gradient(135deg,#f3e5f5,#e1bee7);border-left:3px solid #7b1fa2;"><div class="kl" style="color:#7b1fa2;">&#8377; per Forged Ton</div><div class="kv" id="mp-cpkg" style="color:#7b1fa2;">&mdash;</div><div class="ks" id="mp-cpkg-s">manpower cost efficiency</div></div>
   </div>
   <div class="card card-last">
     <div class="ch"><div class="ct">Department-wise Headcount &mdash; Today vs Yesterday</div></div>
@@ -696,16 +700,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
             <th class="lf">Department</th>
             <th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today</th>
             <th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday</th>
-            <th colspan="2" style="background:var(--brl);color:var(--brd);">MTD Avg</th>
+            <th colspan="3" style="background:var(--brl);color:var(--brd);">MTD Avg</th>
           </tr>
           <tr>
             <th class="lf"></th>
             <th>Staff</th><th>Contract</th><th>Total</th>
             <th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Total</th>
-            <th style="background:var(--brl);">Staff</th><th style="background:var(--brl);">Contract</th>
+            <th style="background:var(--brl);">Staff</th><th style="background:var(--brl);">Contract</th><th style="background:var(--brl);">Cost &#8377;</th>
           </tr>
         </thead>
-        <tbody id="mp-body"><tr><td colspan="9" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+        <tbody id="mp-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1543,6 +1547,17 @@ function renderManpower(today, yest, mtd){
   var DEPTS=['Cutting Shop','Forge Shop','Press Shop','HT Shop','Heat Treatment','Machine Shop','Final Shop','Die Shop','Maint Dept','Store','Office','HR','Housekeeping','VMC Shop'];
   var mpT=today.manpower||{}, mpY=(yest||{}).manpower||{};
   var mpAvg=mtd.deptManpower||{};
+
+  // Build cost map from manpower_summary cache array
+  var mpCostMap={};
+  var totalMPCost=0;
+  (D.manpower_summary||[]).forEach(function(r){
+    if(r.dept&&r.dept!=='TOTAL'){
+      mpCostMap[r.dept]=N(r.actualContractCost)||0;
+      totalMPCost+=N(r.actualContractCost)||0;
+    }
+  });
+
   // Add other depts seen in data but missing from list
   Object.keys(mpT).forEach(function(d){if(DEPTS.indexOf(d)<0)DEPTS.push(d);});
   Object.keys(mpY).forEach(function(d){if(DEPTS.indexOf(d)<0)DEPTS.push(d);});
@@ -1554,26 +1569,49 @@ function renderManpower(today, yest, mtd){
     var t=mpT[d]||{staff:0,contract:0};
     var y=mpY[d]||{staff:0,contract:0};
     var a=mpAvg[d]||{staffAvg:0,contractAvg:0};
-    if(t.staff===0&&t.contract===0&&y.staff===0&&y.contract===0&&!a.staffAvg&&!a.contractAvg) return;
+    var deptCost=mpCostMap[d]||0;
+    if(t.staff===0&&t.contract===0&&y.staff===0&&y.contract===0&&!a.staffAvg&&!a.contractAvg&&!deptCost) return;
     totS+=N(t.staff); totC+=N(t.contract); totSY+=N(y.staff); totCY+=N(y.contract);
+    var costCell=deptCost>0?'<span style="color:#B91C1C;font-weight:600;">₹'+fmtN(Math.round(deptCost))+'</span>':'—';
     rows+='<tr><td class="lf">'+d+'</td>'+
       '<td>'+(t.staff||'—')+'</td><td>'+(t.contract||'—')+'</td><td style="font-weight:700;">'+(N(t.staff)+N(t.contract)||'—')+'</td>'+
       '<td style="background:#FAFBFD;">'+(y.staff||'—')+'</td><td style="background:#FAFBFD;">'+(y.contract||'—')+'</td><td style="background:#FAFBFD;font-weight:700;">'+(N(y.staff)+N(y.contract)||'—')+'</td>'+
-      '<td style="background:var(--brl);">'+(a.staffAvg||'—')+'</td><td style="background:var(--brl);">'+(a.contractAvg||'—')+'</td></tr>';
+      '<td style="background:var(--brl);">'+(a.staffAvg||'—')+'</td><td style="background:var(--brl);">'+(a.contractAvg||'—')+'</td>'+
+      '<td style="background:var(--brl);">'+costCell+'</td></tr>';
   });
   if(rows){
+    var totalCostCell=totalMPCost>0?'<span style="color:#B91C1C;font-weight:700;">₹'+fmtN(Math.round(totalMPCost))+'</span>':'—';
     rows+='<tr class="tot"><td class="lf">TOTAL</td>'+
       '<td>'+totS+'</td><td>'+totC+'</td><td>'+(totS+totC)+'</td>'+
       '<td>'+totSY+'</td><td>'+totCY+'</td><td>'+(totSY+totCY)+'</td>'+
-      '<td>—</td><td>—</td></tr>';
+      '<td>—</td><td>—</td><td>'+totalCostCell+'</td></tr>';
   }
-  document.getElementById('mp-body').innerHTML=rows||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:14px;">No manpower data</td></tr>';
+  document.getElementById('mp-body').innerHTML=rows||'<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No manpower data</td></tr>';
   document.getElementById('mp-staff').textContent=fmtN(totS);
   document.getElementById('mp-contract').textContent=fmtN(totC);
   document.getElementById('mp-total').textContent=fmtN(totS+totC);
   var deltaT=(totS+totC)-(totSY+totCY);
   document.getElementById('mp-delta').textContent=(deltaT>0?'+':'')+deltaT;
   document.getElementById('mp-delta-s').textContent=deltaT>0?'more than yesterday':deltaT<0?'fewer than yesterday':'same as yesterday';
+
+  // Cost KPI tiles
+  var costEl=document.getElementById('mp-cost');
+  if(costEl) costEl.textContent=totalMPCost>0?'₹'+fmtN(Math.round(totalMPCost)):'—';
+
+  // ₹ per Forged Ton = Total Contract Cost ÷ (Forge+Press Inhouse Tons MTD)
+  var forgedTons=N(mtd.ownForgedTons)||0;
+  var cpkgEl=document.getElementById('mp-cpkg');
+  var cpkgSEl=document.getElementById('mp-cpkg-s');
+  if(cpkgEl){
+    if(totalMPCost>0&&forgedTons>0){
+      var costPerTon=Math.round(totalMPCost/forgedTons);
+      cpkgEl.textContent='₹'+fmtN(costPerTon);
+      if(cpkgSEl) cpkgSEl.textContent='per ton forged (contract only)';
+    } else {
+      cpkgEl.textContent='—';
+      if(cpkgSEl) cpkgSEl.textContent='no forging data this month';
+    }
+  }
 }
 
 function renderOil(oil){
