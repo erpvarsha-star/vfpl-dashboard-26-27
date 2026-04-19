@@ -197,6 +197,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 .prod-tbl tr.tot-row td{background:var(--gnb);color:var(--gn);font-weight:700;border-top:2px solid var(--gn);}
 .prod-tbl tr.tot-row td.shift-col{background:#BFE5C9;}
 
+/* ═══ CAPACITY RED FLAGS — P5+P7 ═══ */
+.prod-tbl td.cap-red  { background:#FFCDD2 !important; }
+.prod-tbl td.cap-green{ background:#C8E6C9 !important; }
+.prod-tbl td.cap-grey { background:#EEF0F3 !important; }
+
 /* WIP STRIP */
 .wip-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:10px;}
 .wip-blk{background:#F7F8FA;border:1px solid var(--bd);border-radius:5px;padding:12px;cursor:pointer;transition:all .15s;}
@@ -1068,8 +1073,8 @@ function checkPin(){
 // ═══ PRODUCTION GRID BUILDER ═══
 // Input: machineList, machineNames, srcMap, todayRows, yestRows
 // Each row: {machine:string, shift:string, entries:{VF:qty}}
-function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows){
-  function buildOne(rows){
+function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, statusYest){
+  function buildOne(rows, statusMap){
     // grid[machineCode][shift] = { VF: qty }
     var grid={}; MACHINES.forEach(function(m){grid[m]={};SHIFTS.forEach(function(s){grid[m][s]={};});});
     var totals={}; MACHINES.forEach(function(m){totals[m]=0;});
@@ -1085,6 +1090,19 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows){
         totals[code]+=N(r.entries[vf]);
       });
     });
+    // Capacity-status lookup. HTML codes (P800, H1N) map to MCODE_ codes
+    // (800, H1O) for cache lookup. statusMap shape: { mcode: { shift: "RED|GREEN|GREY" } }
+    function lookupClass(htmlCode, shift){
+      if(!statusMap) return '';
+      var mcode = htmlCode;
+      if(htmlCode.charAt(0)==='P') mcode = htmlCode.substring(1);   // P800 -> 800
+      if(htmlCode==='H1N') mcode = 'H1O';                            // H1N collapsed to H1O
+      var s = statusMap[mcode] && statusMap[mcode][shift];
+      if(s==='RED')   return ' cap-red';
+      if(s==='GREEN') return ' cap-green';
+      if(s==='GREY')  return ' cap-grey';
+      return '';
+    }
     // Build table
     var html='<thead><tr><th class="shift-col">Shift</th>';
     MACHINES.forEach(function(m){html+='<th>'+NAMES[m]+'</th>';});
@@ -1094,13 +1112,14 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows){
       MACHINES.forEach(function(m){
         var entries=grid[m][sh]||{};
         var keys=Object.keys(entries);
-        if(keys.length===0){html+='<td class="empty">—</td>';}
+        var capCls=lookupClass(m, sh);
+        if(keys.length===0){html+='<td class="empty'+capCls+'">—</td>';}
         else{
           var c='';
           keys.forEach(function(vf){
             c+='<span class="vf-cell"><span class="vf-name">'+vf+'</span></span><span class="vf-cell vf-qty">'+fmtN(entries[vf])+'</span>';
           });
-          html+='<td>'+c+'</td>';
+          html+='<td class="'+capCls.trim()+'">'+c+'</td>';
         }
       });
       html+='</tr>';
@@ -1113,7 +1132,7 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows){
     html+='</tr></tbody>';
     return html;
   }
-  return {today:buildOne(todayRows), yest:buildOne(yestRows)};
+  return {today:buildOne(todayRows, statusToday), yest:buildOne(yestRows, statusYest)};
 }
 
 // ═══ DEPT SUMMARY (Today vs Yesterday) ═══
@@ -1281,10 +1300,17 @@ function render(data){
   var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC,t.cutting||[],yest.cutting||[]);
   document.getElementById('tbl-cut-today').innerHTML=cutRes.today;
   document.getElementById('tbl-cut-yest').innerHTML=cutRes.yest;
-  var frgRes=buildProdTable(FRG_MACHINES,FRG_NAMES,FRG_SRC,t.forging||[],yest.forging||[]);
+  // ─── Capacity status maps (RED / GREEN / GREY by date|machine|shift) ───
+  var shiftStat = data.shift_status || {};
+  var todayKey = t.date ? (function(){ var d=new Date(t.date); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); })() : null;
+  var yestKey  = t.prevDate ? (function(){ var d=new Date(t.prevDate); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); })() : null;
+  var statTodayMap = (todayKey && shiftStat[todayKey]) || {};
+  var statYestMap  = (yestKey  && shiftStat[yestKey])  || {};
+
+  var frgRes=buildProdTable(FRG_MACHINES,FRG_NAMES,FRG_SRC,t.forging||[],yest.forging||[],statTodayMap,statYestMap);
   document.getElementById('tbl-frg-today').innerHTML=frgRes.today;
   document.getElementById('tbl-frg-yest').innerHTML=frgRes.yest;
-  var prRes=buildProdTable(PRESS_MACHINES,PRESS_NAMES,PRESS_SRC,t.pressing||[],yest.pressing||[]);
+  var prRes=buildProdTable(PRESS_MACHINES,PRESS_NAMES,PRESS_SRC,t.pressing||[],yest.pressing||[],statTodayMap,statYestMap);
   document.getElementById('tbl-press-today').innerHTML=prRes.today;
   document.getElementById('tbl-press-yest').innerHTML=prRes.yest;
   var mRes=buildProdTable(MACH_MACHINES,MACH_NAMES,MACH_SRC,t.machine||[],yest.machine||[]);
