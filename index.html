@@ -732,18 +732,28 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 
 <!-- ═══════════════ TRANSPORT ═══════════════ -->
 <div id="tab-transport" class="main" style="display:none;" data-print-title="TRANSPORT — VFPL Factory OS">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">FY Total Transport</div><div class="kv" id="tr-tot">&mdash;</div><div class="ks">incl GST</div></div>
+  <div class="kgrid k5" style="margin-bottom:10px;">
+    <div class="kc bl"><div class="kl">FY Total Transport</div><div class="kv" id="tr-tot">&mdash;</div><div class="ks">incl GST YTD</div></div>
     <div class="kc or"><div class="kl">This Month</div><div class="kv" id="tr-mtd">&mdash;</div><div class="ks" id="tr-mtd-s">&mdash;</div></div>
+    <div class="kc pu"><div class="kl">Avg ₹/Kg — This Month</div><div class="kv" id="tr-perkg">&mdash;</div><div class="ks" id="tr-perton">&mdash;</div></div>
     <div class="kc gn"><div class="kl">Inbound (₹L)</div><div class="kv" id="tr-in">&mdash;</div><div class="ks">RM transport</div></div>
     <div class="kc sl"><div class="kl">Outbound (₹L)</div><div class="kv" id="tr-out">&mdash;</div><div class="ks">FG transport</div></div>
   </div>
-  <div class="card card-last">
+  <div class="card">
     <div class="ch"><div class="ct">Monthly Transport &mdash; FY 2026-27</div></div>
     <div class="scroll-x">
       <table class="tbl">
-        <thead><tr><th class="lf">Month</th><th>Basic ₹</th><th>Total incl GST ₹</th><th class="lf">Status</th><th>Inbound ₹L</th><th>Outbound ₹L</th><th>Running ₹</th></tr></thead>
-        <tbody id="tr-body"><tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+        <thead><tr><th class="lf">Month</th><th>Basic ₹</th><th>Tons</th><th>₹/Kg</th><th>₹/Ton</th><th>Total incl GST ₹</th><th class="lf">Status</th><th>Inbound ₹L</th><th>Outbound ₹L</th><th>Running ₹</th></tr></thead>
+        <tbody id="tr-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card card-last" style="margin-top:10px;">
+    <div class="ch"><div class="ct">Transporter Leaderboard &mdash; FY 2026-27</div><div class="badge b-sl" id="tl-count">&mdash;</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Transporter</th><th>Dispatches</th><th>Vehicles</th><th>Tons</th><th>₹/Kg</th><th>₹/Ton</th><th>Total Freight ₹</th><th class="lf">Last Dispatch</th></tr></thead>
+        <tbody id="tl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1480,7 +1490,7 @@ function render(data){
   renderOil(data.oil_summary||{});
 
   // ─── TRANSPORT ───
-  renderTransport(data.transport_summary||[],mtd);
+  renderTransport(data.transport_summary||[], data.transporter_ledger||[], mtd);
 
   // ─── ALERTS ───
   renderAlerts(data.alerts||[]);
@@ -1633,32 +1643,60 @@ function renderOil(oil){
   document.getElementById('oil-grid').innerHTML=html;
 }
 
-function renderTransport(rows, mtd){
+function renderTransport(rows, ledger, mtd){
+  // ── KPI tiles ──
   var fyTot=0, mtdRow=null;
-  rows.forEach(function(r){fyTot+=N(r.totalInclGST); if(r.month===mtd.month)mtdRow=r;});
+  rows.forEach(function(r){ fyTot+=N(r.totalInclGST); if(r.month===mtd.month) mtdRow=r; });
   document.getElementById('tr-tot').textContent=fmtCr(fyTot);
   if(mtdRow){
     document.getElementById('tr-mtd').textContent=fmtCr(mtdRow.totalInclGST);
-    document.getElementById('tr-mtd-s').textContent=mtdRow.month+' — '+safeText(mtdRow.status);
-    document.getElementById('tr-in').textContent='₹'+(mtdRow.inboundL||0).toFixed(2)+'L';
-    document.getElementById('tr-out').textContent='₹'+(mtdRow.outboundL||0).toFixed(2)+'L';
+    document.getElementById('tr-mtd-s').textContent=mtdRow.month+' — '+N(mtdRow.weightTons).toFixed(2)+'T · '+safeText(mtdRow.status);
+    document.getElementById('tr-perkg').textContent='₹'+N(mtdRow.freightPerKg).toFixed(2);
+    document.getElementById('tr-perton').textContent='₹'+Math.round(N(mtdRow.freightPerTon)).toLocaleString('en-IN')+' /ton';
+    document.getElementById('tr-in').textContent='₹'+N(mtdRow.inboundL).toFixed(2)+'L';
+    document.getElementById('tr-out').textContent='₹'+N(mtdRow.outboundL).toFixed(2)+'L';
   } else {
     document.getElementById('tr-mtd').textContent='—';
+    document.getElementById('tr-mtd-s').textContent='—';
+    document.getElementById('tr-perkg').textContent='—';
+    document.getElementById('tr-perton').textContent='—';
     document.getElementById('tr-in').textContent='—';
     document.getElementById('tr-out').textContent='—';
   }
+
+  // ── Monthly breakdown table (10 cols) ──
   var html='';
   rows.forEach(function(r){
     var statColor=r.status&&r.status.indexOf('ACTUAL')>=0?'b-gn':r.status&&r.status.indexOf('BASELINE')>=0?'b-am':'b-sl';
     html+='<tr><td class="lf" style="font-weight:600;">'+safeText(r.month)+'</td>'+
       '<td>'+fmtN(r.basicRs)+'</td>'+
+      '<td>'+N(r.weightTons).toFixed(2)+'</td>'+
+      '<td>'+N(r.freightPerKg).toFixed(2)+'</td>'+
+      '<td>'+Math.round(N(r.freightPerTon)).toLocaleString('en-IN')+'</td>'+
       '<td style="font-weight:700;">'+fmtN(r.totalInclGST)+'</td>'+
       '<td class="lf"><span class="badge '+statColor+'">'+safeText(r.status||'—')+'</span></td>'+
-      '<td>'+(r.inboundL||0).toFixed(2)+'</td>'+
-      '<td>'+(r.outboundL||0).toFixed(2)+'</td>'+
+      '<td>'+N(r.inboundL).toFixed(2)+'</td>'+
+      '<td>'+N(r.outboundL).toFixed(2)+'</td>'+
       '<td>'+fmtN(r.runningTotal)+'</td></tr>';
   });
-  document.getElementById('tr-body').innerHTML=html||'<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:14px;">No transport data</td></tr>';
+  document.getElementById('tr-body').innerHTML=html||'<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No transport data</td></tr>';
+
+  // ── Transporter leaderboard (sorted desc by Total Freight) ──
+  var sorted=(ledger||[]).slice().sort(function(a,b){return N(b.totalFreightRs)-N(a.totalFreightRs);});
+  document.getElementById('tl-count').textContent=sorted.length+' transporters';
+  var lhtml='';
+  sorted.forEach(function(t){
+    var last=t.lastDispatch?(new Date(t.lastDispatch)).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}):'—';
+    lhtml+='<tr><td class="lf" style="font-weight:600;">'+safeText(t.transporter)+'</td>'+
+      '<td>'+fmtN(t.dispatches)+'</td>'+
+      '<td>'+fmtN(t.vehicles)+'</td>'+
+      '<td>'+N(t.totalTons).toFixed(2)+'</td>'+
+      '<td>'+N(t.avgPerKg).toFixed(2)+'</td>'+
+      '<td>'+Math.round(N(t.avgPerTon)).toLocaleString('en-IN')+'</td>'+
+      '<td style="font-weight:700;">'+fmtN(t.totalFreightRs)+'</td>'+
+      '<td class="lf">'+last+'</td></tr>';
+  });
+  document.getElementById('tl-body').innerHTML=lhtml||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No transporter data</td></tr>';
 }
 
 function renderAlerts(alerts){
