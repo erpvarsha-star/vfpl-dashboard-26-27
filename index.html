@@ -1875,24 +1875,7 @@ function fetchData(silent){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     })
-    .then(function(d){
-      if(d.error) throw new Error(d.error);
-      document.getElementById('err-banner').style.display='none';
-      render(d);
-      var rb=document.getElementById('refresh-btn');
-      if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Refresh';}
-    })
-    .catch(function(err){
-      console.error('Fetch failed:',err);
-      var eb=document.getElementById('err-banner');
-      eb.style.display='block';
-      eb.textContent='⚠ Could not load live data: '+err.message+'  —  showing last fetched data. Will retry in 60s.';
-      document.getElementById('lov').classList.add('hide');
-      var rb=document.getElementById('refresh-btn');
-      if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Retry';}
-    });
-}
-function manualRefresh(){fetchData(false);}
+    
 
 // ═══════════════════════════════════════════════════════════════
 // SESSION 18 ADDITIONS — all new functions below
@@ -1917,7 +1900,43 @@ function checkCostPin(){
     document.getElementById('cs-pin-err').style.display='block';
   }
 }
-
+.then(function(d){
+      if(d.error) throw new Error(d.error);
+      document.getElementById('err-banner').style.display='none';
+      
+      // ── DATA MATRIX FLATTENING ENGINE ──
+      // Unpacks nested module slices (c1-c5) into global fields
+      var compiledData = d;
+      if (d.c1 || d.c2 || d.c3 || d.c4 || d.c5) {
+        compiledData = {};
+        Object.keys(d).forEach(function(chunkKey) {
+          var innerModule = d[chunkKey];
+          if (innerModule && typeof innerModule === 'object') {
+            Object.keys(innerModule).forEach(function(dataKey) {
+              compiledData[dataKey] = innerModule[dataKey];
+            });
+          }
+        });
+      }
+      
+      // Cache structural records and binder to layout elements
+      window.D = compiledData;
+      render(compiledData);
+      
+      var rb=document.getElementById('refresh-btn');
+      if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Refresh';}
+    })
+    .catch(function(err){
+      console.error('Fetch failed:',err);
+      var eb=document.getElementById('err-banner');
+      eb.style.display='block';
+      eb.textContent='⚠ Could not load live data: '+err.message+'  —  showing last fetched data. Will retry in 60s.';
+      document.getElementById('lov').classList.add('hide');
+      var rb=document.getElementById('refresh-btn');
+      if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Retry';}
+    });
+}
+function manualRefresh(){fetchData(false);}
 // ═══ SPARKLINE — pure SVG, 6-month trend ═══
 function drawSparkline(svgId, values){
   var svg=document.getElementById(svgId);
