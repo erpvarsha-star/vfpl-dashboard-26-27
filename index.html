@@ -1583,22 +1583,45 @@ function fetchData(silent) {
 function doPost(e) {
   return handleRequest_(e);
 }
-
+// Add this to your Code.gs - enables CORS for GitHub Pages
 function doGet(e) {
-  if (e && e.parameter && e.parameter.proxy === '1') {
-    return handleProxy_(e);
+  // Get the requesting origin
+  var origin = e && e.parameter ? e.parameter.origin : '';
+  
+  // Get the data
+  var data = getMergedCache_();
+  var jsonString = JSON.stringify(data);
+  
+  // Create response
+  var output = ContentService.createTextOutput(jsonString)
+    .setMimeType(ContentService.MimeType.JSON);
+  
+  // Add CORS headers - allow your GitHub Pages domain
+  // Replace with your actual GitHub Pages URL
+  var allowedOrigins = [
+    'https://YOUR_USERNAME.github.io',  // Change this!
+    'http://localhost:5500'  // For local testing
+  ];
+  
+  if (allowedOrigins.indexOf(origin) > -1 || origin === '') {
+    output.setHeader('Access-Control-Allow-Origin', origin || '*');
+    output.setHeader('Access-Control-Allow-Methods', 'GET');
+    output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
-  // Normal doGet - return JSON cache
-  try {
-    var data = getMergedCache_();
-    return ContentService.createTextOutput(JSON.stringify(data))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({error: err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  
+  return output;
 }
 
+// Handle preflight OPTIONS requests (required for CORS)
+function doOptions(e) {
+  var origin = e && e.parameter ? e.parameter.origin : '';
+  var output = ContentService.createTextOutput('');
+  output.setHeader('Access-Control-Allow-Origin', origin || '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  output.setHeader('Access-Control-Max-Age', '3600');
+  return output;
+}
 function handleProxy_(e) {
   // This returns HTML content that can be embedded via iframe
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>';
