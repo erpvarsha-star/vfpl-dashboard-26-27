@@ -1904,8 +1904,8 @@ function checkCostPin(){
       if(d.error) throw new Error(d.error);
       document.getElementById('err-banner').style.display='none';
       
-      // ── DATA MATRIX FLATTENING ENGINE ──
-      // Unpacks nested module slices (c1-c5) into global fields
+      // ── UNIVERSAL FLAT STREAM BINDER ──
+      // Handles both wrapped module sets and native flat dictionary tracking blocks
       var compiledData = d;
       if (d.c1 || d.c2 || d.c3 || d.c4 || d.c5) {
         compiledData = {};
@@ -1919,12 +1919,13 @@ function checkCostPin(){
         });
       }
       
-      // Cache structural records and binder to layout elements
+      // Cache structural data and force DOM element compilation
       window.D = compiledData;
       render(compiledData);
       
       var rb=document.getElementById('refresh-btn');
       if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Refresh';}
+    })
     })
     .catch(function(err){
       console.error('Fetch failed:',err);
