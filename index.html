@@ -1579,7 +1579,33 @@ function fetchData(silent) {
       if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
     });
 }
+// Add this to your Code.gs
+function doPost(e) {
+  return handleRequest_(e);
+}
 
+function doGet(e) {
+  if (e && e.parameter && e.parameter.proxy === '1') {
+    return handleProxy_(e);
+  }
+  // Normal doGet - return JSON cache
+  try {
+    var data = getMergedCache_();
+    return ContentService.createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function handleProxy_(e) {
+  // This returns HTML content that can be embedded via iframe
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>';
+  html += '<script src="https://your-github-io-url/dashboard.js"></script>';
+  html += '</body></html>';
+  return HtmlService.createHtmlOutput(html);
+}
 function manualRefresh() { fetchData(false); }
 
 // Initial fetch + auto-refresh
