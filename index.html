@@ -1570,14 +1570,16 @@ function fetchData(silent) {
     // Process data
     if (data && data.error) {
       console.error('Data error:', data.error);
-      document.getElementById('err-banner').style.display = 'block';
-      document.getElementById('err-banner').textContent = '⚠ ' + data.error;
+      var eb = document.getElementById('err-banner');
+      eb.style.display = 'block';
+      eb.textContent = '⚠ ' + data.error;
       document.getElementById('lov').classList.add('hide');
       var rb = document.getElementById('refresh-btn');
       if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
       return;
     }
     
+    // Handle chunked data (from your cache)
     var compiledData = data;
     if (data.c1 || data.c2 || data.c3 || data.c4 || data.c5) {
       compiledData = {};
@@ -1609,8 +1611,9 @@ function fetchData(silent) {
   setTimeout(function() {
     if (window[callbackName]) {
       delete window[callbackName];
-      document.getElementById('err-banner').style.display = 'block';
-      document.getElementById('err-banner').textContent = '⚠ Request timeout - check your connection';
+      var eb = document.getElementById('err-banner');
+      eb.style.display = 'block';
+      eb.textContent = '⚠ Request timeout - check your connection';
       document.getElementById('lov').classList.add('hide');
       var rb = document.getElementById('refresh-btn');
       if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
