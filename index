@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">https://avatars.githubusercontent.com/u/267720589?v=4&size=64
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>VFPL Factory OS — FY 2026-27</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -17,6 +17,30 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
+
+/* VARSHA 3D Logo for Header */
+.hdr-logo-mark { width:38px; height:38px; flex-shrink:0; overflow:hidden; border-radius:50%; }
+.hdr-sphere {
+  width:200px; height:200px; border-radius:50%;
+  background: radial-gradient(circle at 35% 35%, #ff9900, #cc5500 70%, #993300 100%);
+  box-shadow: inset -10px -10px 30px rgba(0,0,0,.5), 15px 20px 25px rgba(0,0,0,.2);
+  position:relative; overflow:hidden;
+  transform: scale(0.19); transform-origin: top left;
+}
+.hdr-vshape {
+  position:absolute; top:20px; left:50%; transform:translateX(-50%);
+  width:160px; height:140px;
+  clip-path:polygon(0 0,50% 100%,100% 0,75% 0,50% 80%,25% 0);
+  background:linear-gradient(180deg,#ffffff,#dddddd);
+  box-shadow:inset 0 5px 10px rgba(0,0,0,.1),0 10px 15px rgba(0,0,0,.3);
+  z-index:2;
+}
+.hdr-vshape::after {
+  content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%);
+  width:140px; height:100px;
+  clip-path:polygon(0 0,50% 100%,100% 0,75% 0,50% 80%,25% 0);
+  background:#333333; z-index:-1;
+}
 
 .print-btn{background:var(--sll);color:var(--sld);border:1px solid var(--bd2);padding:4px 10px;font-size:10px;font-weight:600;border-radius:3px;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;transition:all .15s;margin-left:8px;}
 .print-btn:hover{background:var(--sl);color:#fff;}
@@ -67,7 +91,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 
 .hdr{background:var(--wh);border-bottom:3px solid var(--br);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:200;box-shadow:0 2px 6px rgba(0,0,0,.06);}
 .logo{display:flex;align-items:center;gap:10px;}
-.logo img{height:38px;}
 .logo-name{font-size:15px;font-weight:700;color:var(--sld);letter-spacing:.5px;}
 .logo-sub{font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;font-weight:500;}
 .hdr-r{display:flex;align-items:center;gap:14px;}
@@ -229,30 +252,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   .clk,.upd{display:none;}
   .main{padding:8px 10px;}
 }
-/* VARSHA 3D Logo for Header */
-.hdr-logo-mark { width:38px; height:38px; flex-shrink:0; overflow:hidden; border-radius:50%; }
-.hdr-sphere {
-  width:200px; height:200px; border-radius:50%;
-  background: radial-gradient(circle at 35% 35%, #ff9900, #cc5500 70%, #993300 100%);
-  box-shadow: inset -10px -10px 30px rgba(0,0,0,.5), 15px 20px 25px rgba(0,0,0,.2);
-  position:relative; overflow:hidden;
-  transform: scale(0.19); transform-origin: top left;
-}
-.hdr-vshape {
-  position:absolute; top:20px; left:50%; transform:translateX(-50%);
-  width:160px; height:140px;
-  clip-path:polygon(0 0,50% 100%,100% 0,75% 0,50% 80%,25% 0);
-  background:linear-gradient(180deg,#ffffff,#dddddd);
-  box-shadow:inset 0 5px 10px rgba(0,0,0,.1),0 10px 15px rgba(0,0,0,.3);
-  z-index:2;
-}
-.hdr-vshape::after {
-  content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%);
-  width:140px; height:100px;
-  clip-path:polygon(0 0,50% 100%,100% 0,75% 0,50% 80%,25% 0);
-  background:#333333; z-index:-1;
-}
-
 </style>
 </head>
 <body>
@@ -266,6 +265,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 
 <div class="hdr">
   <div class="logo">
+    <div class="hdr-logo-mark">
+      <div class="hdr-sphere"><div class="hdr-vshape"></div></div>
+    </div>
     <div>
       <div class="logo-name">VARSHA FORGINGS</div>
       <div class="logo-sub">Factory Operating System</div>
@@ -318,208 +320,27 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
   <div id="date-notice" class="date-notice" style="display:none;"><span style="font-size:16px;">&#9888;</span><span>Displaying last available data &mdash; no entries found for today</span></div>
   <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Cutting Shop &mdash; Today</span><span class="dh-date" id="cut-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-cut-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Cutting Shop &mdash; Yesterday</span><span class="dh-date" id="cut-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-cut-yest"></table></div></div>
-  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Forge Shop &mdash; Today</span><span class="dh-date" id="frg-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-today"><table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Forge Shop &mdash; Yesterday</span><span class="dh-date" id="frg-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-yest"></td></div></div>
-  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Press Shop &mdash; Today</span><span class="dh-date" id="press-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-today"></td></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Press Shop &mdash; Yesterday</span><span class="dh-date" id="press-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-yest"></td></div></div>
-  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Machine Shop &mdash; Today</span><span class="dh-date" id="mach-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-mach-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Machine Shop &mdash; Yesterday</span><span class="dh-date" id="mach-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-mach-yest"></table></div></div>
+  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Forge Shop &mdash; Today</span><span class="dh-date" id="frg-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Forge Shop &mdash; Yesterday</span><span class="dh-date" id="frg-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-yest"><tr></div></div>
+  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Press Shop &mdash; Today</span><span class="dh-date" id="press-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Press Shop &mdash; Yesterday</span><span class="dh-date" id="press-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-yest"></td></div></div>
+  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Machine Shop &mdash; Today</span><span class="dh-date" id="mach-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-mach-today"></td></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Machine Shop &mdash; Yesterday</span><span class="dh-date" id="mach-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-mach-yest"><tr></div></div>
   <div class="sec-label">Department Summary &mdash; Manpower &amp; Electricity</div>
-  <div class="card"><div class="ch"><div class="ct">Today vs Yesterday &mdash; Staff / Contract / Electricity kWh</div></div><div class="scroll-x"><table class="tbl dept-summ"><thead><tr><th class="lf" style="min-width:140px;">Department</th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today</th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday</th> </tr><tr><th class="lf"></th><th>Staff</th><th>Contract</th><th>Elec kWh</th><th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Elec kWh</th></tr></thead><tbody id="dept-summ-body"></tbody></table></div></div>
+  <div class="card"><div class="ch"><div class="ct">Today vs Yesterday &mdash; Staff / Contract / Electricity kWh</div></div><div class="scroll-x"><table class="tbl dept-summ"><thead><tr><th class="lf" style="min-width:140px;">Department</th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today</th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday</th>  </tr><tr><th class="lf"></th><th>Staff</th><th>Contract</th><th>Elec kWh</th><th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Elec kWh</th></tr></thead><tbody id="dept-summ-body"></tbody></table></div></div>
   <div class="sec-label">Material Needed &mdash; Schedule Priority (A+ First)</div>
-  <div class="card"><div class="ch"><div class="ct">Steel Requirement vs Stock &mdash; Order or Produce Now</div><div style="display:flex;gap:6px;"><span class="badge b-rd">&#9650; No Stock</span><span class="badge b-gn">&#9654; In Stock</span><span class="badge b-sl" id="mat-count">&mdash;</span></div></div><div class="scroll-x"><table class="mat-tbl"><thead><tr><th class="lf">Band</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Grade</th><th>Pending Pcs</th><th>RM Req T</th><th>Stock T</th><th>Status</th></tr></thead><tbody id="mat-body"><tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
+  <div class="card"><div class="ch"><div class="ct">Steel Requirement vs Stock &mdash; Order or Produce Now</div><div style="display:flex;gap:6px;"><span class="badge b-rd">&#9650; No Stock</span><span class="badge b-gn">&#9654; In Stock</span><span class="badge b-sl" id="mat-count">&mdash;</span></div></div><div class="scroll-x"><table class="mat-tbl"><thead><tr><th class="lf">Band</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Grade</th><th>Pending Pcs</th><th>RM Req T</th><th>Stock T</th><th>Status</th></tr></thead><tbody id="mat-body"><tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
   <div class="sec-label">WIP Snapshot</div>
   <div class="card card-last"><div class="ch"><div class="ct">Work in Process &mdash; Closing Balance</div><div class="badge b-or" id="wip-total-badge">&mdash;</div></div><div class="wip-strip"><div class="wip-blk" onclick="showTabByName('wip')"><div class="wip-lbl">Cut WIP &mdash; Own</div><div class="wip-pcs or" id="wip-cut-pcs">&mdash;</div><div class="wip-sub" id="wip-cut-sub">&mdash;</div><div class="wip-hint">&#9660; click to expand</div></div><div class="wip-blk" onclick="showTabByName('wip')"><div class="wip-lbl">Forged WIP &mdash; Own</div><div class="wip-pcs gn" id="wip-frg-pcs">&mdash;</div><div class="wip-sub" id="wip-frg-sub">&mdash;</div><div class="wip-hint">&#9660; click to expand</div></div><div class="wip-blk" onclick="showTabByName('wip')"><div class="wip-lbl">JWK WIP &mdash; Laxmi + Kalyani</div><div class="wip-pcs bl" id="wip-jwk-pcs">&mdash;</div><div class="wip-sub" id="wip-jwk-sub">&mdash;</div><div class="wip-hint">&#9660; click to expand</div></div></div></div>
 </div>
-
-<div id="tab-mtd" class="main" style="display:none;" data-print-title="MONTH TO DATE — VFPL Factory OS">
-  <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Turnover MTD</div><div class="kv" id="m-tov">&mdash;</div><div class="ks" id="m-tov-s">&mdash;</div><svg class="spark" id="sp-tov"></svg></div>
-    <div class="kc gn"><div class="kl">Own MTD (Forge+Press)</div><div class="kv" id="m-own">&mdash;</div><div class="ks" id="m-own-s">&mdash;</div><svg class="spark" id="sp-own"></svg></div>
-    <div class="kc bl"><div class="kl">JWK MTD (Forge+Press)</div><div class="kv" id="m-jwk">&mdash;</div><div class="ks" id="m-jwk-s">&mdash;</div><svg class="spark" id="sp-jwk"></svg></div>
-    <div class="kc sl"><div class="kl">Cut MTD</div><div class="kv" id="m-cut">&mdash;</div><div class="ks" id="m-cut-s">&mdash;</div><svg class="spark" id="sp-cut"></svg></div>
-    <div class="kc am"><div class="kl">Schedule Achievement</div><div class="kv" id="m-sch">&mdash;</div><div class="ks">% of plan</div></div>
-  </div>
-  <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc pu"><div class="kl">Dispatch Qty</div><div class="kv" id="m-disp">&mdash;</div><div class="ks">pcs sent</div><svg class="spark" id="sp-disp"></svg></div>
-    <div class="kc rd"><div class="kl">Vendor Rejection</div><div class="kv" id="m-rej">&mdash;</div><div class="ks">pcs failed</div></div>
-    <div class="kc sl"><div class="kl">Electricity</div><div class="kv" id="m-elec">&mdash;</div><div class="ks">kWh consumed</div><svg class="spark" id="sp-elec"></svg></div>
-    <div class="kc gn"><div class="kl">Oil — Forge</div><div class="kv" id="m-oilf">&mdash;</div><div class="ks">litres</div></div>
-    <div class="kc bl"><div class="kl">Oil — HT</div><div class="kv" id="m-oilh">&mdash;</div><div class="ks">litres</div></div>
-  </div>
-  <div class="sec-label">Manpower &amp; Costs</div>
-  <div class="card"><div class="ch"><div class="ct">Department-wise Headcount &amp; Contract Cost</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department</th><th>Staff Avg</th><th>Contract Avg</th><th>Total HC</th><th>Contract Cost ₹L</th></tr></thead><tbody id="m-mp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-  <div class="sec-label">Top Producing Machines &mdash; This Month</div>
-  <div class="card card-last"><div class="ch"><div class="ct">Top 10 by Pieces &mdash; Anchor for Utilisation</div><\/div><div class="cb" id="m-mach-bars"><div style="color:var(--tx3);font-size:11px;text-align:center;padding:14px;">Loading&hellip;<\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-wip" class="main" style="display:none;" data-print-title="WIP — VFPL Factory OS">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Cut WIP &mdash; Own</div><div class="kv" id="w-cut">&mdash;<\/div><div class="ks" id="w-cut-s">VFs<\/div><\/div>
-    <div class="kc gn"><div class="kl">Forged WIP &mdash; Own</div><div class="kv" id="w-frg">&mdash;<\/div><div class="ks" id="w-frg-s">VFs<\/div><\/div>
-    <div class="kc bl"><div class="kl">JWK WIP</div><div class="kv" id="w-jwk">&mdash;<\/div><div class="ks">Laxmi + Kalyani<\/div><\/div>
-    <div class="kc sl"><div class="kl">Total Closing WIP</div><div class="kv" id="w-tot">&mdash;<\/div><div class="ks">all VFs combined<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">VF-wise Work in Process</div><div class="badge b-sl" id="w-row-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Cut WIP<\/th><th>FG WIP<\/th><th>Closing WIP<\/th></tr></thead><tbody id="w-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-sched" class="main" style="display:none;" data-print-title="SCHEDULE — VFPL Factory OS">
-  <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total Schedule</div><div class="kv" id="s-tot">&mdash;<\/div><div class="ks" id="s-tot-s">pcs target<\/div><\/div>
-    <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv" id="s-prod">&mdash;<\/div><div class="ks">pcs done<\/div><\/div>
-    <div class="kc or"><div class="kl">Balance to Produce</div><div class="kv" id="s-bal">&mdash;<\/div><div class="ks" id="s-bal-s">pcs pending<\/div><\/div>
-    <div class="kc am"><div class="kl">Schedule %</div><div class="kv" id="s-pct">&mdash;<\/div><div class="ks">achievement<\/div><\/div>
-    <div class="kc rd"><div class="kl">RM Required</div><div class="kv" id="s-rm">&mdash;<\/div><div class="ks">tons of steel<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Schedule Intelligence &mdash; A+ First</div><div class="badge b-sl" id="s-row-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Band<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Grade<\/th><th>Sched Qty<\/th><th>Produced<\/th><th>Bal Produce<\/th><th>RM Req kg<\/th><th>%<\/th><th>Stock<\/th></tr></thead><tbody id="s-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-outstanding" class="main" style="display:none;" data-print-title="OUTSTANDING — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="o-od">&mdash;<\/div><div class="ks" id="o-asn">&mdash;<\/div><\/div>
-    <div class="kc am"><div class="kl">Not Due</div><div class="kv" id="o-nd">&mdash;<\/div><div class="ks">future receivables<\/div><\/div>
-    <div class="kc sl"><div class="kl">Grand Total Outstanding</div><div class="kv" id="o-tot">&mdash;<\/div><div class="ks">all customers<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Customer-wise Outstanding</div><div style="display:flex;gap:6px;"><span class="badge b-bl">Not Due = future<\/span><span class="badge b-rd">Overdue = past due<\/span><span class="badge b-sl" id="o-row-count">&mdash;<\/span><\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Customer<\/th><th>Not Due<\/th><th>Overdue<\/th><th>Grand Total<\/th></tr></thead><tbody id="o-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-steel" class="main" style="display:none;" data-print-title="STEEL STOCK — VFPL Factory OS">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total Stock Balance</div><div class="kv" id="st-bal">&mdash;<\/div><div class="ks">kg across grades<\/div><\/div>
-    <div class="kc or"><div class="kl">Stock Value</div><div class="kv" id="st-val">&mdash;<\/div><div class="ks">at avg purchase rate<\/div><\/div>
-    <div class="kc gn"><div class="kl">Inward FY</div><div class="kv" id="st-inw">&mdash;<\/div><div class="ks">kg received<\/div><\/div>
-    <div class="kc sl"><div class="kl">Consumed FY</div><div class="kv" id="st-con">&mdash;<\/div><div class="ks">kg used<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Grade-wise Stock</div><div class="badge b-sl" id="st-rate-badge">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Grade<\/th><th>Opening kg<\/th><th>Inward kg<\/th><th>Consumed kg<\/th><th>Balance kg<\/th><th>Value ₹L<\/th><th>Days Stock<\/th><th class="lf">Status<\/th></tr></thead><tbody id="st-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-f4" class="main" style="display:none;" data-print-title="57F4 — VFPL Factory OS">
-  <div class="card card-last"><div class="ch"><div class="ct">57F4 Vendor Reconciliation &mdash; Sent vs Received</div><div class="badge b-sl" id="f4-count">&mdash;<\/div><\/div><div id="f4-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;<\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-elec" class="main" style="display:none;" data-print-title="ELECTRICITY — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total kWh MTD</div><div class="kv" id="e-tot">&mdash;<\/div><div class="ks">all departments<\/div><\/div>
-    <div class="kc or"><div class="kl">Highest Dept</div><div class="kv" id="e-top">&mdash;<\/div><div class="ks" id="e-top-s">&mdash;<\/div><\/div>
-    <div class="kc sl"><div class="kl">Departments Tracked</div><div class="kv" id="e-cnt">&mdash;<\/div><div class="ks">meters mapped<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Department-wise Consumption &mdash; This Month</div><\/div><div class="cb" id="e-bars"><div style="color:var(--tx3);font-size:11px;text-align:center;padding:14px;">Loading&hellip;<\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-manpower" class="main" style="display:none;" data-print-title="MANPOWER — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total Staff Today</div><div class="kv" id="mp-staff">&mdash;<\/div><div class="ks">company HC<\/div><\/div>
-    <div class="kc gn"><div class="kl">Total Contract Today</div><div class="kv" id="mp-contract">&mdash;<\/div><div class="ks">contract HC<\/div><\/div>
-    <div class="kc or"><div class="kl">Total HC Today</div><div class="kv" id="mp-total">&mdash;<\/div><div class="ks">staff + contract<\/div><\/div>
-  <\/div>
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc sl"><div class="kl">vs Yesterday</div><div class="kv" id="mp-delta">&mdash;<\/div><div class="ks" id="mp-delta-s">&mdash;<\/div><\/div>
-    <div class="kc rd"><div class="kl">MTD Contract Cost</div><div class="kv" id="mp-cost">&mdash;<\/div><div class="ks">actual contract spend<\/div><\/div>
-    <div class="kc pu"><div class="kl">&#8377; per Forged Ton</div><div class="kv" id="mp-cpkg">&mdash;<\/div><div class="ks" id="mp-cpkg-s">manpower cost efficiency<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Department-wise Headcount &mdash; Today vs Yesterday</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department<\/th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today<\/th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday<\/th><th colspan="3" style="background:var(--brl);color:var(--brd);">MTD Avg<\/th> </tr><tr> <th class="lf"><\/th><th>Staff<\/th><th>Contract<\/th><th>Total<\/th><th style="background:var(--sll);">Staff<\/th><th style="background:var(--sll);">Contract<\/th><th style="background:var(--sll);">Total<\/th><th style="background:var(--brl);">Staff<\/th><th style="background:var(--brl);">Contract<\/th><th style="background:var(--brl);">Cost &#8377;<\/th> </tr><\/thead><tbody id="mp-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-oil" class="main" style="display:none;" data-print-title="OIL — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Forge Oil Closing</div><div class="kv" id="oil-fc">&mdash;<\/div><div class="ks">litres in stock<\/div><\/div>
-    <div class="kc bl"><div class="kl">HT Oil Closing</div><div class="kv" id="oil-hc">&mdash;<\/div><div class="ks">litres in stock<\/div><\/div>
-    <div class="kc sl"><div class="kl">Zyc Oil Closing</div><div class="kv" id="oil-zc">&mdash;<\/div><div class="ks">litres in stock<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Oil Ledger &mdash; Opening / Inward / Consumed / Closing (Litres)</div><\/div><div class="cb"><div class="oil-grid" id="oil-grid"><\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-transport" class="main" style="display:none;" data-print-title="TRANSPORT — VFPL Factory OS">
-  <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">FY Total Transport</div><div class="kv" id="tr-tot">&mdash;<\/div><div class="ks">incl GST YTD<\/div><\/div>
-    <div class="kc or"><div class="kl">This Month</div><div class="kv" id="tr-mtd">&mdash;<\/div><div class="ks" id="tr-mtd-s">&mdash;<\/div><\/div>
-    <div class="kc pu"><div class="kl">Avg ₹/Kg — This Month</div><div class="kv" id="tr-perkg">&mdash;<\/div><div class="ks" id="tr-perton">&mdash;<\/div><\/div>
-    <div class="kc gn"><div class="kl">Inbound (₹L)</div><div class="kv" id="tr-in">&mdash;<\/div><div class="ks">RM transport<\/div><\/div>
-    <div class="kc sl"><div class="kl">Outbound (₹L)</div><div class="kv" id="tr-out">&mdash;<\/div><div class="ks">FG transport<\/div><\/div>
-  <\/div>
-  <div class="card"><div class="ch"><div class="ct">Monthly Transport &mdash; FY 2026-27</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Month<\/th><th>Basic ₹<\/th><th>Tons<\/th><th>₹/Kg<\/th><th>₹/Ton<\/th><th>Total incl GST ₹<\/th><th class="lf">Status<\/th><th>Inbound ₹L<\/th><th>Outbound ₹L<\/th><th>Running ₹<\/th></tr></thead><tbody id="tr-body"><td><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-  <div class="card card-last" style="margin-top:10px;"><div class="ch"><div class="ct">Transporter Leaderboard &mdash; FY 2026-27</div><div class="badge b-sl" id="tl-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Transporter<\/th><th>Dispatches<\/th><th>Vehicles<\/th><th>Tons<\/th><th>₹/Kg<\/th><th>₹/Ton<\/th><th>Total Freight ₹<\/th><th class="lf">Last Dispatch<\/th></tr></thead><tbody id="tl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-alerts" class="main" style="display:none;" data-print-title="ALERTS — VFPL Factory OS">
-  <div class="card card-last"><div class="ch"><div class="ct">Active Alerts &mdash; High Priority First</div><div class="badge b-rd" id="al-count">&mdash;<\/div><\/div><div id="al-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;<\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-dielife" class="main" style="display:none;" data-print-title="DIE LIFE — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc gn"><div class="kl">Running Dies</div><div class="kv" id="dl-run">&mdash;<\/div><div class="ks">currently active<\/div><\/div>
-    <div class="kc sl"><div class="kl">Completed Runs</div><div class="kv" id="dl-cmp">&mdash;<\/div><div class="ks">historical<\/div><\/div>
-    <div class="kc or"><div class="kl">Total Pcs (Running)</div><div class="kv" id="dl-pcs">&mdash;<\/div><div class="ks">on active dies<\/div><\/div>
-  <\/div>
-  <div class="card"><div class="ch"><div class="ct">Currently Running Dies</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Machine<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Run Start<\/th><th>Days<\/th><th>Shifts<\/th><th>Total Pcs<\/th></tr></thead><tbody id="dl-run-body"><tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">&mdash;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Completed Die Runs &mdash; History</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Machine<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Run Start<\/th><th>Run End<\/th><th>Days<\/th><th>Shifts<\/th><th>Total Pcs<\/th></tr></thead><tbody id="dl-cmp-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">&mdash;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-planner" class="main" style="display:none;" data-print-title="PRODUCTION PLANNER — VFPL Factory OS">
-  <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Total Units Loaded</div><div class="kv" id="pl-units">&mdash;<\/div><div class="ks">in planner<\/div><\/div>
-    <div class="kc rd"><div class="kl">No-Stock RM</div><div class="kv" id="pl-nostock">&mdash;<\/div><div class="ks">blocked VFs<\/div><\/div>
-    <div class="kc am"><div class="kl">Partial Stock</div><div class="kv" id="pl-partial">&mdash;<\/div><div class="ks">caution VFs<\/div><\/div>
-    <div class="kc gn"><div class="kl">Ready to Run</div><div class="kv" id="pl-ready">&mdash;<\/div><div class="ks">stock OK<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Unit-wise Loading Sequence &mdash; Shop Floor Actionable</div><div class="badge b-sl" id="pl-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Unit<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Qty Pending<\/th><th class="lf">RM Status<\/th><th>Shifts Req<\/th><th>Target/Shift<\/th><th class="lf">Supervisor Action<\/th></tr></thead><tbody id="pl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-gaps" class="main" style="display:none;" data-print-title="DATA GAPS — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Gaps</div><div class="kv" id="gp-tot">&mdash;<\/div><div class="ks">to resolve<\/div><\/div>
-    <div class="kc am"><div class="kl">Gap Categories</div><div class="kv" id="gp-cats">&mdash;<\/div><div class="ks">types active<\/div><\/div>
-    <div class="kc bl"><div class="kl">High-Impact Items</div><div class="kv" id="gp-high">&mdash;<\/div><div class="ks">blocking planning<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Data Gaps by Category &mdash; DME Daily Checklist</div><div class="badge b-rd" id="gp-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Gap Type<\/th><th class="lf">VF No<\/th><th class="lf">Issue<\/th><th class="lf">Impact<\/th><th class="lf">Fix In<\/th></tr></thead><tbody id="gp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-collection" class="main" style="display:none;" data-print-title="COLLECTION ENGINE — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="col-total">&mdash;<\/div><div class="ks">gross positive ₹<\/div><\/div>
-    <div class="kc am"><div class="kl">Customers to Chase</div><div class="kv" id="col-count">&mdash;<\/div><div class="ks">with overdue<\/div><\/div>
-    <div class="kc bl"><div class="kl">Top Overdue</div><div class="kv" id="col-top">&mdash;<\/div><div class="ks" id="col-top-s">customer<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Collection Actions &mdash; One-click Email Templates</div><div class="badge b-rd" id="col-badge">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Customer<\/th><th>Overdue ₹<\/th><th>Days<\/th><th class="lf">Action<\/th><th class="lf">Copy Email<\/th></tr></thead><tbody id="col-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-vrej" class="main" style="display:none;" data-print-title="VENDOR REJECTION — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Rejections</div><div class="kv" id="vr-pcs">&mdash;<\/div><div class="ks">pcs (FY MTD)<\/div><\/div>
-    <div class="kc am"><div class="kl">Financial Impact</div><div class="kv" id="vr-rs">&mdash;<\/div><div class="ks">₹ at risk<\/div><\/div>
-    <div class="kc sl"><div class="kl">Vendors Involved</div><div class="kv" id="vr-vendors">&mdash;<\/div><div class="ks">distinct<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Vendor Rejection &mdash; Material for Debit-Note Conversations</div><div class="badge b-rd" id="vr-badge">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Vendor<\/th><th class="lf">VF No<\/th><th>Pcs Rejected<\/th><th>Amount ₹<\/th><th class="lf">Top Reason<\/th></tr></thead><tbody id="vr-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-dscore" class="main" style="display:none;" data-print-title="DEPT SCORE — VFPL Factory OS">
-  <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Overall Compliance</div><div class="kv" id="ds-pct">&mdash;<\/div><div class="ks">% of expected entries<\/div><\/div>
-    <div class="kc gn"><div class="kl">Departments Tracked</div><div class="kv" id="ds-cnt">&mdash;<\/div><div class="ks">data sources<\/div><\/div>
-    <div class="kc or"><div class="kl">Working Days MTD</div><div class="kv" id="ds-days">&mdash;<\/div><div class="ks">days in month so far<\/div><\/div>
-  <\/div>
-  <div class="card card-last"><div class="ch"><div class="ct">Department Compliance &mdash; Data Entry Tracking</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department<\/th><th>Rows Logged<\/th><th>Expected<\/th><th>Compliance %<\/th><th class="lf">Grade<\/th></tr></thead><tbody id="ds-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
-<\/div>
-
-<div id="tab-margin" class="main" style="display:none;" data-print-title="MARGINS — VFPL Factory OS">
-  <div id="pin-gate" class="card card-last"><div class="pin-gate"><div style="font-size:34px;margin-bottom:8px;">&#128274;<\/div><div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Margins<\/div><div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view margin classification<\/div><input type="password" class="pin-in" id="pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkPin()"><button class="pin-btn" onclick="checkPin()">UNLOCK<\/button><div id="pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN<\/div><\/div><\/div>
-  <div id="margin-content" style="display:none;"><div class="kgrid k4" style="margin-bottom:10px;"><div class="kc gn"><div class="kl">Avg RM Rate<\/div><div class="kv" id="mg-rate">&mdash;<\/div><div class="ks">₹/kg from RM Inward<\/div><\/div><div class="kc bl"><div class="kl">Total VFs Dispatched<\/div><div class="kv" id="mg-vfs">&mdash;<\/div><div class="ks">with margin data<\/div><\/div><div class="kc or"><div class="kl">Total Turnover<\/div><div class="kv" id="mg-tov">&mdash;<\/div><div class="ks">₹L MTD<\/div><\/div><div class="kc sl"><div class="kl">Net Realisation<\/div><div class="kv" id="mg-net">&mdash;<\/div><div class="ks">₹L after conversion<\/div><\/div><\/div><div class="card card-last"><div class="ch"><div class="ct">VF-wise Margin &mdash; Sorted A+ First<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Band<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Grade<\/th><th>Conv ₹/kg<\/th><th>Net ₹/kg<\/th><th>Disp Tons<\/th><th>Turnover ₹L<\/th><th>Net Real ₹L<\/th></tr></thead><tbody id="mg-body"><\/tbody><\/table><\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-costsum" class="main" style="display:none;" data-print-title="COST SUMMARY — VFPL Factory OS">
-  <div id="cs-pin-gate" class="card card-last"><div class="pin-gate"><div style="font-size:34px;margin-bottom:8px;">&#128274;<\/div><div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Cost Summary<\/div><div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view monthly MIS P&amp;L<\/div><input type="password" class="pin-in" id="cs-pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkCostPin()"><button class="pin-btn" onclick="checkCostPin()">UNLOCK<\/button><div id="cs-pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN<\/div><\/div><\/div>
-  <div id="cs-content" style="display:none;"><div class="card card-last"><div class="ch"><div class="ct">Cost Summary &mdash; Monthly MIS P&amp;L (Owner View)<\/div><div class="badge b-sl" id="cs-updated">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl" style="font-size:10px;"><thead><tr id="cs-head"><\/tr><\/thead><tbody id="cs-body"><\/tbody><\/table><\/div><\/div><\/div>
-<\/div>
-
-<div id="tab-fy" class="main" style="display:none;" data-print-title="FY MONTHLY — VFPL Factory OS">
-  <div class="card card-last"><div class="ch"><div class="ct">FY 2026-27 &mdash; Monthly Summary (All Metrics)<\/div><\/div><div class="scroll-x"><table class="tbl" style="font-size:10px;"><thead><tr id="fy-head"><\/tr><\/thead><tbody id="fy-body"><\/tbody><\/table><\/div><\/div>
-<\/div>
-
 <script>
 // ============================================================
 // VFPL FACTORY OS — DATA BINDING LAYER (GITHUB PAGES VERSION)
 // ============================================================
+
 // IMPORTANT: Replace this URL with your actual Apps Script Web App URL
 var WEB_APP = 'https://script.google.com/macros/s/AKfycbzELEF253v1SWsJbTh5TW-Yyqap6i3Rv0NBb5W1vzvaX75uY8_bklnp5zyHfPoXpzwP9g/exec';
 var OWNER_PIN = '1234';
 var REFRESH_MS = 300000;
+var D = {};
+
 // ========== HELPER FUNCTIONS ==========
 function N(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
 function fmtN(n) { n = N(n); return n.toLocaleString('en-IN'); }
@@ -716,6 +537,7 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, 
   }
   return { today: buildOne(todayRows, statusToday), yest: buildOne(yestRows, statusYest) };
 }
+
 
 // ========== RENDER FUNCTIONS ==========
 function renderDeptSummary(today, yest) {
@@ -1285,7 +1107,80 @@ function renderSession18(data) {
   renderCollection(data);
   renderVrej(data);
 }
+// ========== FETCH DATA USING JSONP ==========
+function fetchData(silent) {
+  if (!silent) {
+    document.getElementById('lov-msg').textContent = 'Fetching live data…';
+    var rb = document.getElementById('refresh-btn');
+    if (rb) { rb.disabled = true; rb.textContent = 'Loading…'; }
+  }
+  
+  var callbackName = 'jsonpCallback_' + Date.now();
+  
+  window[callbackName] = function(data) {
+    console.log('Data received!', data ? 'Has data' : 'No data');
+    delete window[callbackName];
+    
+    if (data && data.error) {
+      console.error('Data error:', data.error);
+      var eb = document.getElementById('err-banner');
+      eb.style.display = 'block';
+      eb.textContent = '⚠ ' + data.error;
+      document.getElementById('lov').classList.add('hide');
+      var rb = document.getElementById('refresh-btn');
+      if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
+      return;
+    }
+    
+    var compiledData = data;
+    if (data && (data.c1 || data.c2 || data.c3 || data.c4 || data.c5)) {
+      compiledData = {};
+      Object.keys(data).forEach(function(chunkKey) {
+        var innerModule = data[chunkKey];
+        if (innerModule && typeof innerModule === 'object') {
+          Object.keys(innerModule).forEach(function(dataKey) {
+            compiledData[dataKey] = innerModule[dataKey];
+          });
+        }
+      });
+    }
+    
+    window.D = compiledData;
+    render(compiledData);
+    
+    var rb = document.getElementById('refresh-btn');
+    if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Refresh'; }
+    document.getElementById('err-banner').style.display = 'none';
+    document.getElementById('lov').classList.add('hide');
+  };
+  
+  var script = document.createElement('script');
+  script.src = WEB_APP + '?callback=' + encodeURIComponent(callbackName) + '&v=' + Date.now();
+  script.onerror = function() {
+    console.error('Script failed to load - check URL');
+    document.getElementById('lov').classList.add('hide');
+    var eb = document.getElementById('err-banner');
+    eb.style.display = 'block';
+    eb.textContent = '⚠ Failed to load data. Check Apps Script deployment.';
+    var rb = document.getElementById('refresh-btn');
+    if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
+  };
+  document.body.appendChild(script);
+  
+  setTimeout(function() {
+    if (window[callbackName]) {
+      delete window[callbackName];
+      document.getElementById('lov').classList.add('hide');
+      var eb = document.getElementById('err-banner');
+      eb.style.display = 'block';
+      eb.textContent = '⚠ Request timeout - check your connection';
+      var rb = document.getElementById('refresh-btn');
+      if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
+    }
+  }, 30000);
+}
 
+function manualRefresh() { fetchData(false); }
 // ========== MAIN RENDER FUNCTION ==========
 function render(data) {
   D = data;
