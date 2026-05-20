@@ -294,11 +294,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
   <div id="date-notice" class="date-notice" style="display:none;"><span style="font-size:16px;">&#9888;</span><span>Displaying last available data &mdash; no entries found for today</span></div>
   <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Cutting Shop &mdash; Today</span><span class="dh-date" id="cut-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-cut-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Cutting Shop &mdash; Yesterday</span><span class="dh-date" id="cut-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-cut-yest"></table></div></div>
-  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Forge Shop &mdash; Today</span><span class="dh-date" id="frg-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Forge Shop &mdash; Yesterday</span><span class="dh-date" id="frg-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-yest"></td></div></div>
-  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Press Shop &mdash; Today</span><span class="dh-date" id="press-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Press Shop &mdash; Yesterday</span><span class="dh-date" id="press-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-yest"></table></div></div>
+  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Forge Shop &mdash; Today</span><span class="dh-date" id="frg-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-today"><table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Forge Shop &mdash; Yesterday</span><span class="dh-date" id="frg-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-frg-yest"></td></div></div>
+  <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Press Shop &mdash; Today</span><span class="dh-date" id="press-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-today"></td></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Press Shop &mdash; Yesterday</span><span class="dh-date" id="press-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-press-yest"></td></div></div>
   <div class="dept-wrap"><div class="dept-hdr today-hdr"><span>&#9998; Machine Shop &mdash; Today</span><span class="dh-date" id="mach-today-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-mach-today"></table></div><div class="dept-hdr yest-hdr" style="margin-top:1px;"><span>Machine Shop &mdash; Yesterday</span><span class="dh-date" id="mach-yest-date"></span></div><div class="prod-scroll"><table class="prod-tbl" id="tbl-mach-yest"></table></div></div>
   <div class="sec-label">Department Summary &mdash; Manpower &amp; Electricity</div>
-  <div class="card"><div class="ch"><div class="ct">Today vs Yesterday &mdash; Staff / Contract / Electricity kWh</div></div><div class="scroll-x"><table class="tbl dept-summ"><thead><tr><th class="lf" style="min-width:140px;">Department</th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today</th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday</th></tr><tr><th class="lf"></th><th>Staff</th><th>Contract</th><th>Elec kWh</th><th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Elec kWh</th></tr></thead><tbody id="dept-summ-body"></tbody></table></div></div>
+  <div class="card"><div class="ch"><div class="ct">Today vs Yesterday &mdash; Staff / Contract / Electricity kWh</div></div><div class="scroll-x"><table class="tbl dept-summ"><thead><tr><th class="lf" style="min-width:140px;">Department</th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today</th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday</th> </tr><tr><th class="lf"></th><th>Staff</th><th>Contract</th><th>Elec kWh</th><th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Elec kWh</th></tr></thead><tbody id="dept-summ-body"></tbody></table></div></div>
   <div class="sec-label">Material Needed &mdash; Schedule Priority (A+ First)</div>
   <div class="card"><div class="ch"><div class="ct">Steel Requirement vs Stock &mdash; Order or Produce Now</div><div style="display:flex;gap:6px;"><span class="badge b-rd">&#9650; No Stock</span><span class="badge b-gn">&#9654; In Stock</span><span class="badge b-sl" id="mat-count">&mdash;</span></div></div><div class="scroll-x"><table class="mat-tbl"><thead><tr><th class="lf">Band</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Grade</th><th>Pending Pcs</th><th>RM Req T</th><th>Stock T</th><th>Status</th></tr></thead><tbody id="mat-body"><tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
   <div class="sec-label">WIP Snapshot</div>
@@ -321,178 +321,179 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
     <div class="kc bl"><div class="kl">Oil — HT</div><div class="kv" id="m-oilh">&mdash;</div><div class="ks">litres</div></div>
   </div>
   <div class="sec-label">Manpower &amp; Costs</div>
-  <div class="card"><div class="ch"><div class="ct">Department-wise Headcount &amp; Contract Cost</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department</th><th>Staff Avg</th><th>Contract Avg</th><th>Total HC</th><th>Contract Cost ₹L</th></tr></thead><tbody id="m-mp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
+  <div class="card"><div class="ch"><div class="ct">Department-wise Headcount &amp; Contract Cost</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department</th><th>Staff Avg</th><th>Contract Avg</th><th>Total HC</th><th>Contract Cost ₹L</th></tr></thead><tbody id="m-mp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
   <div class="sec-label">Top Producing Machines &mdash; This Month</div>
-  <div class="card card-last"><div class="ch"><div class="ct">Top 10 by Pieces &mdash; Anchor for Utilisation</div></div><div class="cb" id="m-mach-bars"><div style="color:var(--tx3);font-size:11px;text-align:center;padding:14px;">Loading&hellip;</div></div></div>
-</div>
+  <div class="card card-last"><div class="ch"><div class="ct">Top 10 by Pieces &mdash; Anchor for Utilisation</div><\/div><div class="cb" id="m-mach-bars"><div style="color:var(--tx3);font-size:11px;text-align:center;padding:14px;">Loading&hellip;<\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-wip" class="main" style="display:none;" data-print-title="WIP — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Cut WIP &mdash; Own</div><div class="kv" id="w-cut">&mdash;</div><div class="ks" id="w-cut-s">VFs</div></div>
-    <div class="kc gn"><div class="kl">Forged WIP &mdash; Own</div><div class="kv" id="w-frg">&mdash;</div><div class="ks" id="w-frg-s">VFs</div></div>
-    <div class="kc bl"><div class="kl">JWK WIP</div><div class="kv" id="w-jwk">&mdash;</div><div class="ks">Laxmi + Kalyani</div></div>
-    <div class="kc sl"><div class="kl">Total Closing WIP</div><div class="kv" id="w-tot">&mdash;</div><div class="ks">all VFs combined</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">VF-wise Work in Process</div><div class="badge b-sl" id="w-row-count">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">VF No</th><th class="lf">Customer</th><th>Cut WIP</th><th>FG WIP</th><th>Closing WIP</th></tr></thead><tbody id="w-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc or"><div class="kl">Cut WIP &mdash; Own</div><div class="kv" id="w-cut">&mdash;<\/div><div class="ks" id="w-cut-s">VFs<\/div><\/div>
+    <div class="kc gn"><div class="kl">Forged WIP &mdash; Own</div><div class="kv" id="w-frg">&mdash;<\/div><div class="ks" id="w-frg-s">VFs<\/div><\/div>
+    <div class="kc bl"><div class="kl">JWK WIP</div><div class="kv" id="w-jwk">&mdash;<\/div><div class="ks">Laxmi + Kalyani<\/div><\/div>
+    <div class="kc sl"><div class="kl">Total Closing WIP</div><div class="kv" id="w-tot">&mdash;<\/div><div class="ks">all VFs combined<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">VF-wise Work in Process</div><div class="badge b-sl" id="w-row-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Cut WIP<\/th><th>FG WIP<\/th><th>Closing WIP<\/th></tr></thead><tbody id="w-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-sched" class="main" style="display:none;" data-print-title="SCHEDULE — VFPL Factory OS">
   <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total Schedule</div><div class="kv" id="s-tot">&mdash;</div><div class="ks" id="s-tot-s">pcs target</div></div>
-    <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv" id="s-prod">&mdash;</div><div class="ks">pcs done</div></div>
-    <div class="kc or"><div class="kl">Balance to Produce</div><div class="kv" id="s-bal">&mdash;</div><div class="ks" id="s-bal-s">pcs pending</div></div>
-    <div class="kc am"><div class="kl">Schedule %</div><div class="kv" id="s-pct">&mdash;</div><div class="ks">achievement</div></div>
-    <div class="kc rd"><div class="kl">RM Required</div><div class="kv" id="s-rm">&mdash;</div><div class="ks">tons of steel</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Schedule Intelligence &mdash; A+ First</div><div class="badge b-sl" id="s-row-count">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Band</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Grade</th><th>Sched Qty</th><th>Produced</th><th>Bal Produce</th><th>RM Req kg</th><th>%</th><th>Stock</th></tr></thead><tbody id="s-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc bl"><div class="kl">Total Schedule</div><div class="kv" id="s-tot">&mdash;<\/div><div class="ks" id="s-tot-s">pcs target<\/div><\/div>
+    <div class="kc gn"><div class="kl">Produced MTD</div><div class="kv" id="s-prod">&mdash;<\/div><div class="ks">pcs done<\/div><\/div>
+    <div class="kc or"><div class="kl">Balance to Produce</div><div class="kv" id="s-bal">&mdash;<\/div><div class="ks" id="s-bal-s">pcs pending<\/div><\/div>
+    <div class="kc am"><div class="kl">Schedule %</div><div class="kv" id="s-pct">&mdash;<\/div><div class="ks">achievement<\/div><\/div>
+    <div class="kc rd"><div class="kl">RM Required</div><div class="kv" id="s-rm">&mdash;<\/div><div class="ks">tons of steel<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Schedule Intelligence &mdash; A+ First</div><div class="badge b-sl" id="s-row-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Band<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Grade<\/th><th>Sched Qty<\/th><th>Produced<\/th><th>Bal Produce<\/th><th>RM Req kg<\/th><th>%<\/th><th>Stock<\/th></tr></thead><tbody id="s-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-outstanding" class="main" style="display:none;" data-print-title="OUTSTANDING — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="o-od">&mdash;</div><div class="ks" id="o-asn">&mdash;</div></div>
-    <div class="kc am"><div class="kl">Not Due</div><div class="kv" id="o-nd">&mdash;</div><div class="ks">future receivables</div></div>
-    <div class="kc sl"><div class="kl">Grand Total Outstanding</div><div class="kv" id="o-tot">&mdash;</div><div class="ks">all customers</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Customer-wise Outstanding</div><div style="display:flex;gap:6px;"><span class="badge b-bl">Not Due = future</span><span class="badge b-rd">Overdue = past due</span><span class="badge b-sl" id="o-row-count">&mdash;</span></div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Customer</th><th>Not Due</th><th>Overdue</th><th>Grand Total</th></tr></thead><tbody id="o-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="o-od">&mdash;<\/div><div class="ks" id="o-asn">&mdash;<\/div><\/div>
+    <div class="kc am"><div class="kl">Not Due</div><div class="kv" id="o-nd">&mdash;<\/div><div class="ks">future receivables<\/div><\/div>
+    <div class="kc sl"><div class="kl">Grand Total Outstanding</div><div class="kv" id="o-tot">&mdash;<\/div><div class="ks">all customers<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Customer-wise Outstanding</div><div style="display:flex;gap:6px;"><span class="badge b-bl">Not Due = future<\/span><span class="badge b-rd">Overdue = past due<\/span><span class="badge b-sl" id="o-row-count">&mdash;<\/span><\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Customer<\/th><th>Not Due<\/th><th>Overdue<\/th><th>Grand Total<\/th></tr></thead><tbody id="o-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-steel" class="main" style="display:none;" data-print-title="STEEL STOCK — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total Stock Balance</div><div class="kv" id="st-bal">&mdash;</div><div class="ks">kg across grades</div></div>
-    <div class="kc or"><div class="kl">Stock Value</div><div class="kv" id="st-val">&mdash;</div><div class="ks">at avg purchase rate</div></div>
-    <div class="kc gn"><div class="kl">Inward FY</div><div class="kv" id="st-inw">&mdash;</div><div class="ks">kg received</div></div>
-    <div class="kc sl"><div class="kl">Consumed FY</div><div class="kv" id="st-con">&mdash;</div><div class="ks">kg used</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Grade-wise Stock</div><div class="badge b-sl" id="st-rate-badge">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Grade</th><th>Opening kg</th><th>Inward kg</th><th>Consumed kg</th><th>Balance kg</th><th>Value ₹L</th><th>Days Stock</th><th class="lf">Status</th></tr></thead><tbody id="st-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc bl"><div class="kl">Total Stock Balance</div><div class="kv" id="st-bal">&mdash;<\/div><div class="ks">kg across grades<\/div><\/div>
+    <div class="kc or"><div class="kl">Stock Value</div><div class="kv" id="st-val">&mdash;<\/div><div class="ks">at avg purchase rate<\/div><\/div>
+    <div class="kc gn"><div class="kl">Inward FY</div><div class="kv" id="st-inw">&mdash;<\/div><div class="ks">kg received<\/div><\/div>
+    <div class="kc sl"><div class="kl">Consumed FY</div><div class="kv" id="st-con">&mdash;<\/div><div class="ks">kg used<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Grade-wise Stock</div><div class="badge b-sl" id="st-rate-badge">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Grade<\/th><th>Opening kg<\/th><th>Inward kg<\/th><th>Consumed kg<\/th><th>Balance kg<\/th><th>Value ₹L<\/th><th>Days Stock<\/th><th class="lf">Status<\/th></tr></thead><tbody id="st-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-f4" class="main" style="display:none;" data-print-title="57F4 — VFPL Factory OS">
-  <div class="card card-last"><div class="ch"><div class="ct">57F4 Vendor Reconciliation &mdash; Sent vs Received</div><div class="badge b-sl" id="f4-count">&mdash;</div></div><div id="f4-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;</div></div></div>
-</div>
+  <div class="card card-last"><div class="ch"><div class="ct">57F4 Vendor Reconciliation &mdash; Sent vs Received</div><div class="badge b-sl" id="f4-count">&mdash;<\/div><\/div><div id="f4-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;<\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-elec" class="main" style="display:none;" data-print-title="ELECTRICITY — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total kWh MTD</div><div class="kv" id="e-tot">&mdash;</div><div class="ks">all departments</div></div>
-    <div class="kc or"><div class="kl">Highest Dept</div><div class="kv" id="e-top">&mdash;</div><div class="ks" id="e-top-s">&mdash;</div></div>
-    <div class="kc sl"><div class="kl">Departments Tracked</div><div class="kv" id="e-cnt">&mdash;</div><div class="ks">meters mapped</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Department-wise Consumption &mdash; This Month</div></div><div class="cb" id="e-bars"><div style="color:var(--tx3);font-size:11px;text-align:center;padding:14px;">Loading&hellip;</div></div></div>
-</div>
+    <div class="kc bl"><div class="kl">Total kWh MTD</div><div class="kv" id="e-tot">&mdash;<\/div><div class="ks">all departments<\/div><\/div>
+    <div class="kc or"><div class="kl">Highest Dept</div><div class="kv" id="e-top">&mdash;<\/div><div class="ks" id="e-top-s">&mdash;<\/div><\/div>
+    <div class="kc sl"><div class="kl">Departments Tracked</div><div class="kv" id="e-cnt">&mdash;<\/div><div class="ks">meters mapped<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Department-wise Consumption &mdash; This Month</div><\/div><div class="cb" id="e-bars"><div style="color:var(--tx3);font-size:11px;text-align:center;padding:14px;">Loading&hellip;<\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-manpower" class="main" style="display:none;" data-print-title="MANPOWER — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Total Staff Today</div><div class="kv" id="mp-staff">&mdash;</div><div class="ks">company HC</div></div>
-    <div class="kc gn"><div class="kl">Total Contract Today</div><div class="kv" id="mp-contract">&mdash;</div><div class="ks">contract HC</div></div>
-    <div class="kc or"><div class="kl">Total HC Today</div><div class="kv" id="mp-total">&mdash;</div><div class="ks">staff + contract</div></div>
-  </div>
+    <div class="kc bl"><div class="kl">Total Staff Today</div><div class="kv" id="mp-staff">&mdash;<\/div><div class="ks">company HC<\/div><\/div>
+    <div class="kc gn"><div class="kl">Total Contract Today</div><div class="kv" id="mp-contract">&mdash;<\/div><div class="ks">contract HC<\/div><\/div>
+    <div class="kc or"><div class="kl">Total HC Today</div><div class="kv" id="mp-total">&mdash;<\/div><div class="ks">staff + contract<\/div><\/div>
+  <\/div>
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc sl"><div class="kl">vs Yesterday</div><div class="kv" id="mp-delta">&mdash;</div><div class="ks" id="mp-delta-s">&mdash;</div></div>
-    <div class="kc rd"><div class="kl">MTD Contract Cost</div><div class="kv" id="mp-cost">&mdash;</div><div class="ks">actual contract spend</div></div>
-    <div class="kc pu"><div class="kl">&#8377; per Forged Ton</div><div class="kv" id="mp-cpkg">&mdash;</div><div class="ks" id="mp-cpkg-s">manpower cost efficiency</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Department-wise Headcount &mdash; Today vs Yesterday</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department</th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today</th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday</th><th colspan="3" style="background:var(--brl);color:var(--brd);">MTD Avg</th></tr><tr><th class="lf"></th><th>Staff</th><th>Contract</th><th>Total</th><th style="background:var(--sll);">Staff</th><th style="background:var(--sll);">Contract</th><th style="background:var(--sll);">Total</th><th style="background:var(--brl);">Staff</th><th style="background:var(--brl);">Contract</th><th style="background:var(--brl);">Cost &#8377;</th></tr></thead><tbody id="mp-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc sl"><div class="kl">vs Yesterday</div><div class="kv" id="mp-delta">&mdash;<\/div><div class="ks" id="mp-delta-s">&mdash;<\/div><\/div>
+    <div class="kc rd"><div class="kl">MTD Contract Cost</div><div class="kv" id="mp-cost">&mdash;<\/div><div class="ks">actual contract spend<\/div><\/div>
+    <div class="kc pu"><div class="kl">&#8377; per Forged Ton</div><div class="kv" id="mp-cpkg">&mdash;<\/div><div class="ks" id="mp-cpkg-s">manpower cost efficiency<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Department-wise Headcount &mdash; Today vs Yesterday</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department<\/th><th colspan="3" style="background:#E3F2FD;color:#1565C0;">Today<\/th><th colspan="3" style="background:var(--sll);color:var(--sld);">Yesterday<\/th><th colspan="3" style="background:var(--brl);color:var(--brd);">MTD Avg<\/th> </tr><tr> <th class="lf"><\/th><th>Staff<\/th><th>Contract<\/th><th>Total<\/th><th style="background:var(--sll);">Staff<\/th><th style="background:var(--sll);">Contract<\/th><th style="background:var(--sll);">Total<\/th><th style="background:var(--brl);">Staff<\/th><th style="background:var(--brl);">Contract<\/th><th style="background:var(--brl);">Cost &#8377;<\/th> </tr><\/thead><tbody id="mp-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-oil" class="main" style="display:none;" data-print-title="OIL — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Forge Oil Closing</div><div class="kv" id="oil-fc">&mdash;</div><div class="ks">litres in stock</div></div>
-    <div class="kc bl"><div class="kl">HT Oil Closing</div><div class="kv" id="oil-hc">&mdash;</div><div class="ks">litres in stock</div></div>
-    <div class="kc sl"><div class="kl">Zyc Oil Closing</div><div class="kv" id="oil-zc">&mdash;</div><div class="ks">litres in stock</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Oil Ledger &mdash; Opening / Inward / Consumed / Closing (Litres)</div></div><div class="cb"><div class="oil-grid" id="oil-grid"></div></div></div>
-</div>
+    <div class="kc or"><div class="kl">Forge Oil Closing</div><div class="kv" id="oil-fc">&mdash;<\/div><div class="ks">litres in stock<\/div><\/div>
+    <div class="kc bl"><div class="kl">HT Oil Closing</div><div class="kv" id="oil-hc">&mdash;<\/div><div class="ks">litres in stock<\/div><\/div>
+    <div class="kc sl"><div class="kl">Zyc Oil Closing</div><div class="kv" id="oil-zc">&mdash;<\/div><div class="ks">litres in stock<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Oil Ledger &mdash; Opening / Inward / Consumed / Closing (Litres)</div><\/div><div class="cb"><div class="oil-grid" id="oil-grid"><\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-transport" class="main" style="display:none;" data-print-title="TRANSPORT — VFPL Factory OS">
   <div class="kgrid k5" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">FY Total Transport</div><div class="kv" id="tr-tot">&mdash;</div><div class="ks">incl GST YTD</div></div>
-    <div class="kc or"><div class="kl">This Month</div><div class="kv" id="tr-mtd">&mdash;</div><div class="ks" id="tr-mtd-s">&mdash;</div></div>
-    <div class="kc pu"><div class="kl">Avg ₹/Kg — This Month</div><div class="kv" id="tr-perkg">&mdash;</div><div class="ks" id="tr-perton">&mdash;</div></div>
-    <div class="kc gn"><div class="kl">Inbound (₹L)</div><div class="kv" id="tr-in">&mdash;</div><div class="ks">RM transport</div></div>
-    <div class="kc sl"><div class="kl">Outbound (₹L)</div><div class="kv" id="tr-out">&mdash;</div><div class="ks">FG transport</div></div>
-  </div>
-  <div class="card"><div class="ch"><div class="ct">Monthly Transport &mdash; FY 2026-27</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Month</th><th>Basic ₹</th><th>Tons</th><th>₹/Kg</th><th>₹/Ton</th><th>Total incl GST ₹</th><th class="lf">Status</th><th>Inbound ₹L</th><th>Outbound ₹L</th><th>Running ₹</th></tr></thead><tbody id="tr-body"><tr><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-  <div class="card card-last" style="margin-top:10px;"><div class="ch"><div class="ct">Transporter Leaderboard &mdash; FY 2026-27</div><div class="badge b-sl" id="tl-count">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Transporter</th><th>Dispatches</th><th>Vehicles</th><th>Tons</th><th>₹/Kg</th><th>₹/Ton</th><th>Total Freight ₹</th><th class="lf">Last Dispatch</th></tr></thead><tbody id="tl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc bl"><div class="kl">FY Total Transport</div><div class="kv" id="tr-tot">&mdash;<\/div><div class="ks">incl GST YTD<\/div><\/div>
+    <div class="kc or"><div class="kl">This Month</div><div class="kv" id="tr-mtd">&mdash;<\/div><div class="ks" id="tr-mtd-s">&mdash;<\/div><\/div>
+    <div class="kc pu"><div class="kl">Avg ₹/Kg — This Month</div><div class="kv" id="tr-perkg">&mdash;<\/div><div class="ks" id="tr-perton">&mdash;<\/div><\/div>
+    <div class="kc gn"><div class="kl">Inbound (₹L)</div><div class="kv" id="tr-in">&mdash;<\/div><div class="ks">RM transport<\/div><\/div>
+    <div class="kc sl"><div class="kl">Outbound (₹L)</div><div class="kv" id="tr-out">&mdash;<\/div><div class="ks">FG transport<\/div><\/div>
+  <\/div>
+  <div class="card"><div class="ch"><div class="ct">Monthly Transport &mdash; FY 2026-27</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Month<\/th><th>Basic ₹<\/th><th>Tons<\/th><th>₹/Kg<\/th><th>₹/Ton<\/th><th>Total incl GST ₹<\/th><th class="lf">Status<\/th><th>Inbound ₹L<\/th><th>Outbound ₹L<\/th><th>Running ₹<\/th></tr></thead><tbody id="tr-body"><td><td colspan="10" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+  <div class="card card-last" style="margin-top:10px;"><div class="ch"><div class="ct">Transporter Leaderboard &mdash; FY 2026-27</div><div class="badge b-sl" id="tl-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Transporter<\/th><th>Dispatches<\/th><th>Vehicles<\/th><th>Tons<\/th><th>₹/Kg<\/th><th>₹/Ton<\/th><th>Total Freight ₹<\/th><th class="lf">Last Dispatch<\/th></tr></thead><tbody id="tl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-alerts" class="main" style="display:none;" data-print-title="ALERTS — VFPL Factory OS">
-  <div class="card card-last"><div class="ch"><div class="ct">Active Alerts &mdash; High Priority First</div><div class="badge b-rd" id="al-count">&mdash;</div></div><div id="al-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;</div></div></div>
-</div>
+  <div class="card card-last"><div class="ch"><div class="ct">Active Alerts &mdash; High Priority First</div><div class="badge b-rd" id="al-count">&mdash;<\/div><\/div><div id="al-body"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;<\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-dielife" class="main" style="display:none;" data-print-title="DIE LIFE — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc gn"><div class="kl">Running Dies</div><div class="kv" id="dl-run">&mdash;</div><div class="ks">currently active</div></div>
-    <div class="kc sl"><div class="kl">Completed Runs</div><div class="kv" id="dl-cmp">&mdash;</div><div class="ks">historical</div></div>
-    <div class="kc or"><div class="kl">Total Pcs (Running)</div><div class="kv" id="dl-pcs">&mdash;</div><div class="ks">on active dies</div></div>
-  </div>
-  <div class="card"><div class="ch"><div class="ct">Currently Running Dies</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Machine</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Run Start</th><th>Days</th><th>Shifts</th><th>Total Pcs</th></tr></thead><tbody id="dl-run-body"><tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">&mdash;</td></tr></tbody></table></div></div>
-  <div class="card card-last"><div class="ch"><div class="ct">Completed Die Runs &mdash; History</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Machine</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Run Start</th><th>Run End</th><th>Days</th><th>Shifts</th><th>Total Pcs</th></tr></thead><tbody id="dl-cmp-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">&mdash;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc gn"><div class="kl">Running Dies</div><div class="kv" id="dl-run">&mdash;<\/div><div class="ks">currently active<\/div><\/div>
+    <div class="kc sl"><div class="kl">Completed Runs</div><div class="kv" id="dl-cmp">&mdash;<\/div><div class="ks">historical<\/div><\/div>
+    <div class="kc or"><div class="kl">Total Pcs (Running)</div><div class="kv" id="dl-pcs">&mdash;<\/div><div class="ks">on active dies<\/div><\/div>
+  <\/div>
+  <div class="card"><div class="ch"><div class="ct">Currently Running Dies</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Machine<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Run Start<\/th><th>Days<\/th><th>Shifts<\/th><th>Total Pcs<\/th></tr></thead><tbody id="dl-run-body"><tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">&mdash;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Completed Die Runs &mdash; History</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Machine<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Run Start<\/th><th>Run End<\/th><th>Days<\/th><th>Shifts<\/th><th>Total Pcs<\/th></tr></thead><tbody id="dl-cmp-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">&mdash;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-planner" class="main" style="display:none;" data-print-title="PRODUCTION PLANNER — VFPL Factory OS">
   <div class="kgrid k4" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Total Units Loaded</div><div class="kv" id="pl-units">&mdash;</div><div class="ks">in planner</div></div>
-    <div class="kc rd"><div class="kl">No-Stock RM</div><div class="kv" id="pl-nostock">&mdash;</div><div class="ks">blocked VFs</div></div>
-    <div class="kc am"><div class="kl">Partial Stock</div><div class="kv" id="pl-partial">&mdash;</div><div class="ks">caution VFs</div></div>
-    <div class="kc gn"><div class="kl">Ready to Run</div><div class="kv" id="pl-ready">&mdash;</div><div class="ks">stock OK</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Unit-wise Loading Sequence &mdash; Shop Floor Actionable</div><div class="badge b-sl" id="pl-count">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Unit</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Qty Pending</th><th class="lf">RM Status</th><th>Shifts Req</th><th>Target/Shift</th><th class="lf">Supervisor Action</th></tr></thead><tbody id="pl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc or"><div class="kl">Total Units Loaded</div><div class="kv" id="pl-units">&mdash;<\/div><div class="ks">in planner<\/div><\/div>
+    <div class="kc rd"><div class="kl">No-Stock RM</div><div class="kv" id="pl-nostock">&mdash;<\/div><div class="ks">blocked VFs<\/div><\/div>
+    <div class="kc am"><div class="kl">Partial Stock</div><div class="kv" id="pl-partial">&mdash;<\/div><div class="ks">caution VFs<\/div><\/div>
+    <div class="kc gn"><div class="kl">Ready to Run</div><div class="kv" id="pl-ready">&mdash;<\/div><div class="ks">stock OK<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Unit-wise Loading Sequence &mdash; Shop Floor Actionable</div><div class="badge b-sl" id="pl-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Unit<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Qty Pending<\/th><th class="lf">RM Status<\/th><th>Shifts Req<\/th><th>Target/Shift<\/th><th class="lf">Supervisor Action<\/th></tr></thead><tbody id="pl-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-gaps" class="main" style="display:none;" data-print-title="DATA GAPS — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Gaps</div><div class="kv" id="gp-tot">&mdash;</div><div class="ks">to resolve</div></div>
-    <div class="kc am"><div class="kl">Gap Categories</div><div class="kv" id="gp-cats">&mdash;</div><div class="ks">types active</div></div>
-    <div class="kc bl"><div class="kl">High-Impact Items</div><div class="kv" id="gp-high">&mdash;</div><div class="ks">blocking planning</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Data Gaps by Category &mdash; DME Daily Checklist</div><div class="badge b-rd" id="gp-count">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Gap Type</th><th class="lf">VF No</th><th class="lf">Issue</th><th class="lf">Impact</th><th class="lf">Fix In</th></tr></thead><tbody id="gp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc rd"><div class="kl">Total Gaps</div><div class="kv" id="gp-tot">&mdash;<\/div><div class="ks">to resolve<\/div><\/div>
+    <div class="kc am"><div class="kl">Gap Categories</div><div class="kv" id="gp-cats">&mdash;<\/div><div class="ks">types active<\/div><\/div>
+    <div class="kc bl"><div class="kl">High-Impact Items</div><div class="kv" id="gp-high">&mdash;<\/div><div class="ks">blocking planning<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Data Gaps by Category &mdash; DME Daily Checklist</div><div class="badge b-rd" id="gp-count">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Gap Type<\/th><th class="lf">VF No<\/th><th class="lf">Issue<\/th><th class="lf">Impact<\/th><th class="lf">Fix In<\/th></tr></thead><tbody id="gp-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-collection" class="main" style="display:none;" data-print-title="COLLECTION ENGINE — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="col-total">&mdash;</div><div class="ks">gross positive ₹</div></div>
-    <div class="kc am"><div class="kl">Customers to Chase</div><div class="kv" id="col-count">&mdash;</div><div class="ks">with overdue</div></div>
-    <div class="kc bl"><div class="kl">Top Overdue</div><div class="kv" id="col-top">&mdash;</div><div class="ks" id="col-top-s">customer</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Collection Actions &mdash; One-click Email Templates</div><div class="badge b-rd" id="col-badge">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Customer</th><th>Overdue ₹</th><th>Days</th><th class="lf">Action</th><th class="lf">Copy Email</th></tr></thead><tbody id="col-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc rd"><div class="kl">Total Overdue</div><div class="kv" id="col-total">&mdash;<\/div><div class="ks">gross positive ₹<\/div><\/div>
+    <div class="kc am"><div class="kl">Customers to Chase</div><div class="kv" id="col-count">&mdash;<\/div><div class="ks">with overdue<\/div><\/div>
+    <div class="kc bl"><div class="kl">Top Overdue</div><div class="kv" id="col-top">&mdash;<\/div><div class="ks" id="col-top-s">customer<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Collection Actions &mdash; One-click Email Templates</div><div class="badge b-rd" id="col-badge">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Customer<\/th><th>Overdue ₹<\/th><th>Days<\/th><th class="lf">Action<\/th><th class="lf">Copy Email<\/th></tr></thead><tbody id="col-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-vrej" class="main" style="display:none;" data-print-title="VENDOR REJECTION — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc rd"><div class="kl">Total Rejections</div><div class="kv" id="vr-pcs">&mdash;</div><div class="ks">pcs (FY MTD)</div></div>
-    <div class="kc am"><div class="kl">Financial Impact</div><div class="kv" id="vr-rs">&mdash;</div><div class="ks">₹ at risk</div></div>
-    <div class="kc sl"><div class="kl">Vendors Involved</div><div class="kv" id="vr-vendors">&mdash;</div><div class="ks">distinct</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Vendor Rejection &mdash; Material for Debit-Note Conversations</div><div class="badge b-rd" id="vr-badge">&mdash;</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Vendor</th><th class="lf">VF No</th><th>Pcs Rejected</th><th>Amount ₹</th><th class="lf">Top Reason</th></tr></thead><tbody id="vr-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc rd"><div class="kl">Total Rejections</div><div class="kv" id="vr-pcs">&mdash;<\/div><div class="ks">pcs (FY MTD)<\/div><\/div>
+    <div class="kc am"><div class="kl">Financial Impact</div><div class="kv" id="vr-rs">&mdash;<\/div><div class="ks">₹ at risk<\/div><\/div>
+    <div class="kc sl"><div class="kl">Vendors Involved</div><div class="kv" id="vr-vendors">&mdash;<\/div><div class="ks">distinct<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Vendor Rejection &mdash; Material for Debit-Note Conversations</div><div class="badge b-rd" id="vr-badge">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Vendor<\/th><th class="lf">VF No<\/th><th>Pcs Rejected<\/th><th>Amount ₹<\/th><th class="lf">Top Reason<\/th></tr></thead><tbody id="vr-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-dscore" class="main" style="display:none;" data-print-title="DEPT SCORE — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc bl"><div class="kl">Overall Compliance</div><div class="kv" id="ds-pct">&mdash;</div><div class="ks">% of expected entries</div></div>
-    <div class="kc gn"><div class="kl">Departments Tracked</div><div class="kv" id="ds-cnt">&mdash;</div><div class="ks">data sources</div></div>
-    <div class="kc or"><div class="kl">Working Days MTD</div><div class="kv" id="ds-days">&mdash;</div><div class="ks">days in month so far</div></div>
-  </div>
-  <div class="card card-last"><div class="ch"><div class="ct">Department Compliance &mdash; Data Entry Tracking</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department</th><th>Rows Logged</th><th>Expected</th><th>Compliance %</th><th class="lf">Grade</th></tr></thead><tbody id="ds-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody></table></div></div>
-</div>
+    <div class="kc bl"><div class="kl">Overall Compliance</div><div class="kv" id="ds-pct">&mdash;<\/div><div class="ks">% of expected entries<\/div><\/div>
+    <div class="kc gn"><div class="kl">Departments Tracked</div><div class="kv" id="ds-cnt">&mdash;<\/div><div class="ks">data sources<\/div><\/div>
+    <div class="kc or"><div class="kl">Working Days MTD</div><div class="kv" id="ds-days">&mdash;<\/div><div class="ks">days in month so far<\/div><\/div>
+  <\/div>
+  <div class="card card-last"><div class="ch"><div class="ct">Department Compliance &mdash; Data Entry Tracking</div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Department<\/th><th>Rows Logged<\/th><th>Expected<\/th><th>Compliance %<\/th><th class="lf">Grade<\/th></tr></thead><tbody id="ds-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;<\/td><\/tr><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <div id="tab-margin" class="main" style="display:none;" data-print-title="MARGINS — VFPL Factory OS">
-  <div id="pin-gate" class="card card-last"><div class="pin-gate"><div style="font-size:34px;margin-bottom:8px;">&#128274;</div><div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Margins</div><div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view margin classification</div><input type="password" class="pin-in" id="pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkPin()"><button class="pin-btn" onclick="checkPin()">UNLOCK</button><div id="pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN</div></div></div>
-  <div id="margin-content" style="display:none;"><div class="kgrid k4" style="margin-bottom:10px;"><div class="kc gn"><div class="kl">Avg RM Rate</div><div class="kv" id="mg-rate">&mdash;</div><div class="ks">₹/kg from RM Inward</div></div><div class="kc bl"><div class="kl">Total VFs Dispatched</div><div class="kv" id="mg-vfs">&mdash;</div><div class="ks">with margin data</div></div><div class="kc or"><div class="kl">Total Turnover</div><div class="kv" id="mg-tov">&mdash;</div><div class="ks">₹L MTD</div></div><div class="kc sl"><div class="kl">Net Realisation</div><div class="kv" id="mg-net">&mdash;</div><div class="ks">₹L after conversion</div></div></div><div class="card card-last"><div class="ch"><div class="ct">VF-wise Margin &mdash; Sorted A+ First</div></div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Band</th><th class="lf">VF No</th><th class="lf">Customer</th><th>Grade</th><th>Conv ₹/kg</th><th>Net ₹/kg</th><th>Disp Tons</th><th>Turnover ₹L</th><th>Net Real ₹L</th></tr></thead><tbody id="mg-body"></tbody></table></div></div></div>
-</div>
+  <div id="pin-gate" class="card card-last"><div class="pin-gate"><div style="font-size:34px;margin-bottom:8px;">&#128274;<\/div><div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Margins<\/div><div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view margin classification<\/div><input type="password" class="pin-in" id="pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkPin()"><button class="pin-btn" onclick="checkPin()">UNLOCK<\/button><div id="pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN<\/div><\/div><\/div>
+  <div id="margin-content" style="display:none;"><div class="kgrid k4" style="margin-bottom:10px;"><div class="kc gn"><div class="kl">Avg RM Rate<\/div><div class="kv" id="mg-rate">&mdash;<\/div><div class="ks">₹/kg from RM Inward<\/div><\/div><div class="kc bl"><div class="kl">Total VFs Dispatched<\/div><div class="kv" id="mg-vfs">&mdash;<\/div><div class="ks">with margin data<\/div><\/div><div class="kc or"><div class="kl">Total Turnover<\/div><div class="kv" id="mg-tov">&mdash;<\/div><div class="ks">₹L MTD<\/div><\/div><div class="kc sl"><div class="kl">Net Realisation<\/div><div class="kv" id="mg-net">&mdash;<\/div><div class="ks">₹L after conversion<\/div><\/div><\/div><div class="card card-last"><div class="ch"><div class="ct">VF-wise Margin &mdash; Sorted A+ First<\/div><\/div><div class="scroll-x"><table class="tbl"><thead><tr><th class="lf">Band<\/th><th class="lf">VF No<\/th><th class="lf">Customer<\/th><th>Grade<\/th><th>Conv ₹/kg<\/th><th>Net ₹/kg<\/th><th>Disp Tons<\/th><th>Turnover ₹L<\/th><th>Net Real ₹L<\/th></tr></thead><tbody id="mg-body"><\/tbody><\/table><\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-costsum" class="main" style="display:none;" data-print-title="COST SUMMARY — VFPL Factory OS">
-  <div id="cs-pin-gate" class="card card-last"><div class="pin-gate"><div style="font-size:34px;margin-bottom:8px;">&#128274;</div><div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Cost Summary</div><div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view monthly MIS P&amp;L</div><input type="password" class="pin-in" id="cs-pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkCostPin()"><button class="pin-btn" onclick="checkCostPin()">UNLOCK</button><div id="cs-pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN</div></div></div>
-  <div id="cs-content" style="display:none;"><div class="card card-last"><div class="ch"><div class="ct">Cost Summary &mdash; Monthly MIS P&amp;L (Owner View)</div><div class="badge b-sl" id="cs-updated">&mdash;</div></div><div class="scroll-x"><table class="tbl" style="font-size:10px;"><thead><tr id="cs-head"></tr></thead><tbody id="cs-body"></tbody></table></div></div></div>
-</div>
+  <div id="cs-pin-gate" class="card card-last"><div class="pin-gate"><div style="font-size:34px;margin-bottom:8px;">&#128274;<\/div><div style="font-size:14px;color:var(--sld);font-weight:600;margin-bottom:6px;">Owner Access &mdash; Cost Summary<\/div><div style="font-size:11px;color:var(--tx2);margin-bottom:18px;">Enter 4-digit PIN to view monthly MIS P&amp;L<\/div><input type="password" class="pin-in" id="cs-pin-in" maxlength="4" onkeyup="if(event.key==='Enter')checkCostPin()"><button class="pin-btn" onclick="checkCostPin()">UNLOCK<\/button><div id="cs-pin-err" style="color:var(--rd);font-size:11px;margin-top:10px;display:none;">Wrong PIN<\/div><\/div><\/div>
+  <div id="cs-content" style="display:none;"><div class="card card-last"><div class="ch"><div class="ct">Cost Summary &mdash; Monthly MIS P&amp;L (Owner View)<\/div><div class="badge b-sl" id="cs-updated">&mdash;<\/div><\/div><div class="scroll-x"><table class="tbl" style="font-size:10px;"><thead><tr id="cs-head"><\/tr><\/thead><tbody id="cs-body"><\/tbody><\/table><\/div><\/div><\/div>
+<\/div>
 
 <div id="tab-fy" class="main" style="display:none;" data-print-title="FY MONTHLY — VFPL Factory OS">
-  <div class="card card-last"><div class="ch"><div class="ct">FY 2026-27 &mdash; Monthly Summary (All Metrics)</div></div><div class="scroll-x"><table class="tbl" style="font-size:10px;"><thead><tr id="fy-head"></tr></thead><tbody id="fy-body"></tbody></table></div></div>
-</div>
+  <div class="card card-last"><div class="ch"><div class="ct">FY 2026-27 &mdash; Monthly Summary (All Metrics)<\/div><\/div><div class="scroll-x"><table class="tbl" style="font-size:10px;"><thead><tr id="fy-head"><\/tr><\/thead><tbody id="fy-body"><\/tbody><\/table><\/div><\/div>
+<\/div>
 
 <script>
 // ============================================================
-// VFPL FACTORY OS — DATA BINDING LAYER
+// VFPL FACTORY OS — DATA BINDING LAYER (GITHUB PAGES VERSION)
 // ============================================================
-var WEB_APP = 'https://script.google.com/macros/s/AKfycbx8BvUoAMVFovekpqY-IE9BAcs6706uMbL0jTu9VIB8UJ5E3Cbu2Vsp1DGYHtx5AVjKSg/exec';
+// IMPORTANT: Replace this URL with your actual Apps Script Web App URL
+var WEB_APP = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
 var OWNER_PIN = '1234';
 var REFRESH_MS = 60000;
 var D = {};
@@ -743,7 +744,8 @@ function renderMaterial(schedRows, steelGrades) {
       '<td>' + fmtN(r.balProduce) + '</td>' +
       '<td>' + (rmKg > 0 ? fmtT(rmKg / 1000) : '—') + '</td>' +
       '<td>' + (stockKg > 0 ? fmtT(stockKg / 1000) : '—') + '</td>' +
-      '<td>' + statusBadge + '</td></tr>';
+      '<td>' + statusBadge + '</td>' +
+      '</tr>';
     shown++;
   });
   document.getElementById('mat-body').innerHTML = rows || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No pending production</td></tr>';
@@ -777,9 +779,10 @@ function renderF4(vendors) {
         '<td class="lf">' + safeText(p.customer) + '</td>' +
         '<td>' + fmtN(p.sentPcs) + '</td>' +
         '<td>' + fmtN(p.receivedPcs) + '</td>' +
-        '<td style="color:' + (N(p.pendingPcs) > 0 ? 'var(--rd)' : 'var(--gn)') + ';font-weight:' + (N(p.pendingPcs) > 0 ? '700' : 'normal') + ';">' + fmtN(p.pendingPcs) + '</td></tr>';
+        '<td style="color:' + (N(p.pendingPcs) > 0 ? 'var(--rd)' : 'var(--gn)') + ';font-weight:' + (N(p.pendingPcs) > 0 ? '700' : 'normal') + ';">' + fmtN(p.pendingPcs) + '</td>' +
+        '</tr>';
     });
-    html += '</tbody></table></div></div>';
+    html += '</tbody></tr></div></div>';
   });
   document.getElementById('f4-body').innerHTML = html;
 }
@@ -815,14 +818,16 @@ function renderManpower(today, yest, mtd) {
       '<td>' + (t.staff || '—') + '</td><td>' + (t.contract || '—') + '</td><td style="font-weight:700;">' + (N(t.staff) + N(t.contract) || '—') + '</td>' +
       '<td style="background:#FAFBFD;">' + (y.staff || '—') + '</td><td style="background:#FAFBFD;">' + (y.contract || '—') + '</td><td style="background:#FAFBFD;font-weight:700;">' + (N(y.staff) + N(y.contract) || '—') + '</td>' +
       '<td style="background:var(--brl);">' + (a.staffAvg || '—') + '</td><td style="background:var(--brl);">' + (a.contractAvg || '—') + '</td>' +
-      '<td style="background:var(--brl);">' + costCell + '</td></tr>';
+      '<td style="background:var(--brl);">' + costCell + '</td>' +
+      '</tr>';
   });
   if (rows) {
     var totalCostCell = totalMPCost > 0 ? '<span style="color:#B91C1C;font-weight:700;">₹' + fmtN(Math.round(totalMPCost)) + '</span>' : '—';
     rows += '<tr class="tot"><td class="lf">TOTAL</td>' +
       '<td>' + totS + '</td><td>' + totC + '</td><td>' + (totS + totC) + '</td>' +
       '<td>' + totSY + '</td><td>' + totCY + '</td><td>' + (totSY + totCY) + '</td>' +
-      '<td>—</td><td>—</td><td>' + totalCostCell + '</td></tr>';
+      '<td>—</td><td>—</td><td>' + totalCostCell + '</td>' +
+      '</tr>';
   }
   document.getElementById('mp-body').innerHTML = rows || '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No manpower data</td></tr>';
   document.getElementById('mp-staff').textContent = fmtN(totS);
@@ -889,9 +894,10 @@ function renderTransport(rows, ledger, mtd) {
       '<td class="lf"><span class="badge ' + statColor + '">' + safeText(r.status || '—') + '</span></td>' +
       '<td>' + N(r.inboundL).toFixed(2) + '</td>' +
       '<td>' + N(r.outboundL).toFixed(2) + '</td>' +
-      '<td>' + fmtN(r.runningTotal) + '</td></tr>';
+      '<td>' + fmtN(r.runningTotal) + '</td>' +
+      '</tr>';
   });
-  document.getElementById('tr-body').innerHTML = html || '<td><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No transport data</td></tr>';
+  document.getElementById('tr-body').innerHTML = html || '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No transport data<\/td><\/tr>';
   var sorted = (ledger || []).slice().sort(function(a, b) { return N(b.totalFreightRs) - N(a.totalFreightRs); });
   document.getElementById('tl-count').textContent = sorted.length + ' transporters';
   var lhtml = '';
@@ -901,12 +907,13 @@ function renderTransport(rows, ledger, mtd) {
       '<td>' + fmtN(t.dispatches) + '</td>' +
       '<td>' + fmtN(t.vehicles) + '</td>' +
       '<td>' + N(t.totalTons).toFixed(2) + '</td>' +
-      '<td>' + N(t.avgPerKg).toFixed(2) + '</td>' +
+      '<td>' + N(t.avgPerKg).toFixed(2) + '<td>' +
       '<td>' + Math.round(N(t.avgPerTon)).toLocaleString('en-IN') + '</td>' +
       '<td style="font-weight:700;">' + fmtN(t.totalFreightRs) + '</td>' +
-      '<td class="lf">' + last + '</td></tr>';
+      '<td class="lf">' + last + '</td>' +
+      '</tr>';
   });
-  document.getElementById('tl-body').innerHTML = lhtml || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No transporter data</td></tr>';
+  document.getElementById('tl-body').innerHTML = lhtml || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No transporter data<\/td><\/tr>';
 }
 
 function renderAlerts(alerts) {
@@ -943,24 +950,26 @@ function renderDieLife(dl) {
     rRows += '<tr><td class="lf">' + safeText(r.machine) + '</td>' +
       '<td class="lf" style="font-weight:600;color:var(--br);">' + safeText(r.vf) + '</td>' +
       '<td class="lf">' + safeText(r.customer) + '</td>' +
-      '<td>' + fmtDate(r.runStart) + '</td>' +
+      '<td>' + fmtDate(r.runStart) + '<td>' +
       '<td>' + fmtN(r.days) + '</td>' +
       '<td>' + fmtN(r.shifts) + '</td>' +
-      '<td style="font-weight:700;color:var(--gn);">' + fmtN(r.totalPcs) + '</td></tr>';
+      '<td style="font-weight:700;color:var(--gn);">' + fmtN(r.totalPcs) + '</td>' +
+      '</tr>';
   });
-  document.getElementById('dl-run-body').innerHTML = rRows || '<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:14px;">No running dies</td></tr>';
+  document.getElementById('dl-run-body').innerHTML = rRows || '<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:14px;">No running dies<\/td><\/tr>';
   var cRows = '';
   cmp.forEach(function(r) {
-    cRows += '<tr><td class="lf">' + safeText(r.machine) + '</td>' +
+    cRows += '<tr><td class="lf">' + safeText(r.machine) + '<td>' +
       '<td class="lf" style="font-weight:600;color:var(--br);">' + safeText(r.vf) + '</td>' +
-      '<td class="lf">' + safeText(r.customer) + '</td>' +
-      '<td>' + fmtDate(r.runStart) + '</td>' +
-      '<td>' + fmtDate(r.runEnd) + '</td>' +
-      '<td>' + fmtN(r.days) + '</td>' +
-      '<td>' + fmtN(r.shifts) + '</td>' +
-      '<td>' + fmtN(r.totalPcs) + '</td></tr>';
+      '<td class="lf">' + safeText(r.customer) + '<td>' +
+      '<td>' + fmtDate(r.runStart) + '<td>' +
+      '<td>' + fmtDate(r.runEnd) + '<td>' +
+      '<td>' + fmtN(r.days) + '<td>' +
+      '<td>' + fmtN(r.shifts) + '<td>' +
+      '<td>' + fmtN(r.totalPcs) + '</td>' +
+      '</tr>';
   });
-  document.getElementById('dl-cmp-body').innerHTML = cRows || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No completed runs</td></tr>';
+  document.getElementById('dl-cmp-body').innerHTML = cRows || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No completed runs<\/td><\/tr>';
 }
 
 function renderDeptScore(ds) {
@@ -979,7 +988,7 @@ function renderDeptScore(ds) {
       '<td class="lf">' + grade + '</td>' +
       '</tr>';
   });
-  document.getElementById('ds-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No compliance data</td></tr>';
+  document.getElementById('ds-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No compliance data<\/td><\/tr>';
 }
 
 function renderMargins() {
@@ -1006,11 +1015,12 @@ function renderMargins() {
       '<td>' + safeText(r.grade) + '</td>' +
       '<td>' + (r.convPerKg || 0).toFixed(2) + '</td>' +
       '<td style="font-weight:700;color:' + (r.netPerKg > 0 ? 'var(--gn)' : 'var(--rd)') + ';">' + (r.netPerKg || 0).toFixed(2) + '</td>' +
-      '<td>' + (r.dispTons || 0).toFixed(3) + '</td>' +
+      '<td>' + (r.dispTons || 0).toFixed(3) + '<td>' +
       '<td>' + (r.turnoverL || 0).toFixed(2) + '</td>' +
-      '<td style="font-weight:700;">' + (r.netRealL || 0).toFixed(2) + '</td></tr>';
+      '<td style="font-weight:700;">' + (r.netRealL || 0).toFixed(2) + '</td>' +
+      '</tr>';
   });
-  document.getElementById('mg-body').innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:14px;">No margin data</td></tr>';
+  document.getElementById('mg-body').innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:14px;">No margin data<\/td><\/tr>';
 }
 
 function renderFY(fy) {
@@ -1066,17 +1076,18 @@ function renderPlanner(data) {
       '<td class="lf-vf">' + safeText(vf) + '</td>' +
       '<td class="lf">' + safeText(cust) + '</td>' +
       '<td>' + (qty > 0 ? fmtN(qty) : '—') + '</td>' +
-      '<td class="lf">' + rmBadge + '</td>' +
+      '<td class="lf">' + rmBadge + '<tr>' +
       '<td>' + safeText(shR) + '</td>' +
       '<td>' + safeText(tgt) + '</td>' +
-      '<td class="lf">' + safeText(act) + '</td></tr>';
+      '<td class="lf">' + safeText(act) + '</td>' +
+      '</tr>';
   });
   document.getElementById('pl-units').textContent = units.size || 0;
   document.getElementById('pl-nostock').textContent = nostock;
   document.getElementById('pl-partial').textContent = partial;
   document.getElementById('pl-ready').textContent = ready;
   document.getElementById('pl-count').textContent = valid + ' VFs loaded';
-  document.getElementById('pl-body').innerHTML = bodyHTML || '<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">No planner rows</td></tr>';
+  document.getElementById('pl-body').innerHTML = bodyHTML || '<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">No planner rows<\/td><\/tr>';
 }
 
 function renderGaps(data) {
@@ -1094,9 +1105,10 @@ function renderGaps(data) {
       '<td class="lf-vf">' + safeText(r.vfNo) + '</td>' +
       '<td class="lf">' + safeText(r.issue) + '</td>' +
       '<td class="lf">' + sev + '</td>' +
-      '<td class="lf">' + safeText(r.action) + '</td></tr>';
+      '<td class="lf">' + safeText(r.action) + '</td>' +
+      '</tr>';
   });
-  document.getElementById('gp-body').innerHTML = bodyHTML || '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No active data gaps</td></tr>';
+  document.getElementById('gp-body').innerHTML = bodyHTML || '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No active data gaps<\/td><\/tr>';
 }
 
 function renderCollection(data) {
@@ -1137,15 +1149,16 @@ function renderCollection(data) {
   customers.forEach(function(c) {
     var days = '—';
     var action = c.overdue > 500000 ? '<span class="badge b-rd">URGENT CALL</span>' : c.overdue > 100000 ? '<span class="badge b-am">EMAIL + CALL</span>' : '<span class="badge b-sl">EMAIL</span>';
-    var email = emailMap[c.name] || ('Subject: Payment reminder — overdue balance ₹' + c.overdue.toLocaleString('en-IN') + '\n\nDear ' + c.name + ' team,\n\nOur records show an overdue balance of ₹' + c.overdue.toLocaleString('en-IN') + ' against your account. Kindly arrange payment at the earliest.\n\nRegards,\nVarsha Forgings Accounts');
+    var email = emailMap[c.name] || ('Subject: Payment reminder — overdue balance ₹' + c.overdue.toLocaleString('en-IN') + '\\n\\nDear ' + c.name + ' team,\\n\\nOur records show an overdue balance of ₹' + c.overdue.toLocaleString('en-IN') + ' against your account. Kindly arrange payment at the earliest.\\n\\nRegards,\\nVarsha Forgings Accounts');
     var emailJs = email.replace(/'/g, "\\'").replace(/\n/g, '\\n');
     bodyHTML += '<tr><td class="lf">' + safeText(c.name) + '</td>' +
       '<td>' + fmtCr(c.overdue) + '</td>' +
       '<td>' + days + '</td>' +
       '<td class="lf">' + action + '</td>' +
-      '<td class="lf"><button onclick="copyEmail(this,\'' + emailJs + '\')" style="background:var(--brl);color:var(--brd);border:1px solid var(--br);padding:3px 8px;font-size:10px;border-radius:3px;cursor:pointer;font-weight:600;">&#128203; Copy</button></td></tr>';
+      '<td class="lf"><button onclick="copyEmail(this,\'' + emailJs + '\')" style="background:var(--brl);color:var(--brd);border:1px solid var(--br);padding:3px 8px;font-size:10px;border-radius:3px;cursor:pointer;font-weight:600;">&#128203; Copy</button></td>' +
+      '</tr>';
   });
-  document.getElementById('col-body').innerHTML = bodyHTML || '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No customers overdue</td></tr>';
+  document.getElementById('col-body').innerHTML = bodyHTML || '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No customers overdue<\/td><\/tr>';
 }
 
 window.copyEmail = function(btn, text) {
@@ -1182,9 +1195,10 @@ function renderVrej(data) {
       '<td class="lf-vf">' + safeText(r.vfNo || '—') + '</td>' +
       '<td>' + fmtN(r.pcs) + '</td>' +
       '<td>' + fmtCr(r.rs) + '</td>' +
-      '<td class="lf">' + safeText(r.reason || '—') + '</td></tr>';
+      '<td class="lf">' + safeText(r.reason || '—') + '</td>' +
+      '</tr>';
   });
-  document.getElementById('vr-body').innerHTML = bodyHTML || '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No vendor rejections this period</td></tr>';
+  document.getElementById('vr-body').innerHTML = bodyHTML || '</tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No vendor rejections this period<\/td><\/tr>';
 }
 
 function renderCostSum(data) {
@@ -1211,7 +1225,7 @@ function renderCostSum(data) {
     });
     bodyHTML += '</tr>';
   });
-  document.getElementById('cs-body').innerHTML = bodyHTML || '<tr><td colspan="20" style="text-align:center;padding:14px;color:var(--tx3);">COST_SUMMARY sheet tab is empty</td></tr>';
+  document.getElementById('cs-body').innerHTML = bodyHTML || '<tr><td colspan="20" style="text-align:center;padding:14px;color:var(--tx3);">COST_SUMMARY sheet tab is empty<\/td><\/tr>';
 }
 
 function renderSession18(data) {
@@ -1395,12 +1409,12 @@ function render(data) {
     var staff = N(r.staffAvg), contract = N(r.contractAvg), cost = N(r.contractCost);
     if (staff === 0 && contract === 0 && cost === 0) return;
     mpRows += '<tr><td class="lf">' + d + '</td>' +
-      '<td>' + staff + '</td><td>' + contract + '</td><td>' + (staff + contract) + '</td>' +
+      '<td>' + staff + '</td><td>' + contract + '<td><td style="font-weight:700;">' + (staff + contract) + '</td>' +
       '<td>' + (cost > 0 ? (cost / 100000).toFixed(2) : '—') + '</td>' +
-      '</tr>';
+      '<tr>';
   });
-  var mpHeader = usingLive ? '<tr><td colspan="5" style="text-align:center;color:var(--am);padding:8px;font-size:10px;background:var(--amb);">Showing today\'s live headcount (MANPOWER_SUMMARY tab not populated)</td></tr>' : '';
-  document.getElementById('m-mp-body').innerHTML = mpHeader + (mpRows || '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No manpower data</td></tr>');
+  var mpHeader = usingLive ? '<tr><td colspan="5" style="text-align:center;color:var(--am);padding:8px;font-size:10px;background:var(--amb);">Showing today\'s live headcount (MANPOWER_SUMMARY tab not populated)</td><\/tr>' : '';
+  document.getElementById('m-mp-body').innerHTML = mpHeader + (mpRows || '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No manpower data<\/td><\/tr>');
   var bars = mtd.machineBars || [];
   var maxBar = bars.length ? Math.max.apply(null, bars.map(function(b) { return N(b[1]); })) : 1;
   var barsHTML = '';
@@ -1420,11 +1434,11 @@ function render(data) {
     wRows += '<tr><td class="lf" style="font-weight:600;color:var(--br);">' + safeText(r.vfNo) + '</td>' +
       '<td class="lf">' + safeText(r.customer) + '</td>' +
       '<td>' + (r.cutWIP ? fmtN(r.cutWIP) : '—') + '</td>' +
-      '<td>' + (r.fgWIP ? fmtN(r.fgWIP) : '—') + '</td>' +
+      '<td>' + (r.fgWIP ? fmtN(r.fgWIP) : '—') + '<td>' +
       '<td style="font-weight:700;">' + fmtN(r.closingWIP || 0) + '</td>' +
       '</tr>';
   });
-  document.getElementById('w-body').innerHTML = wRows || '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No WIP data</td></tr>';
+  document.getElementById('w-body').innerHTML = wRows || '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No WIP data<\/td><\/tr>';
   document.getElementById('w-row-count').textContent = (wip.rows || []).length + ' VFs';
   document.getElementById('s-tot').textContent = fmtN(scSum.totalSchedQty || 0);
   document.getElementById('s-prod').textContent = fmtN(scSum.totalProduced || 0);
@@ -1460,7 +1474,7 @@ function render(data) {
       '<td>' + (hasStock ? '<span class="badge b-gn">YES</span>' : '<span class="badge b-rd">NO</span>') + '</td>' +
       '</tr>';
   });
-  document.getElementById('s-body').innerHTML = sRows || '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No schedule</td></tr>';
+  document.getElementById('s-body').innerHTML = sRows || '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No schedule<\/td><\/tr>';
   document.getElementById('s-row-count').textContent = sSorted.length + ' VFs';
   var grossOverdue = 0, creditBal = 0;
   (out.customers || []).forEach(function(c) {
@@ -1481,7 +1495,7 @@ function render(data) {
       '<td style="font-weight:600;">' + fmtCr(c.grandTotal) + '</td>' +
       '</tr>';
   });
-  document.getElementById('o-body').innerHTML = oRows || '<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:14px;">No outstanding</td></tr>';
+  document.getElementById('o-body').innerHTML = oRows || '<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:14px;">No outstanding<\/td><\/tr>';
   document.getElementById('o-row-count').textContent = (out.customers || []).length + ' customers';
   window.__lastOutstandingRows = (out.customers || []).map(function(c) {
     return { customer: c.customer, name: c.customer, overdue: N(c.overdue), notDue: N(c.notDue), grandTotal: N(c.grandTotal), asOn: c.asOn };
@@ -1501,7 +1515,7 @@ function render(data) {
     else if (status.indexOf('🟢') >= 0) statusClass = 'color:var(--gn);font-weight:600;';
     stRows += '<tr><td class="lf" style="font-weight:600;">' + safeText(grade) + '</td>' +
       '<td>' + fmtN(g['Opening (kg)'] || 0) + '</td>' +
-      '<td>' + fmtN(g['Inward (kg)'] || 0) + '<td>' +
+      '<td>' + fmtN(g['Inward (kg)'] || 0) + '</td>' +
       '<td>' + fmtN(g['Consumed (kg)'] || 0) + '</td>' +
       '<td style="font-weight:700;">' + fmtN(g['Balance (kg)'] || 0) + '</td>' +
       '<td>' + (g['Value (₹L)'] || 0).toFixed(1) + '</td>' +
@@ -1509,7 +1523,7 @@ function render(data) {
       '<td class="lf" style="' + statusClass + '">' + safeText(status) + '</td>' +
       '</tr>';
   });
-  document.getElementById('st-body').innerHTML = stRows || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No steel data</td></tr>';
+  document.getElementById('st-body').innerHTML = stRows || '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No steel data<\/td><\/tr>';
   renderF4(f4.vendors || []);
   document.getElementById('e-tot').textContent = fmtN(elec.totalKwh || 0) + ' kWh';
   var deptBars = elec.deptBars || [];
@@ -1537,14 +1551,21 @@ function render(data) {
   document.getElementById('lov').classList.add('hide');
 }
 
-// ========== FETCH DATA ==========
+// ========== FETCH DATA WITH CORS ==========
 function fetchData(silent) {
   if (!silent) {
     document.getElementById('lov-msg').textContent = 'Fetching live data…';
     var rb = document.getElementById('refresh-btn');
     if (rb) { rb.disabled = true; rb.textContent = 'Loading…'; }
   }
-  fetch(WEB_APP + '?v=' + Date.now())
+  
+  // Add origin parameter for CORS
+  var url = WEB_APP + '?origin=' + encodeURIComponent(window.location.origin) + '&v=' + Date.now();
+  
+  fetch(url, {
+    mode: 'cors',
+    credentials: 'omit'
+  })
     .then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
@@ -1573,62 +1594,13 @@ function fetchData(silent) {
       console.error('Fetch failed:', err);
       var eb = document.getElementById('err-banner');
       eb.style.display = 'block';
-      eb.textContent = '⚠ Could not load live data: ' + err.message + ' — will retry in 60s.';
+      eb.textContent = '⚠ Could not load live data: ' + err.message + ' — Check CORS configuration and Web App URL';
       document.getElementById('lov').classList.add('hide');
       var rb = document.getElementById('refresh-btn');
       if (rb) { rb.disabled = false; rb.innerHTML = '&#x21bb; Retry'; }
     });
 }
-// Add this to your Code.gs
-function doPost(e) {
-  return handleRequest_(e);
-}
-// Add this to your Code.gs - enables CORS for GitHub Pages
-function doGet(e) {
-  // Get the requesting origin
-  var origin = e && e.parameter ? e.parameter.origin : '';
-  
-  // Get the data
-  var data = getMergedCache_();
-  var jsonString = JSON.stringify(data);
-  
-  // Create response
-  var output = ContentService.createTextOutput(jsonString)
-    .setMimeType(ContentService.MimeType.JSON);
-  
-  // Add CORS headers - allow your GitHub Pages domain
-  // Replace with your actual GitHub Pages URL
-  var allowedOrigins = [
-    'https://YOUR_USERNAME.github.io',  // Change this!
-    'http://localhost:5500'  // For local testing
-  ];
-  
-  if (allowedOrigins.indexOf(origin) > -1 || origin === '') {
-    output.setHeader('Access-Control-Allow-Origin', origin || '*');
-    output.setHeader('Access-Control-Allow-Methods', 'GET');
-    output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  }
-  
-  return output;
-}
 
-// Handle preflight OPTIONS requests (required for CORS)
-function doOptions(e) {
-  var origin = e && e.parameter ? e.parameter.origin : '';
-  var output = ContentService.createTextOutput('');
-  output.setHeader('Access-Control-Allow-Origin', origin || '*');
-  output.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  output.setHeader('Access-Control-Max-Age', '3600');
-  return output;
-}
-function handleProxy_(e) {
-  // This returns HTML content that can be embedded via iframe
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>';
-  html += '<script src="https://your-github-io-url/dashboard.js"></script>';
-  html += '</body></html>';
-  return HtmlService.createHtmlOutput(html);
-}
 function manualRefresh() { fetchData(false); }
 
 // Initial fetch + auto-refresh
