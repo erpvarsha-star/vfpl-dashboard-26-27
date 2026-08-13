@@ -319,6 +319,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="hdr-r">
     <span class="fy-badge">FY 2026-27</span>
     <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">&#x21bb; Refresh</button>
+    <button class="refresh-btn owner-only-ctrl" id="restore-btn" onclick="promptRestoreCache()" title="Restore last known-good cache snapshot (owner PIN required)" style="background:#92400E;color:#FDE68A;border-color:#B45309;display:none;">&#x21ba; Restore</button>
     <button class="print-btn" onclick="printActiveTab()" title="Print current tab">&#128196; Print</button>
     <div class="upd" id="upd">&mdash;</div>
     <div class="live"><div class="pulse"></div>Live</div>
@@ -1044,17 +1045,41 @@ setInterval(tick,1000); tick();
 // is purely a "don't clutter the shop floor view" convenience for them.
 (function(){
   var isOwner = new URLSearchParams(window.location.search).get('role') === 'owner';
-  if (isOwner) return;
-  var OWNER_ONLY_TAB_NAMES = ['outstanding','collection'];
-  document.querySelectorAll('.tab').forEach(function(t){
-    var onclick = t.getAttribute('onclick') || '';
-    var isOwnerOnly = OWNER_ONLY_TAB_NAMES.some(function(n){ return onclick.indexOf("'"+n+"'") >= 0; });
-    if (isOwnerOnly) t.style.display = 'none';
-    // Margins (#mbtn) / Cost Summary (#cbtn) stay visible — they're already
-    // PIN-gated for real; hiding the tab button too would just be confusing
-    // ("where did Margins go?") without adding any actual protection.
-  });
+  if (!isOwner) {
+    var OWNER_ONLY_TAB_NAMES = ['outstanding','collection'];
+    document.querySelectorAll('.tab').forEach(function(t){
+      var onclick = t.getAttribute('onclick') || '';
+      var isOwnerOnly = OWNER_ONLY_TAB_NAMES.some(function(n){ return onclick.indexOf("'"+n+"'") >= 0; });
+      if (isOwnerOnly) t.style.display = 'none';
+    });
+  } else {
+    // Owner mode — show the Restore Cache button
+    var rb = document.getElementById('restore-btn');
+    if (rb) rb.style.display = '';
+  }
 })();
+
+function promptRestoreCache(){
+  var pin = prompt('Enter owner PIN to restore last known-good cache snapshot:');
+  if (!pin) return;
+  var btn = document.getElementById('restore-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Restoring…'; }
+  fetch(WEB_APP+'?json=1&action=restore_cache&pin='+encodeURIComponent(pin))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if (btn) { btn.disabled = false; btn.innerHTML = '&#x21ba; Restore'; }
+      if (d.ok) {
+        alert('✅ ' + d.msg);
+        fetchData(false); // reload the dashboard from the restored cache
+      } else {
+        alert('❌ ' + (d.error || 'Restore failed'));
+      }
+    })
+    .catch(function(err){
+      if (btn) { btn.disabled = false; btn.innerHTML = '&#x21ba; Restore'; }
+      alert('❌ Network error: ' + err.message);
+    });
+}
 
 // ═══ TABS ═══
 function showTab(name,el){
