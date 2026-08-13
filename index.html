@@ -350,6 +350,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="tab" id="mbtn" onclick="showMargins()">&#9679; Margins</div>
   <div class="tab" id="cbtn" onclick="showCostSum()">&#9679; Cost Summary</div>
   <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
+  <div class="tab" onclick="showTab('downtime',this)">Downtime</div>
 </div>
 
 <!-- ═══════════════ TODAY TAB ═══════════════ -->
@@ -988,6 +989,57 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
 </div>
 
+<!-- ── DOWNTIME TAB ─────────────────────────────────────────────────────── -->
+<div id="tab-downtime" class="main" style="display:none;" data-print-title="DOWNTIME — VFPL Factory OS">
+  <!-- KPI row -->
+  <div class="kpi-row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="card" style="flex:1;min-width:140px;text-align:center;padding:16px 10px;">
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;">MTD Downtime</div>
+      <div id="dt-mtd" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">hours this month</div>
+    </div>
+    <div class="card" style="flex:1;min-width:140px;text-align:center;padding:16px 10px;">
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;">YTD Downtime</div>
+      <div id="dt-ytd" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">hours this FY</div>
+    </div>
+  </div>
+  <!-- By Department -->
+  <div class="sec-label">Downtime by Department (YTD hours)</div>
+  <div class="card" style="margin-bottom:10px;">
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th class="lf" style="min-width:130px;">Department</th>
+            <th style="min-width:100px;">YTD Hours</th>
+          </tr>
+        </thead>
+        <tbody id="dt-dept-body">
+          <tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- By Category -->
+  <div class="sec-label">Downtime by Category (YTD hours)</div>
+  <div class="card card-last">
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th class="lf" style="min-width:200px;">Category</th>
+            <th style="min-width:100px;">YTD Hours</th>
+          </tr>
+        </thead>
+        <tbody id="dt-cat-body">
+          <tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // VFPL FACTORY OS — DATA BINDING LAYER
@@ -1615,6 +1667,9 @@ function render(data){
   // ─── FY MONTHLY ───
   renderFY(fy);
 
+  // ─── DOWNTIME ───
+  renderDowntimeSummary(data.downtime_summary || null);
+
   // ─── SESSION 18 — utilization, exact tons, sparklines, 4 new tabs ───
   try { renderSession18(data); } catch(e) { console.warn('renderSession18 failed:', e); }
 
@@ -2000,6 +2055,34 @@ function renderDropoutTrend(trend) {
     rows += '</tr>';
   });
   tbody.innerHTML = rows || '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">No production data yet this FY</td></tr>';
+}
+
+function renderDowntimeSummary(ds) {
+  var deptEl = document.getElementById('dt-dept-body');
+  var catEl  = document.getElementById('dt-cat-body');
+  var mtdEl  = document.getElementById('dt-mtd');
+  var ytdEl  = document.getElementById('dt-ytd');
+  if (!ds) {
+    if (deptEl) deptEl.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">No downtime data — run createDowntimeForm_() and set SRC_DOWNTIME</td></tr>';
+    if (catEl)  catEl.innerHTML  = '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">—</td></tr>';
+    return;
+  }
+  if (mtdEl) mtdEl.textContent = (ds.mtdHours || 0).toFixed(1);
+  if (ytdEl) ytdEl.textContent = (ds.ytdHours || 0).toFixed(1);
+  if (deptEl) {
+    var rows = '';
+    (ds.byDept || []).forEach(function(r) {
+      rows += '<tr><td class="lf">' + safeText(r.dept) + '</td><td>' + (r.ytdHours || 0).toFixed(1) + '</td></tr>';
+    });
+    deptEl.innerHTML = rows || '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">No entries yet</td></tr>';
+  }
+  if (catEl) {
+    var crows = '';
+    (ds.byCategory || []).forEach(function(r) {
+      crows += '<tr><td class="lf">' + safeText(r.category) + '</td><td>' + (r.ytdHours || 0).toFixed(1) + '</td></tr>';
+    });
+    catEl.innerHTML = crows || '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">No entries yet</td></tr>';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

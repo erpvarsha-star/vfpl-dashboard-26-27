@@ -33,6 +33,9 @@ var SRC_SCHEDULE          = '1NR8EPGRJN0AQDXZjYw5k93clsO8AD4u2l2Xke1lBC2I';
 var SRC_PARTS             = '14zydCr6_cD9W_6aifEIF6WK_qkO667jnkGXO0jQkY38';
 var SRC_OIL_INWARD        = '1iP4Ikp-K3k3m7iwY-YJ51X0Sw6KCI5EWiYFEr22-wv0';
 var SRC_JWK_OS            = '1yC-b36rgAxablmdXhngHCEOsmnlgWourep6ctKifXCA';
+// Set this to the response-sheet ID logged by createDowntimeForm_().
+// Leave blank until the form has been created; pullDashDowntime() skips gracefully.
+var SRC_DOWNTIME          = '';
 
 // ════════════════════════════════════════════════════════════
 // NOTE: this list is NOT enforced anywhere in this file (nothing below
@@ -392,7 +395,8 @@ var DASH_SEC_NAMES_ = [
   'steel','elec','wip','schedule','prod_monthly','die_life','outstanding',
   'f4','debit_notes','manpower_summary','oil_summary','transport_summary',
   'planner','vendor_rej_summary','data_gaps_summary','fy_monthly',
-  'shift_status','dept_score','today','dropout_trend','machine_registry'
+  'shift_status','dept_score','today','dropout_trend','machine_registry',
+  'downtime_summary'
 ];
 
 // ── INCREMENTAL PULL GUARD ────────────────────────────────────────
@@ -598,6 +602,9 @@ function runDashboardPull() {
   if (_pullFresh_('MACHINE',     55)) try { pullDashMachine();         Logger.log('OK Machine');           } catch(e) { Logger.log('FAIL Machine: '+e); }
   if (_pullFresh_('MP_STAFF',    55)) try { pullDashManpowerStaff();   Logger.log('OK Manpower Staff');    } catch(e) { Logger.log('FAIL Manpower Staff: '+e); }
   if (_pullFresh_('MP_CONTRACT', 55)) try { pullDashManpowerContract();Logger.log('OK Manpower Contract'); } catch(e) { Logger.log('FAIL Manpower Contract: '+e); }
+
+  // ── Downtime form — pull every 55 min (shift-level, same cadence as production) ──
+  if (_pullFresh_('DOWNTIME', 55)) try { pullDashDowntime(); Logger.log('OK Downtime'); } catch(e) { Logger.log('FAIL Downtime: '+e); }
 
   // ── Utilities / daily entries — pull every 4 hours ──────────────────────
   if (_pullFresh_('ELECTRICITY', 240)) try { pullDashElectricity();   Logger.log('OK Electricity');       } catch(e) { Logger.log('FAIL Electricity: '+e); }
@@ -1144,6 +1151,95 @@ function pullDashDieselPlant() {
   }
   writeToTab_(ss,'RAW_DIESEL_PLANT',['Date','Vehicle_Name','Driver','Pump','Litres','Amount_Rs','Mode_Of_Payment'],output);
   Logger.log('RAW_DIESEL_PLANT rows: '+output.length);
+}
+
+// ── ITEM 3: DOWNTIME FORM PULL ────────────────────────────────────────────────
+// Reads the VFPL Downtime form response sheet (SRC_DOWNTIME) into RAW_DOWNTIME.
+// Skip gracefully when SRC_DOWNTIME is empty (form not yet created / ID not set).
+// Column map matches createDowntimeForm_() field order:
+//   [0] Timestamp  [1] Department  [2] Date  [3] Shift  [4] Machine
+//   [5] Start Time [6] End Time    [7] Category  [8] Description
+function pullDashDowntime() {
+  if (!SRC_DOWNTIME) {
+    Logger.log('pullDashDowntime: SRC_DOWNTIME not set — run createDowntimeForm_() first');
+    return;
+  }
+  var srcSS = SpreadsheetApp.openById(SRC_DOWNTIME);
+  var ss    = SpreadsheetApp.openById(DASH_ID);
+  // Form responses go to a sheet named "Form Responses 1" (Google default)
+  var srcSheet = srcSS.getSheets()[0];
+  if (!srcSheet) { Logger.log('pullDashDowntime: no sheets in SRC_DOWNTIME'); return; }
+  var data = srcSheet.getDataRange().getValues();
+  var output = [];
+  for (var r = 1; r < data.length; r++) {
+    var row = data[r];
+    var rawDate = row[2]; // Date field
+    if (!rawDate) continue;
+    var dateObj = (rawDate instanceof Date) ? rawDate : new Date(rawDate);
+    if (isNaN(dateObj.getTime()) || !inFY_(dateObj)) continue;
+    var dept     = (row[1] || '').toString().trim();
+    var shift    = (row[3] || '').toString().trim();
+    var machine  = (row[4] || '').toString().trim();
+    var startRaw = row[5]; // time object or string
+    var endRaw   = row[6];
+    // Compute duration in minutes
+    var startMin = NaN, endMin = NaN;
+    if (startRaw instanceof Date) startMin = startRaw.getHours()*60 + startRaw.getMinutes();
+    if (endRaw   instanceof Date) endMin   = endRaw.getHours()*60   + endRaw.getMinutes();
+    var durationMin = (!isNaN(startMin) && !isNaN(endMin))
+      ? (endMin >= startMin ? endMin - startMin : (1440 - startMin + endMin))
+      : 0;
+    var category = (row[7] || '').toString().trim();
+    var desc     = (row[8] || '').toString().trim();
+    output.push([dateObj, dept, shift, machine, startRaw, endRaw, durationMin, category, desc]);
+  }
+  writeToTab_(ss, 'RAW_DOWNTIME',
+    ['Date','Department','Shift','Machine','Start_Time','End_Time','Duration_Min','Category','Description'],
+    output);
+  Logger.log('RAW_DOWNTIME rows: ' + output.length);
+}
+
+// Aggregates RAW_DOWNTIME into a summary object for the dashboard payload.
+// Returns { byDept: [...], byCategory: [...], mtdHours: X, ytdHours: Y }
+function buildDowntimeSummary_() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var sh = ss.getSheetByName('RAW_DOWNTIME');
+  if (!sh || sh.getLastRow() < 2) return { byDept: [], byCategory: [], mtdHours: 0, ytdHours: 0 };
+
+  var data = sh.getDataRange().getValues();
+  var headers = data[0]; // Date,Department,Shift,Machine,Start,End,Duration_Min,Category,Description
+  var now = new Date();
+  var curMonth = now.getMonth();
+  var curYear  = now.getFullYear();
+
+  var deptMap = {}, catMap = {}, mtdMin = 0, ytdMin = 0;
+
+  for (var r = 1; r < data.length; r++) {
+    var row = data[r];
+    var dateObj = row[0] instanceof Date ? row[0] : new Date(row[0]);
+    if (isNaN(dateObj.getTime())) continue;
+    var dept = (row[1] || 'Other').toString().trim() || 'Other';
+    var cat  = (row[7] || 'Other').toString().trim() || 'Other';
+    var mins = Number(row[6]) || 0;
+    var isMTD = (dateObj.getMonth() === curMonth && dateObj.getFullYear() === curYear);
+
+    deptMap[dept] = (deptMap[dept] || 0) + mins;
+    catMap[cat]   = (catMap[cat]   || 0) + mins;
+    ytdMin += mins;
+    if (isMTD) mtdMin += mins;
+  }
+
+  var byDept = Object.keys(deptMap).sort(function(a,b){ return deptMap[b]-deptMap[a]; })
+    .map(function(d){ return { dept: d, ytdHours: Math.round(deptMap[d]/6)/10 }; });
+  var byCat = Object.keys(catMap).sort(function(a,b){ return catMap[b]-catMap[a]; })
+    .map(function(c){ return { category: c, ytdHours: Math.round(catMap[c]/6)/10 }; });
+
+  return {
+    byDept:   byDept,
+    byCategory: byCat,
+    mtdHours: Math.round(mtdMin/6)/10,
+    ytdHours: Math.round(ytdMin/6)/10
+  };
 }
 
 function pullDashManpowerStaff() {
@@ -4864,7 +4960,8 @@ function buildDashboardCache() {
     data_gaps_summary: dataGapsSummary,
     cost_summary_snap: costSummarySnap,
     machine_registry: getMachineRegistryForCache_(),
-    dropout_trend: buildDropoutTrend_()
+    dropout_trend: buildDropoutTrend_(),
+    downtime_summary: buildDowntimeSummary_()
   };
 
   // ─── DATA SPLICING ENGINE ───
