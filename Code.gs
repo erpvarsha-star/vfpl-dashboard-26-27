@@ -3278,6 +3278,78 @@ function buildDieLife() {
     output.filter(function(r) { return r[8] === 'RUNNING'; }).length + ' running)');
 }
 
+// ── DEPT_SCORE FORMULA FIX (Item 9) ───────────────────────────────────────
+// Run this ONCE from the Apps Script editor (select it in the function
+// dropdown, click Run). It rewrites the "Rows with Data" column in
+// DEPT_SCORE from COUNTA(all form submissions) to COUNTUNIQUE(unique dates),
+// which is what "compliance" actually means. Also fixes the Grade column
+// formula so it uses the corrected compliance %.
+//
+// HOW: SUMPRODUCT((range<>"")*1/COUNTIF(range,range&"")) counts unique
+// non-blank values without requiring an array-formula entry — compatible
+// with all Google Sheets formula modes.
+//
+// After running, do one buildDashboardCache() so the corrected scores
+// propagate to the dashboard payload.
+function fixDeptScoreFormulas_() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var dsSh = ss.getSheetByName('DEPT_SCORE');
+  if (!dsSh) { Logger.log('❌ DEPT_SCORE sheet not found'); return; }
+
+  // Department → RAW tab mapping. Date is always column A (A2:A) in every
+  // RAW production tab. Non-production depts (Electricity, Oil) are excluded —
+  // their RAW tabs hold meter/litre readings, not submission events.
+  var DEPT_RAW = {
+    'Cutting':          'RAW_CUTTING',
+    'Forge':            'RAW_FORGE',
+    'Forging':          'RAW_FORGE',
+    'Press':            'RAW_PRESS',
+    'Machine':          'RAW_MACHINE',
+    'Machining':        'RAW_MACHINE',
+    'HT':               'RAW_HT',
+    'Heat Treatment':   'RAW_HT',
+    'Final':            'RAW_FINAL',
+    'Final Assembly':   'RAW_FINAL',
+    'Manpower':         'RAW_MANPOWER_STAFF',
+    'Staff Manpower':   'RAW_MANPOWER_STAFF',
+    'Contract Manpower':'RAW_MANPOWER_CONTRACT'
+  };
+
+  var data = dsSh.getDataRange().getValues();
+  var changed = 0;
+  for (var r = 2; r < data.length; r++) {  // rows 0-1 are headers
+    var dept = (data[r][0] || '').toString().trim();
+    if (!dept) continue;
+    var rawTab = DEPT_RAW[dept];
+    if (!rawTab) {
+      Logger.log('SKIP ' + dept + ' — no RAW tab mapped (electricity/oil excluded intentionally)');
+      continue;
+    }
+    var shRow = r + 1; // 1-based sheet row
+
+    // Col B: unique-date count using SUMPRODUCT division trick
+    // (avoids ARRAYFORMULA; works in normal cell formula mode)
+    var dateRange = "'" + rawTab + "'!A2:A";
+    var countF = '=IFERROR(SUMPRODUCT((' + dateRange + '<>"")*1/COUNTIF(' + dateRange + ',' + dateRange + '&"")),0)';
+    dsSh.getRange(shRow, 2).setFormula(countF);
+
+    // Col D: compliance % = B / C — recalculate in case old formula was wrong
+    dsSh.getRange(shRow, 4).setFormula('=IFERROR(ROUND(B' + shRow + '/C' + shRow + '*100,1),0)');
+
+    // Col E: grade from compliance %
+    dsSh.getRange(shRow, 5).setFormula(
+      '=IF(D' + shRow + '>=95,"A+",' +
+        'IF(D' + shRow + '>=85,"A",' +
+          'IF(D' + shRow + '>=70,"B",' +
+            'IF(D' + shRow + '>=50,"C","D"))))'
+    );
+
+    Logger.log('✅ Row ' + shRow + ': ' + dept + ' → ' + rawTab);
+    changed++;
+  }
+  Logger.log('fixDeptScoreFormulas_() complete — fixed ' + changed + ' dept rows. Run buildDashboardCache() next.');
+}
+
 function buildAlerts() {
   var ss = SpreadsheetApp.openById(DASH_ID);
   var sh = ss.getSheetByName('ALERTS_CONFIG');
@@ -4248,15 +4320,9 @@ function buildDashboardCache() {
   }
   
   // ── DEPT_SCORE ──────────────────────────────────────────
-  // KNOWN ISSUE (sheet-side, not fixable from this script): DEPT_SCORE's
-  // own footnote admits "Rows with Data = total form submissions (not
-  // unique dates)". Its %Compliance = COUNTA(rows) / expected calendar
-  // days, so any department logging multiple rows/day (all of them) shows
-  // 100s-1000s of percent — currently every department is a meaningless
-  // "A+". The real fix is in the DEPT_SCORE sheet's own formula (COUNTA of
-  // rows -> COUNTA of UNIQUE dates), which lives in the spreadsheet, not
-  // in this script. Until that's fixed, cap what we forward so a shop-floor
-  // viewer never sees a badge claiming "2365% compliance".
+  // DEPT_SCORE formulas are now managed by fixDeptScoreFormulas_() below —
+  // run it once to replace COUNTA(all rows) with COUNTUNIQUE(dates) so
+  // departments logging multiple rows/day no longer show 1000% compliance.
   var deptScores=[],overallPct=0,dsSh=ss.getSheetByName('DEPT_SCORE');
   if(dsSh&&dsSh.getLastRow()>=3){
     dsSh.getDataRange().getValues().slice(2).forEach(function(r){
