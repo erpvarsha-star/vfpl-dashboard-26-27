@@ -426,6 +426,97 @@ function clearPullFreshTimestamps_() {
   Logger.log('All PULL_TS_ timestamps cleared — next runDashboardPull will do a full re-pull.');
 }
 
+// ── ITEM 3: DOWNTIME FORM CREATION ───────────────────────────────────────────
+// Run createDowntimeForm_() ONCE from the Apps Script editor to create the
+// Google Form for downtime/stoppage tracking and link its response sheet.
+// The form URL is logged — share it with floor supervisors.
+//
+// After running, set SRC_DOWNTIME to the response spreadsheet ID
+// (logged after creation) and add pullDashDowntime() to runDashboardPull().
+//
+// Fields created:
+//   Department (dropdown), Date, Shift (dropdown), Machine (text),
+//   Downtime Start Time (time), Downtime End Time (time),
+//   Category (dropdown: Breakdown/Planned Maint/Power Failure/No Material/
+//             Die Change/Setup+Setting/Quality Hold/Other),
+//   Description (paragraph, optional)
+function createDowntimeForm_() {
+  var form = FormApp.create('VFPL — Downtime & Stoppage Report FY 2026-27');
+  form.setDescription('Record every machine stoppage. Filled by shift supervisor immediately after downtime ends.');
+  form.setCollectEmail(false);
+  form.setLimitOneResponsePerUser(false);
+  form.setAllowResponseEdits(true);
+
+  var DEPTS = ['Cutting','Forge','Press','Machine','HT','Final','VMC Shop','Maintenance','Other'];
+  var SHIFTS = ['Shift 1 (6am–2pm)','Shift 2 (2pm–10pm)','Shift 3 (10pm–6am)'];
+  var CATEGORIES = [
+    'Breakdown — Mechanical',
+    'Breakdown — Electrical',
+    'Planned Maintenance',
+    'Power Failure / Trip',
+    'No Material / RM Shortage',
+    'Die Change',
+    'Setup / Setting Change',
+    'Quality Hold',
+    'Other'
+  ];
+
+  form.addListItem().setTitle('Department').setChoiceValues(DEPTS).setRequired(true);
+  form.addDateItem().setTitle('Date').setRequired(true);
+  form.addListItem().setTitle('Shift').setChoiceValues(SHIFTS).setRequired(true);
+  form.addTextItem().setTitle('Machine').setHelpText('E.g. Hammer 3T, 2500 Ton Press, H1N').setRequired(true);
+  form.addTimeItem().setTitle('Downtime Start Time').setRequired(true);
+  form.addTimeItem().setTitle('Downtime End Time').setRequired(true);
+  form.addListItem().setTitle('Downtime Category').setChoiceValues(CATEGORIES).setRequired(true);
+  form.addParagraphTextItem().setTitle('Description / Root Cause').setRequired(false)
+    .setHelpText('Brief note on what happened and what was done to restore.');
+
+  // Link a response spreadsheet
+  var ss = form.getDestination();
+  if (!ss) {
+    var respSs = SpreadsheetApp.create('VFPL Downtime Form Responses');
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, respSs.getId());
+    Logger.log('Response sheet created: ' + respSs.getUrl());
+    Logger.log('Response sheet ID (set as SRC_DOWNTIME): ' + respSs.getId());
+  }
+
+  Logger.log('✅ Downtime form created: ' + form.getPublishedUrl());
+  Logger.log('Form edit URL: ' + form.getEditUrl());
+}
+
+// ── ITEM 12: REMOVE CHAT ID FIELD FROM GOOGLE FORM ──────────────────────────
+// The Telegram bot now reads chat IDs via /register instead of a form field.
+// Run removeChatIdFromForm_(formUrl) from the Apps Script editor, passing the
+// edit URL of the form that still has a "Chat ID" / "Telegram Chat ID" field.
+//
+// Example: removeChatIdFromForm_('https://docs.google.com/forms/d/FORM_ID/edit')
+//
+// The function lists all fields first so you can verify, then removes matches.
+// Safe to re-run — if the field is already gone it logs "0 fields removed".
+function removeChatIdFromForm_(formUrl) {
+  if (!formUrl) {
+    Logger.log('Usage: removeChatIdFromForm_("https://docs.google.com/forms/d/FORM_ID/edit")');
+    return;
+  }
+  var form = FormApp.openByUrl(formUrl);
+  Logger.log('Form: "' + form.getTitle() + '"');
+  var items = form.getItems();
+  Logger.log('All fields (' + items.length + '):');
+  items.forEach(function(it) { Logger.log('  [' + it.getIndex() + '] ' + it.getTitle()); });
+
+  var removed = 0;
+  // Iterate in reverse so index shifts don't affect deletion
+  for (var i = items.length - 1; i >= 0; i--) {
+    var title = items[i].getTitle().toLowerCase().replace(/\s+/g, ' ').trim();
+    if (title.indexOf('chat id') >= 0 || title.indexOf('telegram') >= 0 || title === 'chat_id') {
+      Logger.log('Removing: "' + items[i].getTitle() + '"');
+      form.deleteItem(items[i]);
+      removed++;
+    }
+  }
+  Logger.log('✅ removeChatIdFromForm_: removed ' + removed + ' field(s). Re-publish the form if needed.');
+}
+
 function invalidateDashJsonCache_() {
   var c = CacheService.getScriptCache();
   try { c.remove(DASH_CACHE_KEY_); } catch(e) {}
