@@ -949,12 +949,40 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 
 <!-- ═══════════════ FY MONTHLY ═══════════════ -->
 <div id="tab-fy" class="main" style="display:none;" data-print-title="FY MONTHLY — VFPL Factory OS">
-  <div class="card card-last">
+  <div class="card" style="margin-bottom:10px;">
     <div class="ch"><div class="ct">FY 2026-27 &mdash; Monthly Summary (All Metrics)</div></div>
     <div class="scroll-x">
       <table class="tbl" style="font-size:10px;">
         <thead><tr id="fy-head"></tr></thead>
         <tbody id="fy-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Dropout / Rejection Rate Trending -->
+  <div class="sec-label">Dropout / Rejection Rate — Press &amp; Forge (FY Monthly)</div>
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Internal Rejection Trend &mdash; pieces dropped vs produced</div></div>
+    <div class="scroll-x">
+      <table class="tbl" id="dropout-tbl">
+        <thead>
+          <tr>
+            <th class="lf" style="min-width:90px;">Month</th>
+            <th colspan="3" style="text-align:center;background:rgba(239,68,68,.08);">Press</th>
+            <th colspan="3" style="text-align:center;background:rgba(234,179,8,.08);">Forge</th>
+          </tr>
+          <tr>
+            <th></th>
+            <th style="background:rgba(239,68,68,.08);">Produced</th>
+            <th style="background:rgba(239,68,68,.08);">Dropout</th>
+            <th style="background:rgba(239,68,68,.08);">Rej %</th>
+            <th style="background:rgba(234,179,8,.08);">Produced</th>
+            <th style="background:rgba(234,179,8,.08);">Dropout</th>
+            <th style="background:rgba(234,179,8,.08);">Rej %</th>
+          </tr>
+        </thead>
+        <tbody id="dropout-body">
+          <tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -1926,6 +1954,52 @@ function renderFY(fy){
     rows+='</tr>';
   });
   document.getElementById('fy-body').innerHTML=rows;
+
+  // Dropout / Rejection Rate Trending
+  renderDropoutTrend(data.dropout_trend);
+}
+
+function renderDropoutTrend(trend) {
+  var tbody = document.getElementById('dropout-body');
+  if (!tbody) return;
+  if (!trend || (!trend.Press && !trend.Forge)) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">No dropout data available</td></tr>';
+    return;
+  }
+  var FY_MONTHS = ['April','May','June','July','August','September','October','November','December','January','February','March'];
+  var press = trend.Press || [];
+  var forge = trend.Forge || [];
+  var pm = {}, fm = {};
+  press.forEach(function(r) { pm[r.month] = r; });
+  forge.forEach(function(r) { fm[r.month] = r; });
+
+  var now = new Date();
+  var curM = ['January','February','March','April','May','June','July','August','September','October','November','December'][now.getMonth()];
+
+  var rows = '';
+  FY_MONTHS.forEach(function(m) {
+    var p = pm[m] || {qty:0, dropoutQty:0, dropoutPct:0};
+    var f = fm[m] || {qty:0, dropoutQty:0, dropoutPct:0};
+    if (p.qty === 0 && f.qty === 0) return; // skip months with no data
+    var isCur = m === curM;
+    var style = isCur ? ' style="font-weight:700;"' : '';
+    function pctColor(pct) {
+      if (pct <= 0) return '';
+      if (pct < 2) return ' style="color:var(--gn);"';
+      if (pct < 5) return ' style="color:var(--am);"';
+      return ' style="color:var(--rd);"';
+    }
+    rows += '<tr' + style + '>';
+    rows += '<td class="lf">' + m + (isCur ? ' ●' : '') + '</td>';
+    rows += '<td>' + fmtN(p.qty) + '</td>';
+    rows += '<td>' + fmtN(p.dropoutQty) + '</td>';
+    rows += '<td' + pctColor(p.dropoutPct) + '>' + (p.qty > 0 ? p.dropoutPct.toFixed(1) + '%' : '—') + '</td>';
+    rows += '<td>' + fmtN(f.qty) + '</td>';
+    rows += '<td>' + fmtN(f.dropoutQty) + '</td>';
+    rows += '<td' + pctColor(f.dropoutPct) + '>' + (f.qty > 0 ? f.dropoutPct.toFixed(1) + '%' : '—') + '</td>';
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows || '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">No production data yet this FY</td></tr>';
 }
 
 // ═══════════════════════════════════════════════════════════════
