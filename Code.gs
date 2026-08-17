@@ -117,21 +117,21 @@ function pullOutstanding_() {
 }
 // ── SET TRIGGERS ─────────────────────────────────────────────
 function setDashboardTriggers() {
-  // Remove old triggers
+  // Remove old triggers for managed functions
   ScriptApp.getProjectTriggers().forEach(function(t){
-    if(t.getHandlerFunction()==='runDashboardPull')ScriptApp.deleteTrigger(t);
+    var fn = t.getHandlerFunction();
+    if (fn === 'runDashboardPull' || fn === 'dailyHealthCheck_') ScriptApp.deleteTrigger(t);
   });
-  
-  // ⏰ NEW SCHEDULE: 08:15, 12:00, 16:00, 18:00, 19:00, 23:00
+
+  // ⏰ Pull schedule: 08:15, 12:00, 16:00, 18:00, 19:00, 23:00
   var pullTimes = [
     { hour: 8,  minute: 15 },  // Shift 3 complete
     { hour: 12, minute: 0  },  // Shift 1 mid-day
     { hour: 16, minute: 0  },  // Shift 1 complete
-    { hour: 18, minute: 0  },  // 🆕 Shift 2 mid-day/evening
+    { hour: 18, minute: 0  },  // Shift 2 mid-day/evening
     { hour: 19, minute: 0  },  // Shift 2 evening
     { hour: 23, minute: 0  }   // Shift 2 night
   ];
-  
   pullTimes.forEach(function(pt) {
     ScriptApp.newTrigger('runDashboardPull')
       .timeBased()
@@ -140,8 +140,55 @@ function setDashboardTriggers() {
       .everyDays(1)
       .create();
   });
-  
-  Logger.log('✅ Triggers set: 8:15AM, 12PM, 4PM, 6PM, 7PM, 11PM for ' + FY_LABEL);
+
+  // ⏰ Health check: 07:00 daily — fires before first pull, alerts if any pull was missed overnight
+  ScriptApp.newTrigger('dailyHealthCheck_')
+    .timeBased()
+    .atHour(7)
+    .nearMinute(0)
+    .everyDays(1)
+    .create();
+
+  Logger.log('✅ Triggers set: 8:15AM, 12PM, 4PM, 6PM, 7PM, 11PM (pulls) + 7AM health check for ' + FY_LABEL);
+}
+
+// ════════════════════════════════════════════════════════════════
+// dailyHealthCheck_() — fires at 07:00 daily.
+// Reads all PULL_TS_ Script Properties. Any key not updated in the
+// last 28 hours sends a Telegram warning so stale-data mornings are
+// caught before Yash opens the dashboard.
+// ════════════════════════════════════════════════════════════════
+function dailyHealthCheck_() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var now = Date.now();
+  var STALE_MS = 28 * 60 * 60 * 1000; // 28h — covers overnight gap between 23:00 and 07:00
+
+  var stale = [];
+  Object.keys(props).forEach(function(k) {
+    if (k.indexOf('PULL_TS_') !== 0) return;
+    var ts = Number(props[k]);
+    if (!ts || (now - ts) > STALE_MS) {
+      var key = k.replace('PULL_TS_', '');
+      var ageH = ts ? Math.round((now - ts) / 3600000) : 999;
+      stale.push(key + ' (' + ageH + 'h ago)');
+    }
+  });
+
+  if (stale.length === 0) {
+    Logger.log('dailyHealthCheck_: all pull timestamps fresh.');
+    return;
+  }
+
+  var msg = '⚠️ <b>VFPL Dashboard — Stale Data Warning</b>\n';
+  msg += 'The following data sources have not refreshed in >28 hours:\n';
+  stale.forEach(function(s) { msg += '  • ' + s + '\n'; });
+  msg += '\nCheck Apps Script execution log and re-run <code>runDashboardPull()</code> if needed.';
+  try {
+    sendTelegramAlert(msg);
+    Logger.log('dailyHealthCheck_: stale alert sent for ' + stale.join(', '));
+  } catch(e) {
+    Logger.log('dailyHealthCheck_: could not send Telegram — ' + e);
+  }
 }
 function doGet(e) {
   // If json=1 parameter, return JSON data
@@ -655,21 +702,6 @@ function runDashboardPull() {
   var dur = Math.round((new Date()-start)/1000);
   Logger.log('=== Pull complete in '+dur+'s ===');
 }
-  // ── FORMULA TABS (sheet calculates live — script does NOT write these) ──
-  // STEEL_STOCK: SUMIF from RAW_RM_INWARD + RM_CONSUMPTION
-  // ELEC_SUMMARY: SUMPRODUCT by meter name
-  // OIL_SUMMARY: SUM(RAW_OIL)
-  // MANPOWER_SUMMARY: SUMIF by dept
-  // TRANSPORT_SUMMARY: SUMPRODUCT month+FY
-  // F4_RECONCILIATION: SUMIF vendor from RAW_57F4_OUT + IN
-  // VENDOR_REJECTION: SUMIF from RAW_VENDOR_REJECTION
-  // MARGINS_SUMMARY: VLOOKUP COSTING_BANDS + SUMIF RAW_DISPATCH
-  // OUTSTANDING: Formula from RAW_OUTSTANDING
-  // DEPT_SCORE: COUNTA per RAW tab
-  // ALERTS_ACTIVE: IF scans from STEEL_STOCK + OUTSTANDING + DEBIT_NOTE_TRACKER
-  // DATA_GAPS: Cross-tab gap detection formulas
-  // SALARY_SUMMARY: Linked to _RAW_SALARY + hardcoded Feb 2026
-  // COSTING_BANDS: VLOOKUP from RAW_PARTS for weights+price
 
 // ============================================================
 // PULL FUNCTIONS 1-23
@@ -1525,11 +1557,7 @@ function pullDashOilInward() {
 //   1. Open FY 2026-27 Dashboard Sheet → Extensions → Apps Script
 //   2. Open your "DailyOverview_Monthly" file → Select All → Replace with this
 //   3. Save.
-//   4. In runDashboardPull() ensure these 3 lines exist at the end:
-//      try { refreshDailyOverview();   Logger.log('✅ Daily Overview done');      } catch(e) { Logger.log('❌ Daily Overview FAILED: '      + e); }
-//      try { buildProductionMonthly(); Logger.log('✅ Production Monthly done');  } catch(e) { Logger.log('❌ Production Monthly FAILED: '  + e); }
-//      try { buildWIPSummary();        Logger.log('✅ WIP Summary done');         } catch(e) { Logger.log('❌ WIP Summary FAILED: '         + e); }
-//   5. Run testAllThree_() once manually to verify.
+//   4. Verify by running runDashboardPull() from the Apps Script dropdown.
 //
 // TABS WRITTEN:
 //   Daily Overview      — Today (shift-wise) + Yesterday (shift-wise), all depts
@@ -3537,87 +3565,6 @@ function fixDeptScoreFormulas_() {
   Logger.log('fixDeptScoreFormulas_() complete — fixed ' + changed + ' dept rows. Run buildDashboardCache() next.');
 }
 
-function buildAlerts() {
-  var ss = SpreadsheetApp.openById(DASH_ID);
-  var sh = ss.getSheetByName('ALERTS_CONFIG');
-  if (sh && sh.getLastRow() >= 3) {
-    Logger.log('ALERTS_CONFIG already exists — not overwriting');
-    return;
-  }
-  if (!sh) sh = ss.insertSheet('ALERTS_CONFIG');
-  sh.clearContents();
-  sh.getRange(1, 1).setValue('VFPL ALERTS CONFIGURATION — Edit thresholds here. Add new rows to add alerts.');
-  var headers = ['Alert_Type', 'Metric', 'Threshold', 'Operator', 'Message', 'Active'];
-  sh.getRange(2, 1, 1, 6).setValues([headers]).setFontWeight('bold').setBackground('#1565C0').setFontColor('#FFFFFF');
-  var defaults = [
-    ['OVERDUE', 'Customer Overdue Rs', 1500000, '>', 'High overdue: {customer} — {value}', 'YES'],
-    ['OVERDUE', 'Total Overdue Rs', 2000000, '>', 'Total overdue > Rs 20L — review with Deepak', 'YES'],
-    ['ELECTRICITY', 'Dept kWh vs 30d avg pct', 120, '>', '{dept} electricity {pct}% above 30-day avg', 'YES'],
-    ['ELECTRICITY', 'Total kWh today', 6000, '>', 'Total electricity high today: {value} kWh', 'YES'],
-    ['MISSING_DATA', 'Cutting hours since entry', 12, '>', 'Cutting: no entry for {hours} hours', 'YES'],
-    ['MISSING_DATA', 'Forge hours since entry', 12, '>', 'Forge: no entry for {hours} hours', 'YES'],
-    ['MISSING_DATA', 'Electricity hours since entry', 24, '>', 'Electricity: no entry for {hours} hours', 'YES'],
-    ['STEEL', 'Grade balance kg', 1000, '<', 'Low stock: {grade} — {value} kg remaining', 'YES'],
-    ['SCHEDULE', 'Balance pending pct', 80, '>', 'Schedule {pct}% still pending — risk of miss', 'YES']
-  ];
-  sh.getRange(3, 1, defaults.length, 6).setValues(defaults);
-  sh.autoResizeColumns(1, 6);
-  Logger.log('ALERTS_CONFIG created with ' + defaults.length + ' default rules');
-}
-
-function loadOpeningWIP() {
-  var ss = SpreadsheetApp.openById(DASH_ID);
-  var openSh = ss.getSheetByName('OPENING_WIP_2627');
-  var wipSh = ss.getSheetByName('WIP_SUMMARY');
-  if (!openSh || !wipSh) {
-    Logger.log('loadOpeningWIP: OPENING_WIP_2627 or WIP_SUMMARY missing');
-    return;
-  }
-
-  // Read opening WIP: Row3=headers, Row4+=data
-  // Cols: VF_No[0] Customer[1] Grade[2] InHouse_Pcs[3] Vendor_Pcs[4] Grand_Total[5]
-  var openData = openSh.getDataRange().getValues();
-  var openMap = {};
-  for (var i = 3; i < openData.length; i++) {
-    var vf = (openData[i][0] || '').toString().trim();
-    if (!vf) continue;
-    var inhouse = Number(openData[i][3]) || 0;
-    var vendor = Number(openData[i][4]) || 0;
-    openMap[vf] = inhouse + vendor; // Total opening WIP pcs
-  }
-
-  // Read WIP_SUMMARY: Row1=title, Row2=header, Row3+=data
-  // Col B (index 1) = Opening WIP
-  var wipData = wipSh.getDataRange().getValues();
-  var updatedCount = 0;
-  for (var r = 2; r < wipData.length; r++) {
-    var vf = (wipData[r][0] || '').toString().trim();
-    if (!vf || vf === 'GRAND TOTAL') continue;
-    if (openMap[vf] !== undefined && openMap[vf] > 0) {
-      wipSh.getRange(r + 1, 2).setValue(openMap[vf]); // Col B = Opening WIP
-      updatedCount++;
-    }
-  }
-
-  // Also add VFs that are in opening but not in WIP_SUMMARY
-  var wipVFs = {};
-  for (var r = 2; r < wipData.length; r++) {
-    var vf = (wipData[r][0] || '').toString().trim();
-    if (vf) wipVFs[vf] = true;
-  }
-  var newRows = [];
-  Object.keys(openMap).forEach(function(vf) {
-    if (!wipVFs[vf] && openMap[vf] > 0) {
-      newRows.push([vf, openMap[vf], 0, 0, 0, 0, 0, 0, openMap[vf]]);
-    }
-  });
-  if (newRows.length > 0) {
-    var lastRow = wipSh.getLastRow();
-    wipSh.getRange(lastRow + 1, 1, newRows.length, 9).setValues(newRows);
-  }
-
-  Logger.log('loadOpeningWIP: Updated ' + updatedCount + ' VFs, added ' + newRows.length + ' new VFs from opening');
-}
 
 // ════════════════════════════════════════════════════════════════
 // auditRawTabsForBadData_() — catches negative quantities that reach
@@ -5013,67 +4960,6 @@ function buildDashboardCache() {
 // THE BRIDGE: DOGET + CACHE MERGER
 // ─────────────────────────────────────────────────────────────
 
-// ============================================================
-// VFPL FACTORY OS — P2 ALERTS PATCH
-// Date: 19-Apr-2026 19:30 IST
-// Fix: Stop ALERTS_ACTIVE duplicate stacking
-//
-// ══════════════════════════════════════════════════════════════
-// DEPLOY INSTRUCTIONS — READ BEFORE PASTING
-// ══════════════════════════════════════════════════════════════
-//
-// This file replaces TWO functions in your current Code.gs
-// and deletes ONE function. Three actions total.
-//
-// STEP 1 — DELETE appendAlertsToActive_
-//   In Code.gs, find this function (search for it):
-//     function appendAlertsToActive_(ss, newAlerts) {
-//   Select from that line to its closing } and DELETE IT.
-//
-// STEP 2 — REPLACE THE FIRST buildAlertsActive()
-//   Your Code.gs has TWO buildAlertsActive() definitions.
-//   The FIRST one ends just before the buildProductionPlanner section.
-//   Find and DELETE the ENTIRE first buildAlertsActive() —
-//   from its opening comment block to its closing }.
-//   (The one WITHOUT the MASTER_DATA section, comment says
-//    "Source: STEEL_STOCK + OUTSTANDING + DEBIT_NOTE_TRACKER + SCHEDULE_INTELLIGENCE")
-//
-// STEP 3 — REPLACE THE SECOND buildAlertsActive()
-//   Find the SECOND buildAlertsActive() in Code.gs
-//   (comment says "Source: STEEL_STOCK + OUTSTANDING + DEBIT_NOTE_TRACKER + SCHEDULE + PLANNER")
-//   Delete it entirely. Paste the new buildAlertsActive() below in its place.
-//
-// STEP 4 — REPLACE buildMasterDataGaps()
-//   Find function buildMasterDataGaps() in Code.gs.
-//   Delete it entirely. Paste the new buildMasterDataGaps() below in its place.
-//
-// STEP 5 — Save and run
-//   Save Code.gs.
-//   From the function dropdown, select buildAlertsActive.
-//   Click Run.
-//   Open ALERTS_ACTIVE tab in your sheet and verify:
-//     - Row count is small (10-30 rows), not 200+
-//     - No GRAND TOTAL rows appear as subjects
-//     - Generated timestamp is today
-//   Then run buildDashboardCache() to push the clean alerts to the dashboard.
-//
-// ══════════════════════════════════════════════════════════════
-// WHAT THIS FIX DOES
-// ══════════════════════════════════════════════════════════════
-//
-// Root cause of the 1,000-row stacking:
-//   buildMasterDataGaps() called appendAlertsToActive_() which
-//   APPENDED to ALERTS_ACTIVE without clearing it first.
-//   Every pull = more rows. 18 pulls since 14-Apr = ~1,000 rows.
-//
-// Fixes applied:
-//   1. appendAlertsToActive_() deleted — nothing appends anymore
-//   2. First (duplicate) buildAlertsActive() removed — clean single definition
-//   3. Second buildAlertsActive() now reads RAW_OUTSTANDING (correct tab)
-//   4. buildMasterDataGaps() no longer calls appendAlertsToActive_
-//   5. GRAND TOTAL guard added (was creating false MASTER_DATA alerts)
-//
-// ══════════════════════════════════════════════════════════════
 
 
 // ════════════════════════════════════════════════════════════
@@ -5875,63 +5761,6 @@ function setCacheTriggers() {
   ScriptApp.newTrigger('refreshCache15min').timeBased().everyMinutes(15).create();
   Logger.log('Cache refresh trigger set (every 15 min).');
 }
-function diagElecSum() {
-  var ss = SpreadsheetApp.openById(DASH_ID);
-  var sh = ss.getSheetByName('RAW_ELECTRICITY');
-  if (!sh) { Logger.log('RAW_ELECTRICITY missing'); return; }
-  
-  var data = sh.getDataRange().getValues();
-  var totalKwh = 0;
-  var found = false;
-  
-  Logger.log('--- Scanning RAW_ELECTRICITY for MSEB meter ---');
-  
-  for (var i = 1; i < data.length; i++) { // start at row 2 (index 1) to skip header
-    var row = data[i];
-    var meter = (row[2] || '').toString().trim();
-    var rawVal = row[3];
-    var kwh = Number(rawVal);
-    
-    if (meter.indexOf('MSEB') >= 0) {
-      found = true;
-      Logger.log('Row ' + i + ' | Meter: "' + meter + '" | Raw reading: "' + rawVal + '" | Parsed KWH: ' + kwh + ' | Date: ' + row[0]);
-      if (!isNaN(kwh) && kwh > 0) {
-        totalKwh += kwh;
-      }
-    }
-  }
-  
-  Logger.log('--- Total KWH for MSEB meter: ' + totalKwh + ' ---');
-  if (!found) Logger.log('❌ No meter containing "MSEB" found in column C!');
-}
-function checkFyMonthlyElec() {
-  var ss = SpreadsheetApp.openById(DASH_ID);
-  var sh = ss.getSheetByName('FY_MONTHLY');
-  if (!sh) { Logger.log('FY_MONTHLY tab missing'); return; }
-  
-  // Headers are in row 2. Find the column index for "Electricity (kWh)"
-  var headers = sh.getRange(2, 1, 1, sh.getLastColumn()).getValues()[0];
-  var elecCol = -1;
-  for (var c = 0; c < headers.length; c++) {
-    if (headers[c].toString().trim() === 'Electricity (kWh)') {
-      elecCol = c + 1; // 1-based column number
-      break;
-    }
-  }
-  if (elecCol === -1) { Logger.log('Electricity column not found'); return; }
-  
-  // Read data from row 3 onward
-  var data = sh.getRange(3, elecCol, sh.getLastRow() - 2, 1).getValues();
-  var total = 0;
-  for (var i = 0; i < data.length; i++) {
-    var val = data[i][0];
-    if (typeof val === 'number' && val > 0) {
-      total += val;
-      Logger.log('Row ' + (i+3) + ': ' + val);
-    }
-  }
-  Logger.log('Total electricity in FY_MONTHLY: ' + total);
-}
 function patchElectricityIntoFYMonthly() {
   var ss = SpreadsheetApp.openById(DASH_ID);
   var sh = ss.getSheetByName('FY_MONTHLY');
@@ -6046,150 +5875,6 @@ function sendTelegramAlert(message) {
 }
 
 // ============================================================
-// PHASE 3: YIELD SENTINEL (Self-contained – No external dependencies)
-// ============================================================
-
-function evaluateDailyYieldSentinel() {
-  var ss = SpreadsheetApp.openById(DASH_ID);
-  
-  // Helper: Load parts map (Finish Weight)
-  function loadPartsMap() {
-    var map = {};
-    var sh = ss.getSheetByName('RAW_PARTS');
-    if (!sh) return map;
-    var data = sh.getDataRange().getValues();
-    for (var i = 2; i < data.length; i++) {
-      var vf = (data[i][1] || '').toString().trim();
-      if (vf) map[vf] = Number(data[i][8]) || 0; // Finish Weight
-    }
-    return map;
-  }
-  var partsMap = loadPartsMap();
-
-  // 1. Define date windows
-  var today = new Date();
-  var yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  var thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  // 2. Helper: Sum electricity for specific production meters
-  function getProductionKwh(dateFrom, dateTo) {
-    var sh = ss.getSheetByName('RAW_ELECTRICITY');
-    if (!sh) return 0;
-    var data = sh.getDataRange().getValues();
-    var total = 0;
-    var productionMeters = ['Forge', 'Press', '2500', '1300', '800', '1000'];
-    
-    for (var i = 1; i < data.length; i++) {
-      var row = data[i];
-      var d = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
-      if (!d || d < dateFrom || d > dateTo) continue;
-      var meter = (row[2] || '').toString().trim();
-      var kwh = Number(row[3]) || 0;
-      
-      var isProduction = productionMeters.some(function(keyword) {
-        return meter.indexOf(keyword) >= 0;
-      });
-      
-      if (isProduction && kwh > 0) total += kwh;
-    }
-    return total;
-  }
-  
-  // 3. Helper: Sum forged tonnage from a specific tab
-  function getTonnage(dateFrom, dateTo, tabName) {
-    var sh = ss.getSheetByName(tabName);
-    if (!sh) return 0;
-    var data = sh.getDataRange().getValues();
-    var totalKg = 0;
-    
-    for (var i = 2; i < data.length; i++) {
-      var row = data[i];
-      var d = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
-      if (!d || d < dateFrom || d > dateTo) continue;
-      var vf = (row[4] || '').toString().trim();
-      var qty = Number(row[5]) || 0;
-      if (!vf || qty === 0) continue;
-      var fw = partsMap[vf] || 0;
-      totalKg += qty * fw;
-    }
-    return totalKg / 1000; // convert to tons
-  }
-  
-  // 4. Build 30-day baseline
-  var totalKwh30 = getProductionKwh(thirtyDaysAgo, today);
-  var totalTons30 = getTonnage(thirtyDaysAgo, today, 'RAW_FORGE') + 
-                    getTonnage(thirtyDaysAgo, today, 'RAW_PRESS');
-  
-  if (totalTons30 < 0.5) {
-    Logger.log('⚠️ Insufficient tonnage data in last 30 days. Skipping yield check.');
-    return;
-  }
-  
-  var baselineKwhPerTon = totalKwh30 / totalTons30;
-  Logger.log('📊 Dynamic Baseline: ' + baselineKwhPerTon.toFixed(1) + ' kWh/ton (based on last 30 days)');
-  
-  // 5. Check yesterday's performance
-  var yesterdayKwh = getProductionKwh(yesterday, today);
-  var yesterdayTons = getTonnage(yesterday, today, 'RAW_FORGE') + 
-                      getTonnage(yesterday, today, 'RAW_PRESS');
-  
-  if (yesterdayTons < 0.1) {
-    Logger.log('⚠️ No production recorded yesterday. Skipping yield check.');
-    return;
-  }
-  
-  var expectedTons = yesterdayKwh / baselineKwhPerTon;
-  var efficiency = (yesterdayTons / expectedTons) * 100;
-  
-  Logger.log('📉 Yesterday: ' + yesterdayKwh + ' kWh | Actual: ' + yesterdayTons.toFixed(2) + ' tons | Expected: ' + expectedTons.toFixed(2) + ' tons | Efficiency: ' + efficiency.toFixed(1) + '%');
-  
-  // 6. Alert if efficiency < 85%
-  if (efficiency < 85 && yesterdayKwh > 500) {
-    var msg = '🚨 <b>VFPL Yield & Energy Anomaly</b>\n';
-    msg += '📅 ' + Utilities.formatDate(yesterday, 'Asia/Kolkata', 'dd-MMM-yyyy') + '\n';
-    msg += '⚡ <b>Power Consumed:</b> ' + Math.round(yesterdayKwh).toLocaleString() + ' kWh\n';
-    msg += '🏋️ <b>Actual Forged Output:</b> ' + yesterdayTons.toFixed(2) + ' Tons\n';
-    msg += '🎯 <b>Expected Output:</b> ' + expectedTons.toFixed(2) + ' Tons\n';
-    msg += '⚠️ <b>Yield Efficiency:</b> ' + efficiency.toFixed(1) + '% <i>(Baseline: ' + baselineKwhPerTon.toFixed(0) + ' kWh/ton)</i>\n';
-    msg += '💬 <i>Input cost per ton increased. Check downtime/furnace logs.</i>';
-    
-    sendTelegramAlert(msg);
-    Logger.log('📨 Yield anomaly alert sent.');
-  } else {
-    Logger.log('✅ Yield is healthy (' + efficiency.toFixed(1) + '% >= 85%). No alert.');
-  }
-}
-
-// Wrapper for daily trigger (08:30 AM)
-function runYieldSentinel() {
-  try {
-    evaluateDailyYieldSentinel();
-  } catch(e) {
-    Logger.log('❌ Yield sentinel failed: ' + e);
-  }
-}
-function checkOutstandingData() {
-  var ss = SpreadsheetApp.openById('1GHdhrRtOhQFshsAOCK4n3GiJp-6a03k8bn0V_M04wSY');
-  var raw = ss.getSheetByName('RAW_OUTSTANDING');
-  if (!raw) {
-    Logger.log('RAW_OUTSTANDING tab not found');
-    return;
-  }
-  
-  var data = raw.getDataRange().getValues();
-  Logger.log('RAW_OUTSTANDING has ' + (data.length - 2) + ' rows of data');
-  
-  // Look for FORCE MOTORS
-  for (var i = 0; i < data.length; i++) {
-    if (data[i][0] && data[i][0].toString().indexOf('FORCE MOTORS') >= 0) {
-      Logger.log('FORCE MOTORS found: Overdue = ' + data[i][2]);
-    }
-  }
-}
-// ============================================================
 // DEPLOY ALL TRIGGERS
 // ============================================================
 
@@ -6266,30 +5951,4 @@ function listAllTriggers() {
   Logger.log('📊 Data Pulls: ' + pullCount);
   Logger.log('⏰ Alerts: ' + alertCount);
   Logger.log('🔄 Cache: 1 (every 15 min)');
-}
-function addMissing19Pull() {
-  ScriptApp.newTrigger('runDashboardPull')
-    .timeBased()
-    .atHour(19)
-    .nearMinute(0)
-    .everyDays(1)
-    .create();
-  
-  Logger.log('✅ 19:00 pull added successfully!');
-  
-  // Now show updated list
-  listAllTriggers();
-}
-function redeployAllTriggers() {
-  // Clear all triggers
-  ScriptApp.getProjectTriggers().forEach(function(t) {
-    ScriptApp.deleteTrigger(t);
-  });
-  
-  // Redeploy everything
-  setDashboardTriggers();          // 08:15, 12:00, 16:00, 18:00, 19:00, 23:00
-  deployShiftTrackingTriggers();   // Alert.gs — gentle reminder, DME alert, follow-up, daily/weekly summary
-  setCacheTriggers();              // 15-min cache refresh
-
-  Logger.log('✅ All triggers redeployed!');
 }
