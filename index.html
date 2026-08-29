@@ -319,6 +319,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="hdr-r">
     <span class="fy-badge">FY 2026-27</span>
     <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">&#x21bb; Refresh</button>
+    <button class="refresh-btn owner-only-ctrl" id="restore-btn" onclick="promptRestoreCache()" title="Restore last known-good cache snapshot (owner PIN required)" style="background:#92400E;color:#FDE68A;border-color:#B45309;display:none;">&#x21ba; Restore</button>
     <button class="print-btn" onclick="printActiveTab()" title="Print current tab">&#128196; Print</button>
     <div class="upd" id="upd">&mdash;</div>
     <div class="live"><div class="pulse"></div>Live</div>
@@ -349,6 +350,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="tab" id="mbtn" onclick="showMargins()">&#9679; Margins</div>
   <div class="tab" id="cbtn" onclick="showCostSum()">&#9679; Cost Summary</div>
   <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
+  <div class="tab" onclick="showTab('downtime',this)">Downtime</div>
 </div>
 
 <!-- ═══════════════ TODAY TAB ═══════════════ -->
@@ -934,26 +936,105 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
     </div>
   </div>
   <div id="cs-content" style="display:none;">
-    <div class="card card-last">
-      <div class="ch"><div class="ct">Cost Summary &mdash; Monthly MIS P&amp;L (Owner View)</div><div class="badge b-sl" id="cs-updated">&mdash;</div></div>
-      <div class="scroll-x">
-        <table class="tbl" style="font-size:10px;">
-          <thead><tr id="cs-head"></tr></thead>
-          <tbody id="cs-body"><tr><td colspan="20" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
-        </table>
-      </div>
+    <div class="ch" style="background:transparent;border:none;padding:0 0 8px 0;">
+      <div class="ct">Cost Summary &mdash; Monthly MIS (Owner View)</div><div class="badge b-sl" id="cs-updated">&mdash;</div>
     </div>
+    <!-- COST_SUMMARY is a hand-curated worksheet: one card per month, one
+         mini-table per cost category within it — matches the sheet's real
+         layout rather than forcing it into a wide month-columns pivot that
+         doesn't exist in the source data. See readCostSummarySnap_() in
+         Code.gs. -->
+    <div id="cs-container"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:11px;">Loading&hellip;</div></div>
   </div>
 </div>
 
 <!-- ═══════════════ FY MONTHLY ═══════════════ -->
 <div id="tab-fy" class="main" style="display:none;" data-print-title="FY MONTHLY — VFPL Factory OS">
-  <div class="card card-last">
+  <div class="card" style="margin-bottom:10px;">
     <div class="ch"><div class="ct">FY 2026-27 &mdash; Monthly Summary (All Metrics)</div></div>
     <div class="scroll-x">
       <table class="tbl" style="font-size:10px;">
         <thead><tr id="fy-head"></tr></thead>
         <tbody id="fy-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Dropout / Rejection Rate Trending -->
+  <div class="sec-label">Dropout / Rejection Rate — Press &amp; Forge (FY Monthly)</div>
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Internal Rejection Trend &mdash; pieces dropped vs produced</div></div>
+    <div class="scroll-x">
+      <table class="tbl" id="dropout-tbl">
+        <thead>
+          <tr>
+            <th class="lf" style="min-width:90px;">Month</th>
+            <th colspan="3" style="text-align:center;background:rgba(239,68,68,.08);">Press</th>
+            <th colspan="3" style="text-align:center;background:rgba(234,179,8,.08);">Forge</th>
+          </tr>
+          <tr>
+            <th></th>
+            <th style="background:rgba(239,68,68,.08);">Produced</th>
+            <th style="background:rgba(239,68,68,.08);">Dropout</th>
+            <th style="background:rgba(239,68,68,.08);">Rej %</th>
+            <th style="background:rgba(234,179,8,.08);">Produced</th>
+            <th style="background:rgba(234,179,8,.08);">Dropout</th>
+            <th style="background:rgba(234,179,8,.08);">Rej %</th>
+          </tr>
+        </thead>
+        <tbody id="dropout-body">
+          <tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── DOWNTIME TAB ─────────────────────────────────────────────────────── -->
+<div id="tab-downtime" class="main" style="display:none;" data-print-title="DOWNTIME — VFPL Factory OS">
+  <!-- KPI row -->
+  <div class="kpi-row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="card" style="flex:1;min-width:140px;text-align:center;padding:16px 10px;">
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;">MTD Downtime</div>
+      <div id="dt-mtd" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">hours this month</div>
+    </div>
+    <div class="card" style="flex:1;min-width:140px;text-align:center;padding:16px 10px;">
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;">YTD Downtime</div>
+      <div id="dt-ytd" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">hours this FY</div>
+    </div>
+  </div>
+  <!-- By Department -->
+  <div class="sec-label">Downtime by Department (YTD hours)</div>
+  <div class="card" style="margin-bottom:10px;">
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th class="lf" style="min-width:130px;">Department</th>
+            <th style="min-width:100px;">YTD Hours</th>
+          </tr>
+        </thead>
+        <tbody id="dt-dept-body">
+          <tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- By Category -->
+  <div class="sec-label">Downtime by Category (YTD hours)</div>
+  <div class="card card-last">
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th class="lf" style="min-width:200px;">Category</th>
+            <th style="min-width:100px;">YTD Hours</th>
+          </tr>
+        </thead>
+        <tbody id="dt-cat-body">
+          <tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -966,57 +1047,46 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 // All data flows from WEB_APP. No calculations done in HTML.
 // ═══════════════════════════════════════════════════════════════
 var WEB_APP = 'https://script.google.com/macros/s/AKfycbx8BvUoAMVFovekpqY-IE9BAcs6706uMbL0jTu9VIB8UJ5E3Cbu2Vsp1DGYHtx5AVjKSg/exec';
-var OWNER_PIN = '1234';
+// PIN is validated server-side (Code.gs getPinGatedSection_) against a
+// Script Property — it is never present in this file. See checkPin()/
+// checkCostPin() below.
 var REFRESH_MS = 60000; // 60s auto-refresh
 var D = {}; // global data store
 
-// ═══ MACHINE CODE MAPS (locked from working dashboard) ═══
-var CUT_MACHINES = ['SM','BS1','BS2','BS3','CS80','CS100','CSITL','HS1','HS2'];
-var CUT_NAMES    = {SM:'Shearing',BS1:'Band Saw 1',BS2:'Band Saw 2',BS3:'Band Saw 3',CS80:'Circ Saw 80',CS100:'Circ Saw 100',CSITL:'Circ Saw ITL',HS1:'HGCK-1',HS2:'HGCK-2'};
-var CUT_SRC = {
-  'Shearing Machine':'SM','SHEARING MACHINE':'SM','Shearing':'SM',
-  'Band Saw No. 1':'BS1','Band Saw No.1':'BS1','BAND SAW NO. 1':'BS1','Band Saw 1':'BS1',
-  'Band Saw No. 2':'BS2','Band Saw No.2':'BS2','BAND SAW NO. 2':'BS2','Band Saw 2':'BS2',
-  'Band Saw No. 3':'BS3','Band Saw No.3':'BS3','BAND SAW NO. 3':'BS3','Band Saw 3':'BS3',
-  'Circular Saw 80':'CS80','CIRCULAR SAW 80':'CS80',
-  'Circular Saw 100':'CS100','CIRCULAR SAW 100':'CS100',
-  'Circular Saw ITL':'CSITL','CIRCULAR SAW ITL':'CSITL',
-  'HGCKW 1':'HS1','HGCKGW 1':'HS1','HGCSGW 1':'HS1','HGCK 1':'HS1',
-  'HGCKW 2':'HS2','HGCKGW 2':'HS2','HGCSGW 2':'HS2','HGCK 2':'HS2'
-};
+// ═══ MACHINE CODE MAPS — populated from cache by _applyMachineRegistry_() ═══
+// Mutable — derived from MASTER_MACHINE_DATA_ in Code.gs via data.machine_registry.
+// Declared here so buildProdTable() references work before first data load
+// (they'll be empty, rendering "—" rather than crashing).
+var CUT_MACHINES = [], CUT_NAMES = {}, CUT_SRC = {};
+var FRG_MACHINES = [], FRG_NAMES = {}, FRG_SRC = {};
+var PRESS_MACHINES = [], PRESS_NAMES = {}, PRESS_SRC = {};
+var MACH_MACHINES = [], MACH_NAMES = {}, MACH_SRC = {};
 
-var FRG_MACHINES = ['H1O','H1N','H15','H2','H3'];
-var FRG_NAMES    = {H1O:'1T Old',H1N:'1T New',H15:'1.5T Hammer',H2:'2T Hammer',H3:'3T Hammer'};
-var FRG_SRC = {
-  'Hammer 1 Ton Old':'H1O','Hammer 1 Ton old':'H1O','1T Hammer (Old)':'H1O','1 Ton Old':'H1O',
-  'Hammer 1 Ton New':'H1N','Hammer 1 Ton new':'H1N','1T Hammer (New)':'H1N','1 Ton New':'H1N',
-  'Hammer 1.5 Ton':'H15','1.5T Hammer':'H15','1.5 Ton':'H15',
-  'Hammer 2 Ton':'H2','2T Hammer':'H2','2 Ton':'H2',
-  'Hammer 3 Ton':'H3','3T Hammer':'H3','3 Ton':'H3'
-};
+// Per-code htmlPrefix for lookupClass() — 'self' | 'strip-P'
+var MACHINE_HTML_PREFIX_ = {};
 
-var PRESS_MACHINES = ['P800','P1000','P1300','P2500'];
-var PRESS_NAMES    = {P800:'800T Press',P1000:'1000T Press',P1300:'1300T Press',P2500:'2500T Press'};
-var PRESS_SRC = {
-  '800 Ton Press':'P800','800 Ton Screw Press':'P800','800T Press':'P800',
-  '1000 Ton Press':'P1000','1000T Press':'P1000',
-  '1300 Ton Press':'P1300','1300T Press':'P1300',
-  '2500 Ton Press':'P2500','2500T Press':'P2500'
-};
-
-var MACH_MACHINES = ['FC1','FC2','LATHE','SPM','CNC1','CNC2','CNC3','CNC4','CNC5','HOB1','HOB2','HOB3','HOB4','HOB5','HOB6','HOB7','HOB8'];
-var MACH_NAMES    = {FC1:'FC-1',FC2:'FC-2',LATHE:'Lathe',SPM:'SPM',CNC1:'CNC-1',CNC2:'CNC-2',CNC3:'CNC-3',CNC4:'CNC-4',CNC5:'CNC-5',HOB1:'Hob-1',HOB2:'Hob-2',HOB3:'Hob-3',HOB4:'Hob-4',HOB5:'Hob-5',HOB6:'Hob-6',HOB7:'Hob-7',HOB8:'Hob-8'};
-var MACH_SRC = {
-  'Facing & Centering 1':'FC1','Facing & Centering 2':'FC2','Facing and Centering 1':'FC1','Facing and Centering 2':'FC2',
-  'Lathe P/T':'LATHE','Lathe-P/T Machine':'LATHE','Lathe':'LATHE',
-  'SPM':'SPM','SPM Machine':'SPM',
-  'CNC 01':'CNC1','CNC 02':'CNC2','CNC 03':'CNC3','CNC 04':'CNC4','CNC 05':'CNC5',
-  'CNC-01':'CNC1','CNC-02':'CNC2','CNC-03':'CNC3','CNC-04':'CNC4','CNC-05':'CNC5',
-  'Hobbing 1':'HOB1','Hobbing 2':'HOB2','Hobbing 3':'HOB3','Hobbing 4':'HOB4',
-  'Hobbing 5':'HOB5','Hobbing 6':'HOB6','Hobbing 7':'HOB7','Hobbing 8':'HOB8',
-  'Hobbing M/C FD-250':'HOB1','Hobbing M/C FD-250UMC':'HOB2','Hobbing M/C FD-800':'HOB3',
-  'Hobbing M/C-400':'HOB4','Hobbing M/C FD-400':'HOB5'
-};
+function _applyMachineRegistry_(registry) {
+  if (!registry) return; // cache not yet populated — keep existing maps
+  function buildMaps(entries, machinesArr, namesObj, srcObj) {
+    machinesArr.length = 0;
+    Object.keys(namesObj).forEach(function(k){delete namesObj[k];});
+    Object.keys(srcObj).forEach(function(k){delete srcObj[k];});
+    var sorted = (entries||[]).slice().sort(function(a,b){return (a.sortOrder||0)-(b.sortOrder||0);});
+    sorted.forEach(function(m) {
+      machinesArr.push(m.code);
+      namesObj[m.code] = m.name;
+      MACHINE_HTML_PREFIX_[m.code] = m.htmlPrefix || 'self';
+      (m.formNames||[]).forEach(function(fn) {
+        srcObj[fn] = m.code;
+        srcObj[fn.toUpperCase()] = m.code;
+      });
+    });
+  }
+  buildMaps(registry.cutting, CUT_MACHINES, CUT_NAMES, CUT_SRC);
+  buildMaps(registry.forge,   FRG_MACHINES, FRG_NAMES, FRG_SRC);
+  buildMaps(registry.press,   PRESS_MACHINES, PRESS_NAMES, PRESS_SRC);
+  buildMaps(registry.machine, MACH_MACHINES, MACH_NAMES, MACH_SRC);
+}
 
 var SHIFTS = ['First Shift','Second Shift','Third Shift'];
 var SHIFT_SHORT = {'First Shift':'Shift 1','Second Shift':'Shift 2','Third Shift':'Shift 3','1':'Shift 1','2':'Shift 2','3':'Shift 3'};
@@ -1042,6 +1112,55 @@ function tick(){
 }
 setInterval(tick,1000); tick();
 
+// ═══ ROLE-BASED TAB VISIBILITY (UX declutter, NOT a security boundary) ═══
+// Shop-floor viewers don't need commercially-sensitive tabs cluttering
+// their view. This only hides tab buttons for anyone without ?role=owner
+// in the URL — it does nothing to protect the data itself, since it's
+// trivial to bypass by editing the DOM or calling showTab() directly from
+// the console. The actual protection is the server-side PIN check in
+// Code.gs (getPinGatedSection_) for Margins/Cost Summary, which never
+// ships owner-only data to the browser in the first place. Outstanding
+// and Collection are NOT PIN-gated server-side (no financial totals
+// there worse than what Outstanding already shows in the open), so this
+// is purely a "don't clutter the shop floor view" convenience for them.
+(function(){
+  var isOwner = new URLSearchParams(window.location.search).get('role') === 'owner';
+  if (!isOwner) {
+    var OWNER_ONLY_TAB_NAMES = ['outstanding','collection'];
+    document.querySelectorAll('.tab').forEach(function(t){
+      var onclick = t.getAttribute('onclick') || '';
+      var isOwnerOnly = OWNER_ONLY_TAB_NAMES.some(function(n){ return onclick.indexOf("'"+n+"'") >= 0; });
+      if (isOwnerOnly) t.style.display = 'none';
+    });
+  } else {
+    // Owner mode — show the Restore Cache button
+    var rb = document.getElementById('restore-btn');
+    if (rb) rb.style.display = '';
+  }
+})();
+
+function promptRestoreCache(){
+  var pin = prompt('Enter owner PIN to restore last known-good cache snapshot:');
+  if (!pin) return;
+  var btn = document.getElementById('restore-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Restoring…'; }
+  fetch(WEB_APP+'?json=1&action=restore_cache&pin='+encodeURIComponent(pin))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if (btn) { btn.disabled = false; btn.innerHTML = '&#x21ba; Restore'; }
+      if (d.ok) {
+        alert('✅ ' + d.msg);
+        fetchData(false); // reload the dashboard from the restored cache
+      } else {
+        alert('❌ ' + (d.error || 'Restore failed'));
+      }
+    })
+    .catch(function(err){
+      if (btn) { btn.disabled = false; btn.innerHTML = '&#x21ba; Restore'; }
+      alert('❌ Network error: ' + err.message);
+    });
+}
+
 // ═══ TABS ═══
 function showTab(name,el){
   document.querySelectorAll('.main').forEach(function(d){d.style.display='none';});
@@ -1059,15 +1178,23 @@ function showTabByName(name){
   showTab(name,found);
 }
 function showMargins(){showTab('margin',document.getElementById('mbtn'));}
+// PIN is validated server-side against a Script Property (see Code.gs
+// getPinGatedSection_) — margins data is not present anywhere in the
+// general ?json=1 payload, so there is nothing to extract from this page's
+// JS state before the PIN check succeeds.
 function checkPin(){
   var v=document.getElementById('pin-in').value;
-  if(v===OWNER_PIN){
-    document.getElementById('pin-gate').style.display='none';
-    document.getElementById('margin-content').style.display='block';
-    renderMargins();
-  } else {
-    document.getElementById('pin-err').style.display='block';
-  }
+  var errEl=document.getElementById('pin-err');
+  errEl.style.display='none';
+  fetch(WEB_APP+'?json=1&section=margins&pin='+encodeURIComponent(v))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.error || !d.margins){ errEl.textContent=d.error||'Wrong PIN'; errEl.style.display='block'; return; }
+      document.getElementById('pin-gate').style.display='none';
+      document.getElementById('margin-content').style.display='block';
+      renderMargins(d.margins);
+    })
+    .catch(function(){ errEl.textContent='Could not reach server'; errEl.style.display='block'; });
 }
 
 // ═══ PRODUCTION GRID BUILDER ═══
@@ -1090,13 +1217,20 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, 
         totals[code]+=N(r.entries[vf]);
       });
     });
-    // Capacity-status lookup. HTML codes (P800, H1N) map to MCODE_ codes
-    // (800, H1O) for cache lookup. statusMap shape: { mcode: { shift: "RED|GREEN|GREY" } }
+    // Capacity-status lookup. HTML codes (P800) map to MCODE_ codes (800)
+    // for cache lookup. statusMap shape: { mcode: { shift: "RED|GREEN|GREY" } }
+    // NOTE: H1N is its own MCODE_ code in Code.gs ('Hammer 1 Ton New' -> 'H1N')
+    // — it is never collapsed into H1O ('Hammer 1 Ton Old'). An earlier
+    // version of this function incorrectly aliased H1N to H1O, which would
+    // paint the "1 Ton New" hammer with the "1 Ton Old" hammer's status.
     function lookupClass(htmlCode, shift){
       if(!statusMap) return '';
       var mcode = htmlCode;
-      if(htmlCode.charAt(0)==='P') mcode = htmlCode.substring(1);   // P800 -> 800
-      if(htmlCode==='H1N') mcode = 'H1O';                            // H1N collapsed to H1O
+      // Derive server-side mcode from htmlPrefix in registry, not hardcoded rules:
+      //   strip-P → P800 becomes 800 (Press machines)
+      //   self    → code is used as-is (all others, including H1N and H1O separately)
+      var prefix = MACHINE_HTML_PREFIX_[htmlCode] || 'self';
+      if (prefix === 'strip-P') mcode = htmlCode.replace(/^P/, '');
       var s = statusMap[mcode] && statusMap[mcode][shift];
       if(s==='RED')   return ' cap-red';
       if(s==='GREEN') return ' cap-green';
@@ -1203,6 +1337,7 @@ function renderMaterial(schedRows, steelGrades){
 // ═══════════════════════════════════════════════════════════════
 function render(data){
   D=data; window.D=data;
+  _applyMachineRegistry_(data.machine_registry);
   document.getElementById('upd').textContent='Updated '+(data.updated_at||'—');
 
   var t=data.today||{}, wip=data.wip||{}, sc=data.schedule||{};
@@ -1327,6 +1462,7 @@ function render(data){
   document.getElementById('wip-frg-pcs').textContent=fmtN(ws.fgWIPPcs||0);
   document.getElementById('wip-frg-sub').textContent=(ws.fgWIPVFs||0)+' VFs';
   document.getElementById('wip-jwk-pcs').textContent=fmtN(ws.jwkWIPPcs||0);
+  document.getElementById('wip-jwk-sub').textContent=(ws.jwkWIPVFs||0)+' VFs';
   var totalWip=N(ws.cutWIPPcs)+N(ws.fgWIPPcs)+N(ws.jwkWIPPcs);
   document.getElementById('wip-total-badge').textContent=fmtN(totalWip)+' pcs total';
 
@@ -1531,6 +1667,9 @@ function render(data){
   // ─── FY MONTHLY ───
   renderFY(fy);
 
+  // ─── DOWNTIME ───
+  renderDowntimeSummary(data.downtime_summary || null);
+
   // ─── SESSION 18 — utilization, exact tons, sparklines, 4 new tabs ───
   try { renderSession18(data); } catch(e) { console.warn('renderSession18 failed:', e); }
 
@@ -1696,15 +1835,15 @@ function renderTransport(rows, ledger, mtd){
   rows.forEach(function(r){
     var statColor=r.status&&r.status.indexOf('ACTUAL')>=0?'b-gn':r.status&&r.status.indexOf('BASELINE')>=0?'b-am':'b-sl';
     html+='<tr><td class="lf" style="font-weight:600;">'+safeText(r.month)+'</td>'+
-      '<td>'+fmtN(r.basicRs)+'</td>'+
+      '<td>'+fmtCr(r.basicRs)+'</td>'+
       '<td>'+N(r.weightTons).toFixed(2)+'</td>'+
       '<td>'+N(r.freightPerKg).toFixed(2)+'</td>'+
       '<td>'+Math.round(N(r.freightPerTon)).toLocaleString('en-IN')+'</td>'+
-      '<td style="font-weight:700;">'+fmtN(r.totalInclGST)+'</td>'+
+      '<td style="font-weight:700;">'+fmtCr(r.totalInclGST)+'</td>'+
       '<td class="lf"><span class="badge '+statColor+'">'+safeText(r.status||'—')+'</span></td>'+
       '<td>'+N(r.inboundL).toFixed(2)+'</td>'+
       '<td>'+N(r.outboundL).toFixed(2)+'</td>'+
-      '<td>'+fmtN(r.runningTotal)+'</td></tr>';
+      '<td>'+fmtCr(r.runningTotal)+'</td></tr>';
   });
   document.getElementById('tr-body').innerHTML=html||'<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:14px;">No transport data</td></tr>';
 
@@ -1720,7 +1859,7 @@ function renderTransport(rows, ledger, mtd){
       '<td>'+N(t.totalTons).toFixed(2)+'</td>'+
       '<td>'+N(t.avgPerKg).toFixed(2)+'</td>'+
       '<td>'+Math.round(N(t.avgPerTon)).toLocaleString('en-IN')+'</td>'+
-      '<td style="font-weight:700;">'+fmtN(t.totalFreightRs)+'</td>'+
+      '<td style="font-weight:700;">'+fmtCr(t.totalFreightRs)+'</td>'+
       '<td class="lf">'+last+'</td></tr>';
   });
   document.getElementById('tl-body').innerHTML=lhtml||'<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:14px;">No transporter data</td></tr>';
@@ -1791,10 +1930,21 @@ function renderDeptScore(ds){
   var rows='';
   (ds.scores||[]).forEach(function(s){
     var pct=N(s.pct);
+    // DEPT_SCORE's own sheet formula counts total form rows, not unique
+    // dates, against expected calendar days — so pct can read in the
+    // hundreds/thousands and would silently claim perfect compliance if
+    // shown as-is (see Code.gs buildDashboardCache DEPT_SCORE comment).
+    // Show that honestly instead of a fabricated percentage.
+    if(s.pctInvalid || pct>100){
+      rows+='<tr><td class="lf" style="font-weight:600;">'+safeText(s.dept)+'</td>'+
+        '<td>'+fmtN(s.count)+'</td>'+
+        '<td>'+fmtN(s.expected)+'</td>'+
+        '<td style="color:var(--tx3);"><span class="badge b-sl" title="Sheet counts total rows, not unique dates — needs a formula fix in DEPT_SCORE">metric needs fix</span></td>'+
+        '<td class="lf">—</td></tr>';
+      return;
+    }
     var pctColor=pct>=90?'var(--gn)':pct>=70?'var(--am)':'var(--rd)';
-    var grade=safeText(s.grade);
-    // Some grades come as numbers like "973.3" — show A/B/C if string match
-    var gradeBadge='<span style="color:'+pctColor+';font-weight:700;">'+grade+'</span>';
+    var gradeBadge='<span style="color:'+pctColor+';font-weight:700;">'+safeText(s.grade)+'</span>';
     rows+='<tr><td class="lf" style="font-weight:600;">'+safeText(s.dept)+'</td>'+
       '<td>'+fmtN(s.count)+'</td>'+
       '<td>'+fmtN(s.expected)+'</td>'+
@@ -1804,8 +1954,8 @@ function renderDeptScore(ds){
   document.getElementById('ds-body').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:14px;">No compliance data</td></tr>';
 }
 
-function renderMargins(){
-  var mg=D.margins||{}, rows=mg.rows||[];
+function renderMargins(mg){
+  mg=mg||{}; var rows=mg.rows||[];
   document.getElementById('mg-rate').textContent='₹'+(mg.rmAvgRate||0).toFixed(2);
   document.getElementById('mg-vfs').textContent=rows.length;
   var totTov=0, totNet=0;
@@ -1859,6 +2009,80 @@ function renderFY(fy){
     rows+='</tr>';
   });
   document.getElementById('fy-body').innerHTML=rows;
+
+  // Dropout / Rejection Rate Trending
+  renderDropoutTrend(data.dropout_trend);
+}
+
+function renderDropoutTrend(trend) {
+  var tbody = document.getElementById('dropout-body');
+  if (!tbody) return;
+  if (!trend || (!trend.Press && !trend.Forge)) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">No dropout data available</td></tr>';
+    return;
+  }
+  var FY_MONTHS = ['April','May','June','July','August','September','October','November','December','January','February','March'];
+  var press = trend.Press || [];
+  var forge = trend.Forge || [];
+  var pm = {}, fm = {};
+  press.forEach(function(r) { pm[r.month] = r; });
+  forge.forEach(function(r) { fm[r.month] = r; });
+
+  var now = new Date();
+  var curM = ['January','February','March','April','May','June','July','August','September','October','November','December'][now.getMonth()];
+
+  var rows = '';
+  FY_MONTHS.forEach(function(m) {
+    var p = pm[m] || {qty:0, dropoutQty:0, dropoutPct:0};
+    var f = fm[m] || {qty:0, dropoutQty:0, dropoutPct:0};
+    if (p.qty === 0 && f.qty === 0) return; // skip months with no data
+    var isCur = m === curM;
+    var style = isCur ? ' style="font-weight:700;"' : '';
+    function pctColor(pct) {
+      if (pct <= 0) return '';
+      if (pct < 2) return ' style="color:var(--gn);"';
+      if (pct < 5) return ' style="color:var(--am);"';
+      return ' style="color:var(--rd);"';
+    }
+    rows += '<tr' + style + '>';
+    rows += '<td class="lf">' + m + (isCur ? ' ●' : '') + '</td>';
+    rows += '<td>' + fmtN(p.qty) + '</td>';
+    rows += '<td>' + fmtN(p.dropoutQty) + '</td>';
+    rows += '<td' + pctColor(p.dropoutPct) + '>' + (p.qty > 0 ? p.dropoutPct.toFixed(1) + '%' : '—') + '</td>';
+    rows += '<td>' + fmtN(f.qty) + '</td>';
+    rows += '<td>' + fmtN(f.dropoutQty) + '</td>';
+    rows += '<td' + pctColor(f.dropoutPct) + '>' + (f.qty > 0 ? f.dropoutPct.toFixed(1) + '%' : '—') + '</td>';
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows || '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--tx3);">No production data yet this FY</td></tr>';
+}
+
+function renderDowntimeSummary(ds) {
+  var deptEl = document.getElementById('dt-dept-body');
+  var catEl  = document.getElementById('dt-cat-body');
+  var mtdEl  = document.getElementById('dt-mtd');
+  var ytdEl  = document.getElementById('dt-ytd');
+  if (!ds) {
+    if (deptEl) deptEl.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">No downtime data — run createDowntimeForm_() and set SRC_DOWNTIME</td></tr>';
+    if (catEl)  catEl.innerHTML  = '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">—</td></tr>';
+    return;
+  }
+  if (mtdEl) mtdEl.textContent = (ds.mtdHours || 0).toFixed(1);
+  if (ytdEl) ytdEl.textContent = (ds.ytdHours || 0).toFixed(1);
+  if (deptEl) {
+    var rows = '';
+    (ds.byDept || []).forEach(function(r) {
+      rows += '<tr><td class="lf">' + safeText(r.dept) + '</td><td>' + (r.ytdHours || 0).toFixed(1) + '</td></tr>';
+    });
+    deptEl.innerHTML = rows || '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">No entries yet</td></tr>';
+  }
+  if (catEl) {
+    var crows = '';
+    (ds.byCategory || []).forEach(function(r) {
+      crows += '<tr><td class="lf">' + safeText(r.category) + '</td><td>' + (r.ytdHours || 0).toFixed(1) + '</td></tr>';
+    });
+    catEl.innerHTML = crows || '<tr><td colspan="2" style="text-align:center;padding:14px;color:var(--tx3);">No entries yet</td></tr>';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1899,23 +2123,42 @@ function manualRefresh(){fetchData(false);}
 // ═══════════════════════════════════════════════════════════════
 
 // Print active tab
+// Explicitly hides every non-active .main before printing and restores
+// their previous inline display value after — this used to rely on the
+// coincidence that showTab() already sets display:none on inactive tabs,
+// which breaks the moment tab-switching logic changes.
 function printActiveTab(){
-  // Find currently visible .main element and print only it by temporarily
-  // hiding others — CSS @media print handles the layout.
+  var mains=document.querySelectorAll('.main');
+  var prevDisplay=[];
+  mains.forEach(function(m,i){
+    prevDisplay[i]=m.style.display;
+    if(m.style.display!=='none') m.style.display='block';
+    else m.style.display='none';
+  });
   window.print();
+  mains.forEach(function(m,i){ m.style.display=prevDisplay[i]; });
 }
 
-// Cost Summary PIN gate (same PIN as Margins — 1234)
+// Cost Summary PIN gate — same server-side validation path as Margins.
+// cost_summary_snap has no builder in Code.gs yet (COST_SUMMARY is a
+// hand-curated single-month sheet, shape doesn't match this table — see
+// project notes), so this currently unlocks to an honest empty state
+// rather than fabricated data. Once a builder exists, no frontend change
+// is needed — it flows through the same section=cost_summary path.
 function showCostSum(){showTab('costsum',document.getElementById('cbtn'));}
 function checkCostPin(){
   var v=document.getElementById('cs-pin-in').value;
-  if(v===OWNER_PIN){
-    document.getElementById('cs-pin-gate').style.display='none';
-    document.getElementById('cs-content').style.display='block';
-    renderCostSum(window.D || {});
-  } else {
-    document.getElementById('cs-pin-err').style.display='block';
-  }
+  var errEl=document.getElementById('cs-pin-err');
+  errEl.style.display='none';
+  fetch(WEB_APP+'?json=1&section=cost_summary&pin='+encodeURIComponent(v))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.error){ errEl.textContent=d.error; errEl.style.display='block'; return; }
+      document.getElementById('cs-pin-gate').style.display='none';
+      document.getElementById('cs-content').style.display='block';
+      renderCostSum({cost_summary_snap: d.cost_summary_snap || {}});
+    })
+    .catch(function(){ errEl.textContent='Could not reach server'; errEl.style.display='block'; });
 }
 
 // ═══ SPARKLINE — pure SVG, 6-month trend ═══
@@ -1953,10 +2196,18 @@ function renderSession18(data){
   if(utilEl){
     if(u.util_pct!==undefined && u.util_pct!==null){
       utilEl.textContent=u.util_pct+'%';
-      utilSub.textContent='vs '+(u.baseline_month||'Dec-25')+' ('+fmtN(u.baseline_pcs||0)+' pcs/day)';
+      // Code.gs sends baseline_month:'Config' as a sentinel when no
+      // UTIL_BASELINE sheet exists — that's a hardcoded fallback (15,000
+      // pcs/day), not a real historical baseline. Say so honestly instead
+      // of printing the literal word "Config", which reads as a typo.
+      if(u.baseline_month==='Config'){
+        utilSub.textContent='no baseline configured — using default '+fmtN(u.baseline_pcs||0)+' pcs/day';
+      } else {
+        utilSub.textContent='vs '+(u.baseline_month||'—')+' ('+fmtN(u.baseline_pcs||0)+' pcs/day)';
+      }
     } else {
       utilEl.textContent='—';
-      utilSub.textContent='baseline '+(u.baseline_month||'Dec-25')+' (TO DO)';
+      utilSub.textContent='baseline not configured';
     }
   }
 
@@ -1977,7 +2228,7 @@ function renderSession18(data){
   // Sparklines from fy_monthly[]
   var fy=data.fy_monthly||[];
   var lastN=function(key){return fy.map(function(r){return N(r[key]||0);}).filter(function(v){return v>0;});};
-  drawSparkline('sp-tov',  lastN('Turnover (Rs L)'));
+  drawSparkline('sp-tov',  lastN('Dispatch Turnover (Rs L)'));
   drawSparkline('sp-own',  fy.map(function(r){return N(r['Forge Qty (Inhouse)']||0)+N(r['Press Qty (Inhouse)']||0);}).filter(function(v){return v>0;}));
   drawSparkline('sp-jwk',  fy.map(function(r){return N(r['Forge Qty (JWK)']||0)+N(r['Press Qty (JWK)']||0);}).filter(function(v){return v>0;}));
   drawSparkline('sp-cut',  lastN('Cut Qty'));
@@ -2109,7 +2360,17 @@ function renderCollection(data){
 
   var bodyHTML='';
   customers.forEach(function(c, idx){
-    var days='—'; // days overdue not currently in cache — left as placeholder
+    // c.asOn is free-text from the source ledger's header cell (see Code.gs
+    // pullOutstanding_) — not guaranteed to be a clean date, so parse
+    // defensively and fall back to '—' rather than showing a wrong number.
+    var days='—';
+    if(c.asOn){
+      var asOnDt=new Date(c.asOn);
+      if(!isNaN(asOnDt.getTime())){
+        var diffDays=Math.floor((Date.now()-asOnDt.getTime())/86400000);
+        if(diffDays>=0) days=diffDays;
+      }
+    }
     var action = c.overdue > 500000 ? '<span class="badge b-rd">URGENT CALL</span>'
                : c.overdue > 100000 ? '<span class="badge" style="background:var(--amb);color:var(--am);">EMAIL + CALL</span>'
                : '<span class="badge b-sl">EMAIL</span>';
@@ -2155,33 +2416,53 @@ function renderVrej(data){
 }
 
 // ═══ COST SUMMARY TAB (PIN-gated) ═══
+// Renders the real COST_SUMMARY shape: one card per month, one mini-table
+// per cost category ("PRODUCTION", "COSTS — CONTRACTOR LABOUR", ...) —
+// not a wide month-columns pivot, because the source sheet is a
+// hand-curated single-month MIS worksheet, not a live multi-month table.
+// See readCostSummarySnap_() in Code.gs for the parser.
 function renderCostSum(data){
   var c=data.cost_summary_snap||{};
-  var hdrs=c.headers||[];
-  var rows=c.rows||[];
+  var months=c.months||[];
   document.getElementById('cs-updated').textContent='Updated '+(c.updated_at||'—');
-  var headHTML='';
-  // First column is label, rest are months/values
-  headHTML='<th class="lf">Metric</th>';
-  hdrs.slice(1).forEach(function(h){headHTML+='<th>'+safeText(h)+'</th>';});
-  document.getElementById('cs-head').innerHTML=headHTML;
-  var bodyHTML='';
-  rows.forEach(function(r){
-    var label=r.label||'';
-    var isHeader=label.toUpperCase()===label && label.length>3 && !/\d/.test(label);
-    var isTotal=/total|net|gross/i.test(label);
-    var rowStyle=isHeader?'background:var(--sll);font-weight:700;':(isTotal?'font-weight:700;border-top:2px solid var(--bd2);':'');
-    bodyHTML+='<tr style="'+rowStyle+'"><td class="lf">'+safeText(label)+'</td>';
-    (r.values||[]).forEach(function(v){
-      var disp='';
-      if(v===''||v===null||v===undefined) disp='—';
-      else if(typeof v==='number') disp=v.toLocaleString('en-IN',{maximumFractionDigits:1});
-      else disp=String(v);
-      bodyHTML+='<td>'+disp+'</td>';
+
+  if(!months.length){
+    document.getElementById('cs-container').innerHTML=
+      '<div style="padding:16px;text-align:center;color:var(--tx3);">COST_SUMMARY sheet tab is empty &mdash; populate it to see MIS data</div>';
+    return;
+  }
+
+  var statusBadge=function(status){
+    var s=(status||'').toString();
+    if(s.indexOf('✅')>=0) return '<span class="badge b-gn">'+safeText(s)+'</span>';
+    if(s.indexOf('⚠')>=0)  return '<span class="badge" style="background:var(--amb);color:var(--am);">'+safeText(s)+'</span>';
+    return '<span class="badge b-sl">'+safeText(s||'—')+'</span>';
+  };
+
+  var html='';
+  months.forEach(function(m){
+    html+='<div class="card" style="margin-bottom:10px;">'+
+      '<div class="ch"><div class="ct">'+safeText(m.month)+'</div></div>';
+    (m.sections||[]).forEach(function(s){
+      html+='<div style="padding:8px 12px;">'+
+        '<div class="sec-label" style="margin:6px 0 4px 2px;">'+safeText(s.name)+'</div>'+
+        '<div class="scroll-x"><table class="tbl">'+
+        '<thead><tr><th class="lf">Cost Item</th><th class="lf">Source</th><th>Amount ₹</th><th>Amount ₹L</th><th class="lf">Notes</th><th class="lf">Status</th></tr></thead><tbody>';
+      (s.rows||[]).forEach(function(r){
+        var isTotal=/total/i.test(r.label);
+        html+='<tr'+(isTotal?' class="tot"':'')+'>'+
+          '<td class="lf" style="font-weight:'+(isTotal?'700':'500')+';">'+safeText(r.label)+'</td>'+
+          '<td class="lf" style="color:var(--tx3);font-size:10px;">'+safeText(r.source)+'</td>'+
+          '<td>'+(r.amountRs!==null?fmtN(r.amountRs):'—')+'</td>'+
+          '<td>'+(r.amountL!==null?r.amountL.toFixed(2):'—')+'</td>'+
+          '<td class="lf" style="color:var(--tx2);font-size:10px;">'+safeText(r.notes)+'</td>'+
+          '<td class="lf">'+statusBadge(r.status)+'</td></tr>';
+      });
+      html+='</tbody></table></div></div>';
     });
-    bodyHTML+='</tr>';
+    html+='</div>';
   });
-  document.getElementById('cs-body').innerHTML=bodyHTML||'<tr><td colspan="20" style="text-align:center;padding:14px;color:var(--tx3);">COST_SUMMARY sheet tab is empty &mdash; populate it to see P&amp;L</td></tr>';
+  document.getElementById('cs-container').innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════════════════
