@@ -102,11 +102,11 @@ function pullOutstanding_() {
   if(!src){Logger.log('pullOutstanding_: CURRENT_OVERDUE not found');return;}
   var raw=src.getDataRange().getValues();
   var asOn=(raw[0]&&raw[0][0])?raw[0][0].toString().trim():'Date unknown';
+  var dtFmt=function(v){if(!v)return '';try{var d=new Date(v);return isNaN(d)?v.toString():d.toLocaleDateString('en-IN');}catch(e){return v.toString();}};
   var outRows=[];
   for(var i=5;i<raw.length;i++){
     var cust=(raw[i][0]||'').toString().trim();
     if(!cust)continue; if(cust.toUpperCase().indexOf('GRAND TOTAL')>=0)break;
-    var dtFmt=function(v){if(!v)return '';try{var d=new Date(v);return isNaN(d)?v.toString():d.toLocaleDateString('en-IN');}catch(e){return v.toString();}};
     outRows.push([
       cust,
       Number(raw[i][1])||0,   // Not Due
@@ -5657,10 +5657,24 @@ function buildCollectionEngine() {
   var actions = [];
   rawSh.getDataRange().getValues().slice(2).forEach(function(r) {
     var customer = r[0], overdue = Number(r[2])||0, total = Number(r[3])||0;
-    if (overdue < 10000 || !customer || customer === 'GRAND TOTAL') return; 
-    var status = overdue > 500000 ? "🔴 CRITICAL" : (overdue > 100000 ? "🟠 WARNING" : "🟡 FOLLOW-UP");
-    var priority = overdue > 500000 ? 1 : 2;
-    actions.push([priority, customer, overdue, total, status, "Email Template", "⏳ PENDING", ""]);
+    if (overdue < 10000 || !customer || customer === 'GRAND TOTAL') return;
+    // New columns (14-col RAW_OUTSTANDING): r[5]=Days_Overdue, r[8]=Escalation_Level, r[11]=Dispatch_Lock, r[12]=Last_Payment_Amt
+    var ncols=r.length;
+    var escalation = ncols>8  ? Number(r[8])||0  : 0;
+    var dispLock   = ncols>11 ? (r[11]||'').toString().trim().toUpperCase() : '';
+    var daysOD     = ncols>5  ? Number(r[5])||0  : 0;
+    var lastPayAmt = ncols>12 ? Number(r[12])||0 : 0;
+    var lastPayDt  = ncols>7  ? (r[7]||'').toString().trim() : '';
+    var locked = dispLock === 'LOCKED';
+    var status, priority;
+    if(locked && escalation>=5){ status='🔴 ESCALATE/LEGAL'; priority=1; }
+    else if(locked)             { status='🔴 CRITICAL';       priority=1; }
+    else if(escalation>=5||overdue>500000){ status='🔴 CRITICAL'; priority=1; }
+    else if(escalation>=3||overdue>100000){ status='🟠 WARNING';  priority=2; }
+    else                                  { status='🟡 FOLLOW-UP';priority=3; }
+    var emailSubj = 'Payment reminder — overdue ₹'+Math.round(overdue).toLocaleString('en-IN');
+    var emailBody = 'Dear '+customer+' team,\n\nOur records show an overdue balance of ₹'+Math.round(overdue).toLocaleString('en-IN')+(daysOD?' ('+daysOD+' days overdue)':'')+' against your account.'+(lastPayDt?'\nLast payment received: '+lastPayDt+(lastPayAmt?' — ₹'+Math.round(lastPayAmt).toLocaleString('en-IN'):'')+'.':(locked?'\n⚠️ Dispatch is currently LOCKED pending clearance.':''))+'\n\nKindly arrange payment at the earliest.\n\nRegards,\nVarsha Forgings Accounts';
+    actions.push([priority, customer, overdue, total, status, 'Subject: '+emailSubj+'\n\n'+emailBody, "⏳ PENDING", ""]);
   });
   var destSh = ss.getSheetByName('COLLECTION_ACTION') || ss.insertSheet('COLLECTION_ACTION');
   destSh.clearContents();
