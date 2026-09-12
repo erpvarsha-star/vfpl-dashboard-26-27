@@ -693,13 +693,9 @@ function runDashboardPull() {
   try { buildMasterDataGaps(); Logger.log('OK Data Gap 8'); } catch(e) { Logger.log('FAIL Data Gap 8: '+e); }
   try { buildCollectionEngine(); Logger.log('OK Collection Engine'); } catch(e) { Logger.log('FAIL Collection Engine: '+e); }
   try { buildAlertsActive(); Logger.log('OK Alerts Active'); } catch(e) { Logger.log('FAIL Alerts Active: '+e); }
-  // Flush all pending spreadsheet writes before building the cache.
-  // Without this, a fresh openById after ~100s of heavy I/O can time out.
-  SpreadsheetApp.flush();
-  var _dashSS = SpreadsheetApp.openById(DASH_ID);
-  try { buildDashboardCache(_dashSS); Logger.log('OK Dashboard Cache'); } catch(e) { Logger.log('FAIL Dashboard Cache: '+e); }
-  try { auditRawTabsForBadData_(_dashSS); Logger.log('OK Submission audit'); } catch(e) { Logger.log('FAIL Submission audit: '+e); }
-  try { flagLateSubmissions_(_dashSS); Logger.log('OK Late submission audit'); } catch(e) { Logger.log('FAIL Late submission audit: '+e); }
+  try { buildDashboardCache(); Logger.log('OK Dashboard Cache'); } catch(e) { Logger.log('FAIL Dashboard Cache: '+e); }
+  try { auditRawTabsForBadData_(); Logger.log('OK Submission audit'); } catch(e) { Logger.log('FAIL Submission audit: '+e); }
+  try { flagLateSubmissions_(); Logger.log('OK Late submission audit'); } catch(e) { Logger.log('FAIL Late submission audit: '+e); }
 
   try { hideRAWTabs(); Logger.log('OK RAW hidden'); } catch(e) { Logger.log('FAIL hideRAWTabs: '+e); }
 
@@ -3650,8 +3646,8 @@ function notifyBadDataViaTelegram_(tab, vf, qty, dateVal, reason) {
   Logger.log('notifyBadDataViaTelegram_: alert sent to ' + sup.name + ' (' + dept + ') for ' + tab + '/' + vf);
 }
 
-function auditRawTabsForBadData_(optSS) {
-  var ss = optSS || SpreadsheetApp.openById(DASH_ID);
+function auditRawTabsForBadData_() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
   var flagged = 0;
 
   // Known VFs, for the "does this VF exist in master data" check below.
@@ -3735,8 +3731,8 @@ var LATE_SUBMISSION_SOURCES_ = [
   { srcId: SRC_MANPOWER_CONTRACT, tab: 'Form responses 1',      workDateCol: 1 }
 ];
 
-function flagLateSubmissions_(optSS) {
-  var ss = optSS || SpreadsheetApp.openById(DASH_ID);
+function flagLateSubmissions_() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
   var sh = ss.getSheetByName('LATE_SUBMISSIONS');
   if (!sh) sh = ss.insertSheet('LATE_SUBMISSIONS');
   sh.clearContents();
@@ -4263,8 +4259,8 @@ function buildDropoutTrend_() {
 }
 
 // ============================================================
-function buildDashboardCache(optSS) {
-  var ss = optSS || SpreadsheetApp.openById(DASH_ID);
+function buildDashboardCache() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
   
   function sN(v){var n=Number(v);return isNaN(n)?0:n;}
   function sS(v){return (v||'').toString().trim();}
