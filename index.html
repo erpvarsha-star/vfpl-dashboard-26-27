@@ -83,7 +83,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   .hdr-r{gap:6px; flex-wrap:wrap;}
   .clk, .upd{font-size:9px;}
   .tabs{padding:0 8px;}
-  .tab{padding:8px 9px; font-size:9px;}
+  .tab{padding:9px 10px; font-size:10px;}
   .main{padding:8px 10px;}
   .kgrid{gap:5px;}
   .k3,.k4,.k5,.k6,.k7{grid-template-columns:repeat(2, 1fr);}
@@ -99,6 +99,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   .dept-hdr{font-size:10px; padding:6px 8px;}
   .dh-date{font-size:9px;}
   .mobile-hint{display:block !important; font-size:9px; color:var(--tx3); padding:4px 8px; text-align:center; background:var(--sll); border-radius:3px; margin-bottom:4px;}
+
+  /* ── Machine Util mobile ── */
+  .mu-flt,.mu-view{padding:8px 14px;font-size:11px;min-height:36px;}
+  .mu-days{width:18px;height:18px;line-height:18px;font-size:9px;}
+  #mu-weekly-tbl th, #mu-weekly-tbl td,
+  #mu-monthly-tbl th, #mu-monthly-tbl td{padding:4px 5px;font-size:10px;}
+  #tab-mutil .kpi-row .card{min-width:calc(50% - 6px);}
+
+  /* ── Header: hide less-essential items at phone width ── */
+  .live,.fy-badge{display:none;}
+  .refresh-btn{padding:6px 10px;font-size:10px;}
 }
 .mobile-hint{display:none;}
 
@@ -122,8 +133,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
 .refresh-btn:disabled{opacity:.5;cursor:wait;}
 
 /* TABS */
-.tabs{background:var(--wh);border-bottom:2px solid var(--bd);padding:0 16px;display:flex;overflow-x:auto;gap:2px;position:sticky;top:54px;z-index:190;}
+.tabs{background:var(--wh);border-bottom:2px solid var(--bd);padding:0 16px;display:flex;overflow-x:auto;gap:2px;position:sticky;top:54px;z-index:190;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
 .tabs::-webkit-scrollbar{height:0;}
+/* Right-edge fade so users know more tabs exist off-screen */
+.tabs::after{content:'';position:sticky;right:0;min-width:32px;height:100%;background:linear-gradient(to right,transparent,var(--wh));pointer-events:none;flex-shrink:0;}
 .tab{padding:10px 13px;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;margin-bottom:-2px;}
 .tab:hover:not(.active){color:var(--tx2);background:#F9FAFB;}
 .tab.active{color:var(--br);border-bottom-color:var(--br);background:var(--brl);}
@@ -1120,6 +1133,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   margin-right:2px;
 }
 .mu-out{font-size:10px;color:var(--tx3);}
+
+/* Sticky machine-name column — stays visible while scrolling weeks/months */
+#mu-weekly-tbl td:first-child,
+#mu-monthly-tbl td:first-child{position:sticky;left:0;z-index:1;background:var(--wh);border-right:1px solid var(--bd);}
+#mu-weekly-tbl th:first-child,
+#mu-monthly-tbl th:first-child{position:sticky;left:0;z-index:2;background:#F7F8FA;border-right:1px solid var(--bd);}
+/* Dept-header rows span all cols but must not sticky-confuse the browser */
+#mu-weekly-tbl tr td[colspan],
+#mu-monthly-tbl tr td[colspan]{position:static;}
 </style>
 
 <script>
@@ -1382,7 +1404,7 @@ function showTab(name,el){
   var t=document.getElementById('tab-'+name);
   if(t)t.style.display='block';
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  if(el)el.classList.add('active');
+  if(el){el.classList.add('active'); el.scrollIntoView({behavior:'smooth',inline:'nearest',block:'nearest'});}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function showTabByName(name){
