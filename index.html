@@ -351,6 +351,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="tab" id="cbtn" onclick="showCostSum()">&#9679; Cost Summary</div>
   <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
   <div class="tab" onclick="showTab('downtime',this)">Downtime</div>
+  <div class="tab" onclick="showTab('mutil',this)">Machine Util</div>
 </div>
 
 <!-- ═══════════════ TODAY TAB ═══════════════ -->
@@ -1040,6 +1041,220 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════
+     MACHINE UTILISATION TAB
+     Source: cache.machine_util (built by buildMachineUtilisation_)
+     Shows per-machine days-run + output, grouped by last 8 weeks
+     and by FY month. Dept filter narrows the visible rows.
+     ══════════════════════════════════════════════════════════════ -->
+<div id="tab-mutil" class="main" style="display:none;" data-print-title="MACHINE UTILISATION — VFPL Factory OS">
+  <!-- KPI row -->
+  <div class="kpi-row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="card" style="flex:1;min-width:130px;text-align:center;padding:14px 8px;">
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:2px;">Active MTD</div>
+      <div id="mu-mtd-active" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">machines</div>
+    </div>
+    <div class="card" style="flex:1;min-width:130px;text-align:center;padding:14px 8px;">
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:2px;">MTD Output</div>
+      <div id="mu-mtd-out" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">pcs (all machines)</div>
+    </div>
+    <div class="card" style="flex:1;min-width:130px;text-align:center;padding:14px 8px;">
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:2px;">YTD Output</div>
+      <div id="mu-ytd-out" style="font-size:22px;font-weight:700;color:var(--acc);">—</div>
+      <div style="font-size:10px;color:var(--tx3);">pcs (all machines)</div>
+    </div>
+    <div class="card" style="flex:1;min-width:130px;text-align:center;padding:14px 8px;">
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:2px;">Best MTD</div>
+      <div id="mu-best-name" style="font-size:13px;font-weight:700;color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+      <div id="mu-best-days" style="font-size:10px;color:var(--tx3);">highest days run</div>
+    </div>
+  </div>
+
+  <!-- Dept filter -->
+  <div id="mu-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+    <button class="mu-flt active" onclick="muFilter('ALL',this)">All</button>
+    <button class="mu-flt" onclick="muFilter('Cutting',this)">Cutting</button>
+    <button class="mu-flt" onclick="muFilter('Forge',this)">Forge</button>
+    <button class="mu-flt" onclick="muFilter('Press',this)">Press</button>
+    <button class="mu-flt" onclick="muFilter('Machine',this)">Machine</button>
+  </div>
+
+  <!-- View toggle -->
+  <div style="display:flex;gap:8px;margin-bottom:10px;">
+    <button class="mu-view active" id="mu-v-week" onclick="muView('week',this)">Weekly (last 8 wks)</button>
+    <button class="mu-view" id="mu-v-month" onclick="muView('month',this)">Monthly (FY)</button>
+  </div>
+
+  <!-- Weekly table -->
+  <div id="mu-weekly-wrap" class="card" style="margin-bottom:10px;">
+    <div class="scroll-x">
+      <table class="tbl" id="mu-weekly-tbl">
+        <thead id="mu-weekly-head"><tr><th>Loading…</th></tr></thead>
+        <tbody id="mu-weekly-body"><tr><td style="padding:14px;text-align:center;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Monthly table -->
+  <div id="mu-monthly-wrap" class="card card-last" style="display:none;">
+    <div class="scroll-x">
+      <table class="tbl" id="mu-monthly-tbl">
+        <thead id="mu-monthly-head"><tr><th>Loading…</th></tr></thead>
+        <tbody id="mu-monthly-body"><tr><td style="padding:14px;text-align:center;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.mu-flt,.mu-view{
+  padding:5px 12px;border:1px solid var(--brd);border-radius:4px;
+  background:var(--bg2);color:var(--tx2);font-size:11px;cursor:pointer;
+}
+.mu-flt.active,.mu-view.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+.mu-days{
+  display:inline-block;width:20px;height:20px;line-height:20px;
+  text-align:center;border-radius:3px;font-size:10px;font-weight:700;
+  margin-right:2px;
+}
+.mu-out{font-size:10px;color:var(--tx3);}
+</style>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// MACHINE UTIL — state & filter
+// ══════════════════════════════════════════════════════════════
+var _MU = { data: null, dept: 'ALL', view: 'week' };
+
+function muFilter(dept, btn) {
+  _MU.dept = dept;
+  document.querySelectorAll('.mu-flt').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  _muRender();
+}
+function muView(v, btn) {
+  _MU.view = v;
+  document.querySelectorAll('.mu-view').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('mu-weekly-wrap').style.display  = (v === 'week')  ? '' : 'none';
+  document.getElementById('mu-monthly-wrap').style.display = (v === 'month') ? '' : 'none';
+}
+
+function renderMachineUtil(mu) {
+  if (!mu || !mu.machines || !mu.machines.length) {
+    document.getElementById('mu-weekly-body').innerHTML =
+      '<tr><td colspan="20" style="padding:20px;text-align:center;color:var(--tx3);">No machine data yet — run a dashboard pull first.</td></tr>';
+    return;
+  }
+  _MU.data = mu;
+
+  // KPI chips
+  var active = 0, mtdOut = 0, ytdOut = 0, bestDays = -1, bestName = '—';
+  mu.machines.forEach(function(m) {
+    if (m.mtd_days > 0) active++;
+    mtdOut += m.mtd_output;
+    ytdOut += m.ytd_output;
+    if (m.mtd_days > bestDays) { bestDays = m.mtd_days; bestName = m.name; }
+  });
+  document.getElementById('mu-mtd-active').textContent = active;
+  document.getElementById('mu-mtd-out').textContent    = fmtN(mtdOut);
+  document.getElementById('mu-ytd-out').textContent    = fmtN(ytdOut);
+  document.getElementById('mu-best-name').textContent  = bestName;
+  document.getElementById('mu-best-days').textContent  = bestDays + ' days this month';
+
+  _muRender();
+}
+
+function _muRender() {
+  var mu = _MU.data;
+  if (!mu) return;
+  var dept = _MU.dept;
+  var rows = mu.machines.filter(function(m) {
+    return dept === 'ALL' || m.dept === dept;
+  });
+
+  // ── Weekly table ──
+  var wkHead = '<tr><th class="lf" style="min-width:100px;">Machine</th><th style="min-width:60px;">MTD<br>Days</th>';
+  mu.week_labels.forEach(function(lbl) {
+    wkHead += '<th style="min-width:90px;font-size:10px;">' + lbl + '</th>';
+  });
+  wkHead += '</tr>';
+  document.getElementById('mu-weekly-head').innerHTML = wkHead;
+
+  var wkBody = '';
+  var lastDept = '';
+  rows.forEach(function(m) {
+    if (m.dept !== lastDept) {
+      lastDept = m.dept;
+      var cols = 2 + (m.weeks ? m.weeks.length : 8);
+      wkBody += '<tr><td colspan="' + cols + '" style="background:var(--bg2);font-size:10px;font-weight:700;color:var(--tx3);padding:4px 8px;text-transform:uppercase;letter-spacing:.5px;">' + m.dept + '</td></tr>';
+    }
+    wkBody += '<tr><td class="lf" style="font-size:11px;white-space:nowrap;">' + m.name + '</td>';
+    wkBody += '<td style="text-align:center;">' + _muDaysCell(m.mtd_days, true) + '</td>';
+    (m.weeks || []).forEach(function(w) {
+      wkBody += '<td style="text-align:center;">';
+      if (w.days > 0) {
+        wkBody += _muDaysCell(w.days, false);
+        wkBody += '<br><span class="mu-out">' + fmtN(w.output) + '</span>';
+      } else {
+        wkBody += '<span style="color:var(--tx3);font-size:10px;">—</span>';
+      }
+      wkBody += '</td>';
+    });
+    wkBody += '</tr>';
+  });
+  if (!rows.length) wkBody = '<tr><td colspan="10" style="padding:14px;text-align:center;color:var(--tx3);">No machines for this filter</td></tr>';
+  document.getElementById('mu-weekly-body').innerHTML = wkBody;
+
+  // ── Monthly table ──
+  var mnHead = '<tr><th class="lf" style="min-width:100px;">Machine</th><th style="min-width:60px;">YTD<br>Days</th>';
+  (mu.months || []).forEach(function(mn) {
+    mnHead += '<th style="min-width:70px;font-size:10px;">' + mn + '</th>';
+  });
+  mnHead += '</tr>';
+  document.getElementById('mu-monthly-head').innerHTML = mnHead;
+
+  var mnBody = '';
+  lastDept = '';
+  rows.forEach(function(m) {
+    if (m.dept !== lastDept) {
+      lastDept = m.dept;
+      var cols = 2 + (m.months ? m.months.length : 12);
+      mnBody += '<tr><td colspan="' + cols + '" style="background:var(--bg2);font-size:10px;font-weight:700;color:var(--tx3);padding:4px 8px;text-transform:uppercase;letter-spacing:.5px;">' + m.dept + '</td></tr>';
+    }
+    mnBody += '<tr><td class="lf" style="font-size:11px;white-space:nowrap;">' + m.name + '</td>';
+    mnBody += '<td style="text-align:center;">' + _muDaysCell(m.ytd_days, true) + '</td>';
+    (m.months || []).forEach(function(mo) {
+      mnBody += '<td style="text-align:center;">';
+      if (mo.days > 0) {
+        mnBody += _muDaysCell(mo.days, false);
+        mnBody += '<br><span class="mu-out">' + fmtN(mo.output) + '</span>';
+      } else {
+        mnBody += '<span style="color:var(--tx3);font-size:10px;">—</span>';
+      }
+      mnBody += '</td>';
+    });
+    mnBody += '</tr>';
+  });
+  if (!rows.length) mnBody = '<tr><td colspan="14" style="padding:14px;text-align:center;color:var(--tx3);">No machines for this filter</td></tr>';
+  document.getElementById('mu-monthly-body').innerHTML = mnBody;
+}
+
+function _muDaysCell(days, big) {
+  // Color: 0=grey, 1-2=red, 3-4=orange, 5=yellow, 6+=green (6-day work week)
+  var bg = days === 0 ? '#9e9e9e'
+         : days <= 2  ? '#ef5350'
+         : days <= 4  ? '#ff9800'
+         : days <= 5  ? '#ffc107'
+         : '#4caf50';
+  var sz = big ? '24px' : '20px';
+  var txt = big ? (days+'d') : String(days);
+  return '<span class="mu-days" style="background:' + bg + ';color:#fff;width:'+sz+';height:'+sz+';line-height:'+sz+';">' + txt + '</span>';
+}
+</script>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // VFPL FACTORY OS — DATA BINDING LAYER
@@ -1669,6 +1884,9 @@ function render(data){
 
   // ─── DOWNTIME ───
   renderDowntimeSummary(data.downtime_summary || null);
+
+  // ─── MACHINE UTILISATION ───
+  renderMachineUtil(data.machine_util || null);
 
   // ─── SESSION 18 — utilization, exact tons, sparklines, 4 new tabs ───
   try { renderSession18(data); } catch(e) { console.warn('renderSession18 failed:', e); }

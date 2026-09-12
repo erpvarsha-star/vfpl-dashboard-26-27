@@ -443,7 +443,7 @@ var DASH_SEC_NAMES_ = [
   'f4','debit_notes','manpower_summary','oil_summary','transport_summary',
   'planner','vendor_rej_summary','data_gaps_summary','fy_monthly',
   'shift_status','dept_score','today','dropout_trend','machine_registry',
-  'downtime_summary'
+  'downtime_summary','machine_util'
 ];
 
 // ── INCREMENTAL PULL GUARD ────────────────────────────────────────
@@ -4908,7 +4908,8 @@ function buildDashboardCache() {
     cost_summary_snap: costSummarySnap,
     machine_registry: getMachineRegistryForCache_(),
     dropout_trend: buildDropoutTrend_(),
-    downtime_summary: buildDowntimeSummary_()
+    downtime_summary: buildDowntimeSummary_(),
+    machine_util: buildMachineUtilisation_()
   };
 
   // ─── DATA SPLICING ENGINE ───
@@ -5841,6 +5842,161 @@ function runAnalyticsDaily() {
 // ============================================================
 // TELEGRAM ALERT ENGINE (Consolidated Messages)
 // ============================================================
+// ============================================================
+// ════════════════════════════════════════════════════════════════
+// MACHINE UTILISATION — weekly & monthly per-machine breakdown
+// Called by buildDashboardCache after MCODE_ is rebuilt.
+//
+// Payload: { machines: [...], week_labels: [...], months: [...] }
+//   machines[i]: { code, name, dept, section, sort,
+//                  weeks:  [{label, days, output}, ...8 entries],
+//                  months: [{label, days, output}, ...12 entries],
+//                  mtd_days, mtd_output, ytd_days, ytd_output }
+//
+// "days" = distinct calendar dates in that period where the machine
+//          had at least one row with qty > 0.
+// "output" = sum of Qty across all rows for that machine+period.
+// ════════════════════════════════════════════════════════════════
+function buildMachineUtilisation_() {
+  var ss  = SpreadsheetApp.openById(DASH_ID);
+  var tz  = 'Asia/Kolkata';
+  var now = new Date();
+
+  // Build MCODE_-based server code for each MASTER_MACHINE_DATA_ entry
+  // (same logic as _rebuildRuntimeMaps_)
+  function serverCode(d) { return (d[4] === 'strip-P') ? d[0].replace(/^P/, '') : d[0]; }
+
+  // Reverse map: serverCode → MASTER_MACHINE_DATA_ entry
+  var machineInfo = {};
+  MASTER_MACHINE_DATA_.forEach(function(d) {
+    machineInfo[serverCode(d)] = d;
+  });
+
+  // RAW tabs: [tabName, dateCol, machineNameCol, qtyCol]
+  var RAW_DEFS = [
+    ['RAW_CUTTING', 0, 1, 4],
+    ['RAW_FORGE',   0, 1, 5],
+    ['RAW_PRESS',   0, 1, 5],
+    ['RAW_MACHINE', 0, 1, 5]
+  ];
+
+  // Accumulator per server code
+  var acc = {};
+  Object.keys(machineInfo).forEach(function(sc) {
+    acc[sc] = { dates: {}, byMonth: {}, byWeek: {} };
+  });
+
+  RAW_DEFS.forEach(function(rd) {
+    var sh = ss.getSheetByName(rd[0]);
+    if (!sh || sh.getLastRow() < 2) return;
+    var data = sh.getDataRange().getValues();
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      var rawDate = row[rd[1]];
+      if (!rawDate) continue;
+      var d = (rawDate instanceof Date) ? rawDate : new Date(rawDate);
+      if (isNaN(d.getTime()) || !inFY_(d)) continue;
+      var qty = Number(row[rd[3]]) || 0;
+      if (qty <= 0) continue;
+      var machName = (row[rd[2]] || '').toString().trim();
+      var sc = MCODE_[machName] || MCODE_[machName.toUpperCase()];
+      if (!sc || !acc[sc]) continue;
+
+      var ds  = Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+      var mth = (d.getMonth() >= 3) ? d.getMonth() - 3 : d.getMonth() + 9; // 0=Apr … 11=Mar
+      var wk  = isoWeekKey_(d);
+
+      if (!acc[sc].dates[ds]) acc[sc].dates[ds] = 0;
+      acc[sc].dates[ds] += qty;
+
+      if (!acc[sc].byMonth[mth]) acc[sc].byMonth[mth] = { qty: 0, days: {} };
+      acc[sc].byMonth[mth].qty += qty;
+      acc[sc].byMonth[mth].days[ds] = true;
+
+      if (!acc[sc].byWeek[wk]) acc[sc].byWeek[wk] = { qty: 0, days: {} };
+      acc[sc].byWeek[wk].qty += qty;
+      acc[sc].byWeek[wk].days[ds] = true;
+    }
+  });
+
+  // Last 8 ISO weeks (oldest → newest)
+  var weekKeys = lastNWeekKeys_(8, now);
+  var weekLabels = weekKeys.map(weekKeyLabel_);
+
+  // FY months
+  var FY_MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+  var curMth = (now.getMonth() >= 3) ? now.getMonth() - 3 : now.getMonth() + 9;
+
+  // Build result array in MASTER_MACHINE_DATA_ order
+  var machines = [];
+  MASTER_MACHINE_DATA_.forEach(function(d) {
+    var sc = serverCode(d);
+    var a  = acc[sc];
+    if (!a) return;
+
+    var weeks = weekKeys.map(function(wk, i) {
+      var w = a.byWeek[wk] || { qty: 0, days: {} };
+      return { label: weekLabels[i], days: Object.keys(w.days).length, output: w.qty };
+    });
+
+    var months = FY_MONTHS.map(function(mn, i) {
+      var m = a.byMonth[i] || { qty: 0, days: {} };
+      return { label: mn, days: Object.keys(m.days).length, output: m.qty };
+    });
+
+    var mtdM    = a.byMonth[curMth] || { qty: 0, days: {} };
+    var ytdDays = Object.keys(a.dates).length;
+    var ytdOut  = Object.keys(a.dates).reduce(function(s, k) { return s + a.dates[k]; }, 0);
+
+    machines.push({
+      code: d[0], name: d[1], dept: d[2], section: d[5], sort: d[7],
+      weeks:  weeks,
+      months: months,
+      mtd_days:   Object.keys(mtdM.days).length,
+      mtd_output: mtdM.qty,
+      ytd_days:   ytdDays,
+      ytd_output: ytdOut
+    });
+  });
+
+  return { machines: machines, week_labels: weekLabels, months: FY_MONTHS };
+}
+
+function isoWeekKey_(d) {
+  var dt  = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var day = dt.getDay() || 7; // Mon=1, Sun=7
+  dt.setDate(dt.getDate() - day + 1); // Monday of the week
+  var y   = dt.getFullYear();
+  var jan4 = new Date(y, 0, 4); // Jan 4 is always in week 1
+  var j4day = jan4.getDay() || 7;
+  var week = Math.round(((dt - new Date(y, 0, 1)) / 86400000 + j4day - 1) / 7) + 1;
+  // Edge case: week 0 means it belongs to last year's last week
+  if (week < 1) { y--; jan4 = new Date(y, 0, 4); j4day = jan4.getDay()||7; week = Math.round(((new Date(y+1,0,1)-new Date(y,0,1))/86400000+j4day-1)/7); }
+  return y + '-W' + (week < 10 ? '0' : '') + week;
+}
+
+function weekKeyLabel_(wk) {
+  var p = wk.split('-W'); var y = parseInt(p[0]), w = parseInt(p[1]);
+  var jan4 = new Date(y, 0, 4);
+  var j4day = jan4.getDay() || 7;
+  var mon = new Date(jan4); mon.setDate(jan4.getDate() - j4day + 1 + (w-1)*7);
+  var sat = new Date(mon); sat.setDate(mon.getDate() + 5);
+  function d(dt) { return (dt.getDate()<10?'0':'')+dt.getDate()+'/'+(dt.getMonth()<9?'0':'')+(dt.getMonth()+1); }
+  return d(mon) + '–' + d(sat);
+}
+
+function lastNWeekKeys_(n, from) {
+  var keys = [];
+  var dt = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  var day = dt.getDay() || 7;
+  dt.setDate(dt.getDate() - day + 1); // Monday of current week
+  for (var i = n - 1; i >= 0; i--) {
+    var w = new Date(dt); w.setDate(dt.getDate() - i * 7);
+    keys.push(isoWeekKey_(w));
+  }
+  return keys;
+}
+
 // ============================================================
 // SEND TELEGRAM ALERT
 // ============================================================
