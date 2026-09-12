@@ -863,8 +863,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
     <div class="ch"><div class="ct">Collection Actions &mdash; One-click Email Templates</div><div class="badge b-rd" id="col-badge">&mdash;</div></div>
     <div class="scroll-x">
       <table class="tbl">
-        <thead><tr><th class="lf">Customer</th><th>Overdue ₹</th><th>Days</th><th class="lf">Action</th><th class="lf">Copy Email</th></tr></thead>
-        <tbody id="col-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+        <thead><tr><th class="lf">Customer</th><th>Overdue ₹</th><th>Days OD</th><th>Escalation</th><th>Dispatch</th><th>Last Paid</th><th class="lf">Action</th><th class="lf">Copy Email</th></tr></thead>
+        <tbody id="col-body"><tr><td colspan="8" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1836,7 +1836,14 @@ function render(data){
   document.getElementById('o-body').innerHTML=oRows||'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:14px;">No outstanding</td></tr>';
   document.getElementById('o-row-count').textContent=(out.customers||[]).length+' customers';
   // Stash for Session 18 Collection Engine renderer
-  window.__lastOutstandingRows=(out.customers||[]).map(function(c){return {customer:c.customer, name:c.customer, overdue:N(c.overdue), notDue:N(c.notDue), grandTotal:N(c.grandTotal), asOn:c.asOn};});
+  window.__lastOutstandingRows=(out.customers||[]).map(function(c){return {
+    customer:c.customer, name:c.customer, overdue:N(c.overdue), notDue:N(c.notDue), grandTotal:N(c.grandTotal),
+    disputedOverdue:N(c.disputedOverdue), daysOverdue:N(c.daysOverdue),
+    firstOverdueDate:c.firstOverdueDate||'', lastPaymentDate:c.lastPaymentDate||'',
+    escalationLevel:N(c.escalationLevel), lastEmailSent:c.lastEmailSent||'',
+    stagnantFlag:c.stagnantFlag||'', dispatchLock:c.dispatchLock||'',
+    lastPaymentAmt:N(c.lastPaymentAmt), asOn:c.asOn
+  };});
 
   // ─── STEEL ───
   document.getElementById('st-bal').textContent=fmtN(steel.totalBalanceKg||0);
@@ -2576,10 +2583,22 @@ function renderCollection(data){
   var outSrc = (data.outstanding && data.outstanding.customers) || [];
   if(outSrc.length){
     outSrc.forEach(function(r){
-      if(N(r.overdue)>0) customers.push({name:r.customer, overdue:N(r.overdue), asOn:r.asOn, notDue:N(r.notDue)});
+      if(N(r.overdue)>0) customers.push({
+        name:r.customer, overdue:N(r.overdue), asOn:r.asOn, notDue:N(r.notDue),
+        daysOverdue:N(r.daysOverdue), escalationLevel:N(r.escalationLevel),
+        dispatchLock:(r.dispatchLock||'').toUpperCase(),
+        lastPaymentDate:r.lastPaymentDate||'', lastPaymentAmt:N(r.lastPaymentAmt),
+        firstOverdueDate:r.firstOverdueDate||''
+      });
     });
   } else if(window.__lastOutstandingRows){
-    customers = window.__lastOutstandingRows.filter(function(r){return N(r.overdue)>0;}).map(function(r){return {name:r.customer||r.name, overdue:N(r.overdue), asOn:r.asOn, notDue:N(r.notDue)};});
+    customers = window.__lastOutstandingRows.filter(function(r){return N(r.overdue)>0;}).map(function(r){return {
+      name:r.customer||r.name, overdue:N(r.overdue), asOn:r.asOn, notDue:N(r.notDue),
+      daysOverdue:N(r.daysOverdue), escalationLevel:N(r.escalationLevel),
+      dispatchLock:(r.dispatchLock||'').toUpperCase(),
+      lastPaymentDate:r.lastPaymentDate||'', lastPaymentAmt:N(r.lastPaymentAmt),
+      firstOverdueDate:r.firstOverdueDate||''
+    };});
   }
 
   // Sort highest overdue first
@@ -2600,30 +2619,52 @@ function renderCollection(data){
 
   var bodyHTML='';
   customers.forEach(function(c, idx){
-    // c.asOn is free-text from the source ledger's header cell (see Code.gs
-    // pullOutstanding_) — not guaranteed to be a clean date, so parse
-    // defensively and fall back to '—' rather than showing a wrong number.
-    var days='—';
-    if(c.asOn){
+    // Use real daysOverdue from source; fallback to calculating from asOn
+    var days = c.daysOverdue > 0 ? c.daysOverdue : '—';
+    if(days==='—' && c.asOn){
       var asOnDt=new Date(c.asOn);
       if(!isNaN(asOnDt.getTime())){
         var diffDays=Math.floor((Date.now()-asOnDt.getTime())/86400000);
         if(diffDays>=0) days=diffDays;
       }
     }
-    var action = c.overdue > 500000 ? '<span class="badge b-rd">URGENT CALL</span>'
-               : c.overdue > 100000 ? '<span class="badge" style="background:var(--amb);color:var(--am);">EMAIL + CALL</span>'
-               : '<span class="badge b-sl">EMAIL</span>';
-    var email = emailMap[c.name] || ('Subject: Payment reminder — overdue balance ₹'+c.overdue.toLocaleString('en-IN')+'\\n\\nDear '+c.name+' team,\\n\\nOur records show an overdue balance of ₹'+c.overdue.toLocaleString('en-IN')+' against your account. Kindly arrange payment at the earliest.\\n\\nRegards,\\nVarsha Forgings Accounts');
+
+    // Escalation level badge (1-5)
+    var lvl = c.escalationLevel || 0;
+    var lvlColor = lvl>=5?'var(--rd)':lvl>=3?'var(--am)':'var(--bl)';
+    var lvlBg = lvl>=5?'rgba(185,28,28,0.08)':lvl>=3?'var(--amb)':'rgba(29,78,216,0.06)';
+    var lvlBadge = lvl ? '<span class="badge" style="background:'+lvlBg+';color:'+lvlColor+';">L'+lvl+'</span>' : '<span style="color:var(--tx3);">—</span>';
+
+    // Dispatch lock badge
+    var locked = c.dispatchLock==='LOCKED';
+    var lockBadge = locked
+      ? '<span class="badge b-rd">&#128274; LOCKED</span>'
+      : '<span class="badge b-sl">&#128275; OK</span>';
+
+    // Last payment
+    var lastPaid = c.lastPaymentDate ? (c.lastPaymentDate+(c.lastPaymentAmt?' ('+fmtCr(c.lastPaymentAmt)+')':'')) : '—';
+
+    // Action: driven by escalation level + lock status
+    var action;
+    if(locked && lvl>=5)       action='<span class="badge b-rd">ESCALATE / LEGAL</span>';
+    else if(locked)            action='<span class="badge b-rd">URGENT CALL</span>';
+    else if(lvl>=5||c.overdue>500000) action='<span class="badge b-rd">URGENT CALL</span>';
+    else if(lvl>=3||c.overdue>100000) action='<span class="badge" style="background:var(--amb);color:var(--am);">EMAIL + CALL</span>';
+    else                       action='<span class="badge b-sl">EMAIL</span>';
+
+    var email = emailMap[c.name] || ('Subject: Payment reminder — overdue balance ₹'+c.overdue.toLocaleString('en-IN')+'\\n\\nDear '+c.name+' team,\\n\\nOur records show an overdue balance of ₹'+c.overdue.toLocaleString('en-IN')+' against your account as per our ledger. The amount has been overdue for '+days+' days.\\n\\nKindly arrange payment at the earliest to avoid supply disruption.\\n\\nRegards,\\nVarsha Forgings Accounts');
     var emailJs = email.replace(/'/g,"\\\'").replace(/\n/g,'\\n');
     bodyHTML+='<tr>'+
       '<td class="lf">'+safeText(c.name)+'</td>'+
       '<td>'+fmtCr(c.overdue)+'</td>'+
-      '<td>'+days+'</td>'+
+      '<td style="text-align:center;">'+days+'</td>'+
+      '<td style="text-align:center;">'+lvlBadge+'</td>'+
+      '<td style="text-align:center;">'+lockBadge+'</td>'+
+      '<td class="lf" style="font-size:10px;color:var(--tx2);">'+safeText(lastPaid)+'</td>'+
       '<td class="lf">'+action+'</td>'+
       '<td class="lf"><button onclick="copyEmail(this,\''+emailJs+'\')" style="background:var(--brl);color:var(--brd);border:1px solid var(--br);padding:3px 8px;font-size:10px;border-radius:3px;cursor:pointer;font-weight:600;">&#128203; Copy</button></td></tr>';
   });
-  document.getElementById('col-body').innerHTML=bodyHTML||'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No customers overdue</td></tr>';
+  document.getElementById('col-body').innerHTML=bodyHTML||'<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No customers overdue</td></tr>';
 }
 function copyEmail(btn, text){
   // Decode any escaped chars we encoded above

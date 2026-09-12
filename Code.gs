@@ -106,13 +106,29 @@ function pullOutstanding_() {
   for(var i=5;i<raw.length;i++){
     var cust=(raw[i][0]||'').toString().trim();
     if(!cust)continue; if(cust.toUpperCase().indexOf('GRAND TOTAL')>=0)break;
-    outRows.push([cust,Number(raw[i][1])||0,Number(raw[i][2])||0,Number(raw[i][3])||0,asOn]);
+    var dtFmt=function(v){if(!v)return '';try{var d=new Date(v);return isNaN(d)?v.toString():d.toLocaleDateString('en-IN');}catch(e){return v.toString();}};
+    outRows.push([
+      cust,
+      Number(raw[i][1])||0,   // Not Due
+      Number(raw[i][2])||0,   // Overdue
+      Number(raw[i][3])||0,   // Grand Total
+      Number(raw[i][4])||0,   // Disputed Overdue
+      Number(raw[i][5])||0,   // Days Overdue
+      dtFmt(raw[i][6]),       // First Overdue Date
+      dtFmt(raw[i][7]),       // Last Payment Date
+      Number(raw[i][8])||0,   // Escalation Level
+      dtFmt(raw[i][9]),       // Last Email Sent
+      (raw[i][10]||'').toString().trim(), // Stagnant Flag
+      (raw[i][11]||'').toString().trim(), // Dispatch Lock
+      Number(raw[i][12])||0,  // Last Payment Amount
+      asOn
+    ]);
   }
   var dest=ss.getSheetByName('RAW_OUTSTANDING');
   if(!dest)dest=ss.insertSheet('RAW_OUTSTANDING');
   dest.clearContents();dest.getRange(1,1).setValue('');
-  dest.getRange(2,1,1,5).setValues([['Customer','Not_Due_Rs','Overdue_Rs','Grand_Total_Rs','As_On']]);
-  if(outRows.length>0)dest.getRange(3,1,outRows.length,5).setValues(outRows);
+  dest.getRange(2,1,1,14).setValues([['Customer','Not_Due_Rs','Overdue_Rs','Grand_Total_Rs','Disputed_Overdue','Days_Overdue','First_Overdue_Date','Last_Payment_Date','Escalation_Level','Last_Email_Sent','Stagnant_Flag','Dispatch_Lock','Last_Payment_Amt','As_On']]);
+  if(outRows.length>0)dest.getRange(3,1,outRows.length,14).setValues(outRows);
   Logger.log('pullOutstanding_: '+outRows.length+' customers | '+asOn);
 }
 // ── SET TRIGGERS ─────────────────────────────────────────────
@@ -4423,7 +4439,23 @@ function buildDashboardCache() {
   if(roSh&&roSh.getLastRow()>=3){
     roSh.getDataRange().getValues().slice(2).forEach(function(r){
       var c=sS(r[0]);if(!c)return;
-      outRows.push({customer:c,notDue:sN(r[1]),overdue:sN(r[2]),grandTotal:sN(r[3]),asOn:sS(r[4])});
+      // columns: 0=Customer,1=NotDue,2=Overdue,3=GrandTotal,4=DisputedOverdue,
+      //          5=DaysOverdue,6=FirstOverdueDate,7=LastPaymentDate,8=EscalationLevel,
+      //          9=LastEmailSent,10=StagnantFlag,11=DispatchLock,12=LastPaymentAmt,13=AsOn
+      var ncols=r.length;
+      outRows.push({
+        customer:c, notDue:sN(r[1]), overdue:sN(r[2]), grandTotal:sN(r[3]),
+        disputedOverdue: ncols>4?sN(r[4]):0,
+        daysOverdue:     ncols>5?sN(r[5]):0,
+        firstOverdueDate:ncols>6?sS(r[6]):'',
+        lastPaymentDate: ncols>7?sS(r[7]):'',
+        escalationLevel: ncols>8?sN(r[8]):0,
+        lastEmailSent:   ncols>9?sS(r[9]):'',
+        stagnantFlag:    ncols>10?sS(r[10]):'',
+        dispatchLock:    ncols>11?sS(r[11]):'',
+        lastPaymentAmt:  ncols>12?sN(r[12]):0,
+        asOn:            ncols>13?sS(r[13]):sS(r[4])
+      });
     });
   }
   outRows.sort(function(a,b){return b.overdue-a.overdue;});
