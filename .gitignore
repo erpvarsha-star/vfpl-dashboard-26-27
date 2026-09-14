@@ -1,0 +1,3 @@
+# SQL patches that contain employee PII (full names, internal IDs).
+# Apply these manually in the Supabase SQL editor — never commit to the public repo.
+PATCH_*_*.sql
