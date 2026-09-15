@@ -32,6 +32,8 @@
   --gn:#0E6E3A;--gnb:#DCFCE7;--rd:#B91C1C;--rdb:#FEE2E2;
   --am:#92400E;--amb:#FEF3C7;--bl:#1D4ED8;--blb:#DBEAFE;
   --mo:'IBM Plex Mono',monospace;--pu:#6D28D9;--pub:#EDE9FE;
+  --acc:#E8731A;--bg2:#F7F8FA;
+
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
@@ -1992,7 +1994,7 @@ function render(data){
   renderDeptScore(data.dept_score||{});
 
   // ─── FY MONTHLY ───
-  renderFY(fy);
+  renderFY(fy, data);
 
   // ─── DOWNTIME ───
   renderDowntimeSummary(data.downtime_summary || null);
@@ -2315,7 +2317,8 @@ function renderMargins(mg){
   document.getElementById('mg-body').innerHTML=html||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:14px;">No margin data</td></tr>';
 }
 
-function renderFY(fy){
+function renderFY(fy, data){
+  data = data || {};
   if(!fy.length){
     document.getElementById('fy-head').innerHTML='<th>No data</th>';
     document.getElementById('fy-body').innerHTML='';
