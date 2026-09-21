@@ -2740,11 +2740,14 @@ function renderCollection(data){
     var lvlBg = lvl>=5?'rgba(185,28,28,0.08)':lvl>=3?'var(--amb)':'rgba(29,78,216,0.06)';
     var lvlBadge = lvl ? '<span class="badge" style="background:'+lvlBg+';color:'+lvlColor+';">L'+lvl+'</span>' : '<span style="color:var(--tx3);">—</span>';
 
-    // Dispatch lock badge
-    var locked = c.dispatchLock==='LOCKED';
-    var lockBadge = locked
-      ? '<span class="badge b-rd">&#128274; LOCKED</span>'
-      : '<span class="badge b-sl">&#128275; OK</span>';
+       // Dispatch lock badge — only shows LOCKED/OK when we actually have the
+    // field from the source. When blank, show — (not a false "OK").
+    var lockRaw = (c.dispatchLock||'').toUpperCase();
+    var lockBadge;
+    if (lockRaw === 'LOCKED')   lockBadge = '<span class="badge b-rd">&#128274; LOCKED</span>';
+    else if (lockRaw === 'OK' || lockRaw === 'UNLOCKED') lockBadge = '<span class="badge b-sl">&#128275; OK</span>';
+    else                        lockBadge = '<span style="color:var(--tx3);">—</span>';
+   
 
     // Last payment
     var lastPaid = c.lastPaymentDate ? (c.lastPaymentDate+(c.lastPaymentAmt?' ('+fmtCr(c.lastPaymentAmt)+')':'')) : '—';
