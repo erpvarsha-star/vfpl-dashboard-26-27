@@ -2448,7 +2448,7 @@ function fetchData(silent){
     var rb=document.getElementById('refresh-btn');
     if(rb){rb.disabled=true; rb.textContent='Loading…';}
   }
-  fetch(WEB_APP+'?v='+Date.now())
+  fetch(WEB_APP+'?json=1&v='+Date.now())
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
