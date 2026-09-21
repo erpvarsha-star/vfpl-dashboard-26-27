@@ -2753,9 +2753,13 @@ function renderCollection(data){
     var lastPaid = c.lastPaymentDate ? (c.lastPaymentDate+(c.lastPaymentAmt?' ('+fmtCr(c.lastPaymentAmt)+')':'')) : '—';
 
     // Action: driven by escalation level + lock status
+    // isLocked derives from lockRaw (declared above) — `locked` was never
+    // defined, so any customer with dispatchLock='LOCKED' would throw
+    // ReferenceError and break the whole Collection tab render.
+    var isLocked = (lockRaw === 'LOCKED');
     var action;
-    if(locked && lvl>=5)       action='<span class="badge b-rd">ESCALATE / LEGAL</span>';
-    else if(locked)            action='<span class="badge b-rd">URGENT CALL</span>';
+    if(isLocked && lvl>=5)     action='<span class="badge b-rd">ESCALATE / LEGAL</span>';
+    else if(isLocked)          action='<span class="badge b-rd">URGENT CALL</span>';
     else if(lvl>=5||c.overdue>500000) action='<span class="badge b-rd">URGENT CALL</span>';
     else if(lvl>=3||c.overdue>100000) action='<span class="badge" style="background:var(--amb);color:var(--am);">EMAIL + CALL</span>';
     else                       action='<span class="badge b-sl">EMAIL</span>';
