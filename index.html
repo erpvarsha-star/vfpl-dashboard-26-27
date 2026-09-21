@@ -442,6 +442,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   <div class="tab" onclick="showTab('fy',this)">FY Monthly</div>
   <div class="tab" onclick="showTab('downtime',this)">Downtime</div>
   <div class="tab" onclick="showTab('mutil',this)">Machine Util</div>
+  <div class="tab" onclick="showTab('vmc',this)">VMC Shop</div>
 </div>
 
 <!-- ═══════════════ TODAY TAB ═══════════════ -->
@@ -1193,6 +1194,45 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
       <table class="tbl" id="mu-monthly-tbl">
         <thead id="mu-monthly-head"><tr><th>Loading…</th></tr></thead>
         <tbody id="mu-monthly-body"><tr><td style="padding:14px;text-align:center;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- ═════════════ VMC SHOP ═════════════ -->
+<div id="tab-vmc" class="main" style="display:none;" data-print-title="VMC SHOP — VFPL Factory OS">
+  <div class="kgrid k4" style="margin-bottom:10px;">
+    <div class="kc gn"><div class="kl">Machines OK (MTD)</div><div class="kv" id="vmc-ok">&mdash;</div><div class="ks">out of 5</div></div>
+    <div class="kc am"><div class="kl">Issues This Month</div><div class="kv" id="vmc-issues">&mdash;</div><div class="ks">machine-days flagged</div></div>
+    <div class="kc bl"><div class="kl">Reports MTD</div><div class="kv" id="vmc-reports">&mdash;</div><div class="ks">shift-wise checks</div></div>
+    <div class="kc sl"><div class="kl">Recent Issues</div><div class="kv" id="vmc-recent">&mdash;</div><div class="ks">in feed</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:10px;">
+    <div class="ch"><div class="ct">Machine Status — MTD</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Machine</th><th>Reports</th><th>OK</th><th>Issues</th><th class="lf">Status</th><th class="lf">Last Issue</th></tr></thead>
+        <tbody id="vmc-machine-body"><tr><td colspan="6" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:10px;">
+    <div class="ch"><div class="ct">Shift Coverage — All-Time</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Shift</th><th>Total Checks</th><th>OK</th><th>Issues</th></tr></thead>
+        <tbody id="vmc-shift-body"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card card-last">
+    <div class="ch"><div class="ct">Recent Issues</div><div class="badge b-sl" id="vmc-issue-count">&mdash;</div></div>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th class="lf">Date</th><th class="lf">Shift</th><th class="lf">Machine</th><th class="lf">Issue</th><th class="lf">Supervisor</th></tr></thead>
+        <tbody id="vmc-issue-body"><tr><td colspan="5" style="text-align:center;padding:14px;color:var(--tx3);">Loading&hellip;</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2010,6 +2050,9 @@ function render(data){
   // ─── MACHINE UTILISATION ───
   renderMachineUtil(data.machine_util || null);
 
+  // ─── VMC SHOP ───
+  renderVMC(data.vmc || null);
+
   // ─── SESSION 18 — utilization, exact tons, sparklines, 4 new tabs ───
   try { renderSession18(data); } catch(e) { console.warn('renderSession18 failed:', e); }
 
@@ -2239,6 +2282,74 @@ function renderAlerts(alerts){
       '</div></div>';
   });
   document.getElementById('al-body').innerHTML=html||'<div style="padding:16px;text-align:center;color:var(--gn);font-size:12px;">&#10003; All clear &mdash; no active alerts</div>';
+}
+
+// ═══ VMC SHOP TAB — reads cache.vmc ═══
+function renderVMC(v){
+  if(!v || !v.machines || !v.machines.length){
+    document.getElementById('vmc-machine-body').innerHTML='<tr><td colspan="6" style="text-align:center;padding:14px;color:var(--tx3);">No VMC data yet &mdash; run syncVMCToDashboard()</td></tr>';
+    return;
+  }
+  function fmtVmcDate_(val){
+    if(!val) return '—';
+    try {
+      var d = (val instanceof Date) ? val : new Date(val);
+      if(isNaN(d.getTime())) return String(val);
+      var pad=function(x){return x<10?'0'+x:''+x;};
+      var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return pad(d.getDate())+'-'+mn[d.getMonth()]+'-'+d.getFullYear();
+    } catch(e) { return String(val); }
+  }
+  var okCount=0, issueCount=0, reportCount=0;
+  var machineRows='';
+  v.machines.forEach(function(m){
+    var statusBadge;
+    if(m.status==='GREEN') statusBadge='<span class="badge b-gn">&#128994; OK</span>';
+    else if(m.status==='AMBER') statusBadge='<span class="badge b-am">&#128993; Minor</span>';
+    else statusBadge='<span class="badge b-rd">&#128308; Issue</span>';
+    var lastIssue = m.last_issue_text
+      ? '<span style="font-size:10px;color:var(--tx2);">'+safeText(m.last_issue_text)+'</span>'
+      : '<span style="color:var(--tx3);">—</span>';
+    machineRows+='<tr>'+
+      '<td class="lf" style="font-weight:600;">'+safeText(m.code)+'</td>'+
+      '<td>'+fmtN(m.mtd_reports||0)+'</td>'+
+      '<td>'+fmtN(m.mtd_ok||0)+'</td>'+
+      '<td>'+fmtN(m.mtd_issues||0)+'</td>'+
+      '<td class="lf">'+statusBadge+'</td>'+
+      '<td class="lf">'+lastIssue+'</td></tr>';
+    if(m.status==='GREEN') okCount++;
+    issueCount += N(m.mtd_issues);
+    reportCount += N(m.mtd_reports);
+  });
+  document.getElementById('vmc-machine-body').innerHTML = machineRows;
+  document.getElementById('vmc-ok').textContent = okCount + ' of 5';
+  document.getElementById('vmc-issues').textContent = fmtN(issueCount);
+  document.getElementById('vmc-reports').textContent = fmtN(reportCount);
+  document.getElementById('vmc-recent').textContent = (v.recent_issues||[]).length;
+
+  var sc=v.shift_coverage||{};
+  var shiftRows='';
+  ['First Shift','Second Shift','Third Shift'].forEach(function(sh){
+    var c=sc[sh]||{total:0,ok:0,issues:0};
+    shiftRows+='<tr><td class="lf" style="font-weight:600;">'+sh+'</td>'+
+      '<td>'+fmtN(c.total)+'</td>'+
+      '<td>'+fmtN(c.ok)+'</td>'+
+      '<td>'+fmtN(c.issues)+'</td></tr>';
+  });
+  document.getElementById('vmc-shift-body').innerHTML = shiftRows;
+
+  var issues=v.recent_issues||[];
+  document.getElementById('vmc-issue-count').textContent = issues.length + ' entries';
+  var issueRows='';
+  issues.forEach(function(r){
+    issueRows+='<tr>'+
+      '<td class="lf">'+safeText(fmtVmcDate_(r.date))+'</td>'+
+      '<td class="lf">'+safeText(r.shift)+'</td>'+
+      '<td class="lf" style="font-weight:600;">'+safeText(r.machine)+'</td>'+
+      '<td class="lf">'+safeText(r.issue)+'</td>'+
+      '<td class="lf">'+safeText(r.supervisor)+'</td></tr>';
+  });
+  document.getElementById('vmc-issue-body').innerHTML = issueRows || '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--gn);">&#10004; No recent issues</td></tr>';
 }
 
 function renderDieLife(dl){
