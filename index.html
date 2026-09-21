@@ -812,13 +812,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
     </div>
   </div>
 </div>
-
+   
 <!-- ═══════════════ OIL ═══════════════ -->
 <div id="tab-oil" class="main" style="display:none;" data-print-title="OIL — VFPL Factory OS">
   <div class="kgrid k3" style="margin-bottom:10px;">
-    <div class="kc or"><div class="kl">Forge Oil Closing</div><div class="kv" id="oil-fc">&mdash;</div><div class="ks">litres in stock</div></div>
-    <div class="kc bl"><div class="kl">HT Oil Closing</div><div class="kv" id="oil-hc">&mdash;</div><div class="ks">litres in stock</div></div>
-    <div class="kc sl"><div class="kl">Zyc Oil Closing</div><div class="kv" id="oil-zc">&mdash;</div><div class="ks">litres in stock</div></div>
+     <div class="kc or"><div class="kl">Forge Oil Consumed</div><div class="kv" id="oil-fc">&mdash;</div><div class="ks">litres MTD</div></div>
+    <div class="kc bl"><div class="kl">HT Oil Consumed</div><div class="kv" id="oil-hc">&mdash;</div><div class="ks">litres MTD</div></div>
+    <div class="kc sl"><div class="kl">Total Consumed</div><div class="kv" id="oil-zc">&mdash;</div><div class="ks">litres MTD</div></div>
   </div>
   <div class="card card-last">
     <div class="ch"><div class="ct">Oil Ledger &mdash; Opening / Inward / Consumed / Closing (Litres)</div></div>
@@ -1529,9 +1529,14 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, 
     (rows||[]).forEach(function(r){
       var code=SRC[r.machine]||SRC[(r.machine||'').trim()]||null;
       if(!code || !grid[code]) return;
-      var sh=r.shift||'First Shift';
-      // normalize shift name
-      var shNorm = (sh.indexOf('First')>=0||sh==='1')?'First Shift':(sh.indexOf('Second')>=0||sh==='2')?'Second Shift':(sh.indexOf('Third')>=0||sh==='3')?'Third Shift':sh;
+           var sh=r.shift||'First Shift';
+      // Normalize shift names. Cutting form writes "Shift 1" / "Shift 2";
+      // Forge/Press/Machine write "First Shift"/"1ST"/"1" etc. Handle all.
+      var shU = ' ' + String(sh).toUpperCase().replace(/\s+/g,' ') + ' ';
+      var shNorm;
+      if (/\b(2|SECOND|2ND)\b/.test(shU))       shNorm = 'Second Shift';
+      else if (/\b(3|THIRD|3RD)\b/.test(shU))   shNorm = 'Third Shift';
+      else                                       shNorm = 'First Shift';
       if(!grid[code][shNorm]) grid[code][shNorm]={};
       Object.keys(r.entries||{}).forEach(function(vf){
         grid[code][shNorm][vf]=(grid[code][shNorm][vf]||0)+N(r.entries[vf]);
@@ -2123,21 +2128,34 @@ function renderManpower(today, yest, mtd){
 }
 
 function renderOil(oil){
-  document.getElementById('oil-fc').textContent=fmtN(oil.closingForge||0);
-  document.getElementById('oil-hc').textContent=fmtN(oil.closingHT||0);
-  document.getElementById('oil-zc').textContent=fmtN(oil.closingZyc||0);
+  oil = oil || {};
+  // OIL_SUMMARY is an Item/Value/Unit list: Forge Consumed, HT Consumed,
+  // Zycril, Total Consumed, Inward Received, Inward Billed, Avg Daily.
+  // No "opening" or "closing" exists in the source — show what's real.
+  document.getElementById('oil-fc').textContent=fmtN(oil.forgeConsumedL||0);
+  document.getElementById('oil-hc').textContent=fmtN(oil.htConsumedL||0);
+  document.getElementById('oil-zc').textContent=fmtN(oil.totalConsumedL||0);
+
+  var rows = [
+    { name:'Forge Oil',  consumed: oil.forgeConsumedL||0, avgDaily: oil.avgDailyForgeL||0 },
+    { name:'HT Oil',     consumed: oil.htConsumedL||0,    avgDaily: oil.avgDailyHTL||0    },
+    { name:'Zycril',     consumed: oil.zycrilL||0,        avgDaily: 0                     }
+  ];
   var html='';
-  ['Forge','HT','Zyc'].forEach(function(t){
-    var k=t.charAt(0).toLowerCase()+t.slice(1);
-    var op=N(oil['opening'+t]), inw=N(oil['inward'+t]), con=N(oil['consumed'+t]), cl=N(oil['closing'+t]);
+  rows.forEach(function(r){
     html+='<div class="oil-card">'+
-      '<div class="oil-title">'+t+' Oil</div>'+
-      '<div class="oil-row"><span>Opening</span><span>'+fmtN(op)+' L</span></div>'+
-      '<div class="oil-row"><span>Inward (+)</span><span style="color:var(--gn);">+'+fmtN(inw)+' L</span></div>'+
-      '<div class="oil-row"><span>Consumed (-)</span><span style="color:var(--rd);">-'+fmtN(con)+' L</span></div>'+
-      '<div class="oil-row tot"><span>Closing</span><span>'+fmtN(cl)+' L</span></div>'+
+      '<div class="oil-title">'+r.name+'</div>'+
+      '<div class="oil-row"><span>Consumed (MTD)</span><span style="color:var(--rd);font-weight:600;">'+fmtN(r.consumed)+' L</span></div>'+
+      '<div class="oil-row"><span>Avg Daily</span><span>'+r.avgDaily.toFixed(1)+' L/day</span></div>'+
       '</div>';
   });
+  // Inward + Total summary card
+  html+='<div class="oil-card">'+
+    '<div class="oil-title">Inward / Total</div>'+
+    '<div class="oil-row"><span>Received (L)</span><span style="color:var(--gn);">+'+fmtN(oil.inwardReceivedL||0)+' L</span></div>'+
+    '<div class="oil-row"><span>Billed (kg)</span><span>'+fmtN(oil.inwardBilledKg||0)+' kg</span></div>'+
+    '<div class="oil-row tot"><span>Total Consumed</span><span>'+fmtN(oil.totalConsumedL||0)+' L</span></div>'+
+    '</div>';
   document.getElementById('oil-grid').innerHTML=html;
 }
 
@@ -2648,7 +2666,6 @@ function renderGaps(data){
 // ═══ COLLECTION ENGINE TAB ═══
 // Source: cache.outstanding.rows (has customer+overdue); we also read cache.collection for email templates
 function renderCollection(data){
-  var outRows=(data.outstanding||{}).rows || []; // may not be present — fallback to RAW_OUTSTANDING indirectly
   // Try to read from cache.collection first (pre-drafted emails); if not available use outstanding array
   var collRows=data.collection||[];
   var emailMap={};
