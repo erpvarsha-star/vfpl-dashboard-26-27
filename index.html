@@ -1521,15 +1521,16 @@ function checkPin(){
 // ═══ PRODUCTION GRID BUILDER ═══
 // Input: machineList, machineNames, srcMap, todayRows, yestRows
 // Each row: {machine:string, shift:string, entries:{VF:qty}}
-function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, statusYest){
+function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, statusYest, activeShifts){
+  activeShifts = activeShifts || SHIFTS;   // default: 3 shifts. Cutting passes 2.
   function buildOne(rows, statusMap){
     // grid[machineCode][shift] = { VF: qty }
-    var grid={}; MACHINES.forEach(function(m){grid[m]={};SHIFTS.forEach(function(s){grid[m][s]={};});});
+    var grid={}; MACHINES.forEach(function(m){grid[m]={};activeShifts.forEach(function(s){grid[m][s]={};});});
     var totals={}; MACHINES.forEach(function(m){totals[m]=0;});
     (rows||[]).forEach(function(r){
       var code=SRC[r.machine]||SRC[(r.machine||'').trim()]||null;
       if(!code || !grid[code]) return;
-           var sh=r.shift||'First Shift';
+      var sh=r.shift||'First Shift';
       // Normalize shift names. Cutting form writes "Shift 1" / "Shift 2";
       // Forge/Press/Machine write "First Shift"/"1ST"/"1" etc. Handle all.
       var shU = ' ' + String(sh).toUpperCase().replace(/\s+/g,' ') + ' ';
@@ -1567,7 +1568,7 @@ function buildProdTable(MACHINES, NAMES, SRC, todayRows, yestRows, statusToday, 
     var html='<thead><tr><th class="shift-col">Shift</th>';
     MACHINES.forEach(function(m){html+='<th>'+NAMES[m]+'</th>';});
     html+='</tr></thead><tbody>';
-    SHIFTS.forEach(function(sh){
+    activeShifts.forEach(function(sh){
       html+='<tr><td class="shift-col">'+SHIFT_SHORT[sh]+'</td>';
       MACHINES.forEach(function(m){
         var entries=grid[m][sh]||{};
@@ -1758,7 +1759,9 @@ function render(data){
   document.getElementById('k-prs-s').textContent=prsTotal>0 ? ('Own: '+fmtN(prsIn)+' | JWK: '+fmtN(prsJWK)) : 'not yet posted';
 
   var yest=t.yesterday||{};
-  var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC,t.cutting||[],yest.cutting||[]);
+    // Cutting runs 2 shifts (7am-7pm day, 7pm-7am night); all other depts run 3.
+  var CUT_SHIFTS = ['First Shift', 'Second Shift'];
+  var cutRes=buildProdTable(CUT_MACHINES,CUT_NAMES,CUT_SRC,t.cutting||[],yest.cutting||[], null, null, CUT_SHIFTS);
   document.getElementById('tbl-cut-today').innerHTML=cutRes.today;
   document.getElementById('tbl-cut-yest').innerHTML=cutRes.yest;
   // ─── Capacity status maps (RED / GREEN / GREY by date|machine|shift) ───
