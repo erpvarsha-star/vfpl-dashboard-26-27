@@ -29,14 +29,38 @@ var SRC_DIESEL_VEHICLE    = '14mc6eWXUjBm49lmBLVzu5oniSkJFONyphpuEaT1yG3w';
 var SRC_DIESEL_PLANT      = '1EpzQVdQEImKryvUPF3SvrtlXpNiingRkHRrhdyd1zxU';
 var SRC_MANPOWER_DAILY    = '1QOu9LM7MVvC73YE_uqeCXoyVmjdBnx0a64xZdP30bec';
 var SRC_MANPOWER_CONTRACT = '1sgSLz9BMrS97L4B6JQmazFFH3gd0Vx59UDZx4AX3DzI';
-var SRC_SCHEDULE          = '1NR8EPGRJN0AQDXZjYw5k93clsO8AD4u2l2Xke1lBC2I';
+var SRC_SCHEDULE = 
+'1RqIzB4kwUAvsOw306KnKkq-ediIujQcRArPgz-jJ9a4';
 var SRC_PARTS             = '14zydCr6_cD9W_6aifEIF6WK_qkO667jnkGXO0jQkY38';
 var SRC_OIL_INWARD        = '1iP4Ikp-K3k3m7iwY-YJ51X0Sw6KCI5EWiYFEr22-wv0';
 var SRC_JWK_OS            = '1yC-b36rgAxablmdXhngHCEOsmnlgWourep6ctKifXCA';
 // Set this to the response-sheet ID logged by createDowntimeForm_().
 // Leave blank until the form has been created; pullDashDowntime() skips gracefully.
-var SRC_DOWNTIME          = '';
+var SRC_DOWNTIME          = '1vnFEpgWz7daANY_wT7KDKSTraHJqTZQi59GxT63Hu70';
+// ============================================================
+// GRADE FAMILIES — interchangeable substitution rules
+// Two real families exist for VFPL:
+//   - Low Carbon (chemically similar, case-hardenable)
+//   - Medium Carbon (chemically similar, higher strength)
+// All other "families" (20MnCr5/M, 41Cr4/M, SCM420/H) are the
+// SAME grade with suffix variants — handled by normalizeGrade_().
+// ============================================================
+var GRADE_FAMILIES = {
+  // Low Carbon family
+  'SAE1010': ['SAE1010', 'SAE1018', 'SAE1020', 'S20C'],
+  'SAE1018': ['SAE1018', 'SAE1010', 'SAE1020', 'S20C'],
+  'SAE1020': ['SAE1020', 'SAE1010', 'SAE1018', 'S20C'],
+  'S20C':    ['S20C', 'SAE1010', 'SAE1018', 'SAE1020'],
 
+  // Medium Carbon family
+  'SAE1030': ['SAE1030', 'SAE1049', 'EN8D', 'EN9'],
+  'SAE1049': ['SAE1049', 'SAE1030', 'EN8D', 'EN9'],
+  'EN8D':    ['EN8D', 'EN9', 'SAE1030', 'SAE1049'],
+  'EN9':     ['EN9', 'EN8D', 'SAE1030', 'SAE1049']
+
+  // Everything else is standalone — no entry needed.
+  // normalizeGrade_() already merges 20MNCR5/M, 16MNCR5/LSI, etc.
+};
 // ════════════════════════════════════════════════════════════
 // NOTE: this list is NOT enforced anywhere in this file (nothing below
 // reads ALLOWED_ORIGINS) and Apps Script Web Apps do not support origin
@@ -95,116 +119,91 @@ function fmtN(val) {
   return Math.round(n).toLocaleString('en-IN');
 }
 function pullOutstanding_() {
-  var OUTSTANDING_ID='1B7eI55FXwdPaSRX9MoZVLB9bx2sWdCBUBZlsLQiF7q0';  // ← Collections Engine
-  var ss=SpreadsheetApp.openById(DASH_ID);
-  var src;
-  try{src=SpreadsheetApp.openById(OUTSTANDING_ID).getSheetByName('CURRENT_OVERDUE');}catch(e){Logger.log('pullOutstanding_: '+e);return;}
-  if(!src){Logger.log('pullOutstanding_: CURRENT_OVERDUE not found');return;}
-  var raw=src.getDataRange().getValues();
-  var asOn=(raw[0]&&raw[0][0])?raw[0][0].toString().trim():'Date unknown';
-  var dtFmt=function(v){if(!v)return '';try{var d=new Date(v);return isNaN(d)?v.toString():d.toLocaleDateString('en-IN');}catch(e){return v.toString();}};
-  var outRows=[];
-  for(var i=5;i<raw.length;i++){
-    var cust=(raw[i][0]||'').toString().trim();
-    if(!cust)continue; if(cust.toUpperCase().indexOf('GRAND TOTAL')>=0)break;
-    outRows.push([
-      cust,
-      Number(raw[i][1])||0,   // Not Due
-      Number(raw[i][2])||0,   // Overdue
-      Number(raw[i][3])||0,   // Grand Total
-      Number(raw[i][4])||0,   // Disputed Overdue
-      Number(raw[i][5])||0,   // Days Overdue
-      dtFmt(raw[i][6]),       // First Overdue Date
-      dtFmt(raw[i][7]),       // Last Payment Date
-      Number(raw[i][8])||0,   // Escalation Level
-      dtFmt(raw[i][9]),       // Last Email Sent
-      (raw[i][10]||'').toString().trim(), // Stagnant Flag
-      (raw[i][11]||'').toString().trim(), // Dispatch Lock
-      Number(raw[i][12])||0,  // Last Payment Amount
-      asOn
-    ]);
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var dest = ss.getSheetByName('RAW_OUTSTANDING');
+  if (!dest) dest = ss.insertSheet('RAW_OUTSTANDING');
+
+  // IDs
+  var ENGINE_ID   = '1B7eI55FXwdPaSRX9MoZVLB9bx2sWdCBUBZlsLQiF7q0'; // Collections Engine (live payments)
+  var OVERDUE_ID  = '13V_iNWi6eEvojb2vZsAYVdL8kzy6oKYSMBTtDbxpX5I'; // Static Overdue Sheet (backup)
+
+  var src = null;
+  var sourceName = '';
+
+  // 1. Try Collections Engine FIRST
+  try {
+    var engineSS = SpreadsheetApp.openById(ENGINE_ID);
+    src = engineSS.getSheetByName('CURRENT_OVERDUE');
+    if (src) sourceName = 'Collections Engine (CURRENT_OVERDUE)';
+  } catch(e) {
+    Logger.log('⚠️ Could not open Collections Engine: ' + e);
   }
-  var dest=ss.getSheetByName('RAW_OUTSTANDING');
-  if(!dest)dest=ss.insertSheet('RAW_OUTSTANDING');
-  dest.clearContents();dest.getRange(1,1).setValue('');
-  dest.getRange(2,1,1,14).setValues([['Customer','Not_Due_Rs','Overdue_Rs','Grand_Total_Rs','Disputed_Overdue','Days_Overdue','First_Overdue_Date','Last_Payment_Date','Escalation_Level','Last_Email_Sent','Stagnant_Flag','Dispatch_Lock','Last_Payment_Amt','As_On']]);
-  if(outRows.length>0)dest.getRange(3,1,outRows.length,14).setValues(outRows);
-  Logger.log('pullOutstanding_: '+outRows.length+' customers | '+asOn);
-}
-// ── SET TRIGGERS ─────────────────────────────────────────────
-function setDashboardTriggers() {
-  // Remove old triggers for managed functions
-  ScriptApp.getProjectTriggers().forEach(function(t){
-    var fn = t.getHandlerFunction();
-    if (fn === 'runDashboardPull' || fn === 'dailyHealthCheck_') ScriptApp.deleteTrigger(t);
-  });
 
-  // ⏰ Pull schedule: 08:15, 12:00, 16:00, 18:00, 19:00, 23:00
-  var pullTimes = [
-    { hour: 8,  minute: 15 },  // Shift 3 complete
-    { hour: 12, minute: 0  },  // Shift 1 mid-day
-    { hour: 16, minute: 0  },  // Shift 1 complete
-    { hour: 18, minute: 0  },  // Shift 2 mid-day/evening
-    { hour: 19, minute: 0  },  // Shift 2 evening
-    { hour: 23, minute: 0  }   // Shift 2 night
-  ];
-  pullTimes.forEach(function(pt) {
-    ScriptApp.newTrigger('runDashboardPull')
-      .timeBased()
-      .atHour(pt.hour)
-      .nearMinute(pt.minute)
-      .everyDays(1)
-      .create();
-  });
-
-  // ⏰ Health check: 07:00 daily — fires before first pull, alerts if any pull was missed overnight
-  ScriptApp.newTrigger('dailyHealthCheck_')
-    .timeBased()
-    .atHour(7)
-    .nearMinute(0)
-    .everyDays(1)
-    .create();
-
-  Logger.log('✅ Triggers set: 8:15AM, 12PM, 4PM, 6PM, 7PM, 11PM (pulls) + 7AM health check for ' + FY_LABEL);
-}
-
-// ════════════════════════════════════════════════════════════════
-// dailyHealthCheck_() — fires at 07:00 daily.
-// Reads all PULL_TS_ Script Properties. Any key not updated in the
-// last 28 hours sends a Telegram warning so stale-data mornings are
-// caught before Yash opens the dashboard.
-// ════════════════════════════════════════════════════════════════
-function dailyHealthCheck_() {
-  var props = PropertiesService.getScriptProperties().getProperties();
-  var now = Date.now();
-  var STALE_MS = 28 * 60 * 60 * 1000; // 28h — covers overnight gap between 23:00 and 07:00
-
-  var stale = [];
-  Object.keys(props).forEach(function(k) {
-    if (k.indexOf('PULL_TS_') !== 0) return;
-    var ts = Number(props[k]);
-    if (!ts || (now - ts) > STALE_MS) {
-      var key = k.replace('PULL_TS_', '');
-      var ageH = ts ? Math.round((now - ts) / 3600000) : 999;
-      stale.push(key + ' (' + ageH + 'h ago)');
+  // 2. Fallback to Overdue Sheet if Engine is missing or unreachable
+  if (!src) {
+    try {
+      var overdueSS = SpreadsheetApp.openById(OVERDUE_ID);
+      src = overdueSS.getSheetByName('Sheet1') || overdueSS.getSheets()[0];
+      if (src) sourceName = 'Overdue Sheet Fallback (' + src.getName() + ')';
+    } catch(e) {
+      Logger.log('❌ Could not open Overdue Sheet fallback: ' + e);
+      return;
     }
-  });
+  }
 
-  if (stale.length === 0) {
-    Logger.log('dailyHealthCheck_: all pull timestamps fresh.');
+  if (!src) {
+    Logger.log('❌ Both Collections Engine and Overdue Sheet failed to load.');
     return;
   }
 
-  var msg = '⚠️ <b>VFPL Dashboard — Stale Data Warning</b>\n';
-  msg += 'The following data sources have not refreshed in >28 hours:\n';
-  stale.forEach(function(s) { msg += '  • ' + s + '\n'; });
-  msg += '\nCheck Apps Script execution log and re-run <code>runDashboardPull()</code> if needed.';
-  try {
-    sendTelegramAlert(msg);
-    Logger.log('dailyHealthCheck_: stale alert sent for ' + stale.join(', '));
-  } catch(e) {
-    Logger.log('dailyHealthCheck_: could not send Telegram — ' + e);
+  var raw = src.getDataRange().getValues();
+  if (raw.length < 6) {
+    Logger.log('⚠️ Tab ' + sourceName + ' has fewer than 6 rows. Aborting pull.');
+    return;
   }
+
+    // The source has no dedicated "As on" cell — row 0 col 0 is the header
+  // ("Customer"). Use the current date as the pull reference instead.
+  var asOn = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy');
+  var outRows = [];
+
+  // Parse rows (starts row 6 / index 5)
+  for (var i = 5; i < raw.length; i++) {
+    var cust = (raw[i][0] || '').toString().trim();
+    if (!cust) continue;
+    if (cust.toUpperCase().indexOf('GRAND TOTAL') >= 0) break;
+    outRows.push([
+      cust,
+      Number(raw[i][1]) || 0,
+      Number(raw[i][2]) || 0,
+      Number(raw[i][3]) || 0,
+      asOn
+    ]);
+  }
+
+  // Write to RAW_OUTSTANDING
+  dest.clearContents();
+  dest.getRange(1, 1).setValue('');
+  dest.getRange(2, 1, 1, 5).setValues([['Customer', 'Not_Due_Rs', 'Overdue_Rs', 'Grand_Total_Rs', 'As_On']]);
+
+  if (outRows.length > 0) {
+    dest.getRange(3, 1, outRows.length, 5).setValues(outRows);
+  }
+
+  Logger.log('✅ pullOutstanding_: Loaded ' + outRows.length + ' customers from ' + sourceName + ' | As on: ' + asOn);
+}
+// ── SET TRIGGERS ─────────────────────────────────────────────
+function setDashboardTriggers() {
+  ScriptApp.getProjectTriggers().forEach(function(t){
+    if (t.getHandlerFunction() === 'runDashboardPull') ScriptApp.deleteTrigger(t);
+  });
+
+  // ONE hourly trigger. runDashboardPull gates itself on the hour list
+  // (8, 12, 16, 18, 19, 23 IST). Same effective schedule, 1/6th the triggers.
+  ScriptApp.newTrigger('runDashboardPull')
+    .timeBased().everyHours(1).create();
+
+  Logger.log('✅ Pull trigger set: hourly, gated to 8/12/16/18/19/23 IST inside runDashboardPull');
 }
 function doGet(e) {
   // If json=1 parameter, return JSON data
@@ -316,99 +315,11 @@ function getPinGatedSection_(section, suppliedPin) {
 // setOwnerPinOneTime_() and confirming Script Properties has
 // TELEGRAM_BOT_TOKEN set (sendTelegramAlert() already expects this
 // property to exist — if alerts are working today, it's already set).
-function doPost(e) {
-  try {
-    var body = JSON.parse(e.postData.contents);
-    var msg = body.message;
-    if (!msg || !msg.text || !msg.chat || !msg.chat.id) {
-      return ContentService.createTextOutput('ok'); // not a text message we handle — Telegram still expects 200 OK
-    }
-    var chatId = msg.chat.id;
-    var text = msg.text.trim();
 
-    if (/^\/start\b/i.test(text)) {
-      sendTelegramToChatId(chatId,
-        '👋 <b>VFPL Factory OS Bot</b>\n\n' +
-        'To receive shift-end alerts directly, register your Chat ID:\n' +
-        '<code>/register Your Full Name</code>\n\n' +
-        '(use the exact name your department head registered you under in SUPERVISOR_MAP)');
-      return ContentService.createTextOutput('ok');
-    }
-
-    var regMatch = text.match(/^\/register\s+(.+)$/i);
-    if (regMatch) {
-      var typedName = regMatch[1].trim();
-      var result = registerSupervisorChatId_(typedName, chatId);
-      sendTelegramToChatId(chatId, result.message);
-      return ContentService.createTextOutput('ok');
-    }
-
-    sendTelegramToChatId(chatId, 'Unrecognized command. Send /start for instructions.');
-  } catch (err) {
-    Logger.log('doPost (Telegram webhook) error: ' + err);
-  }
-  return ContentService.createTextOutput('ok');
-}
 
 // Matches a typed name against SUPERVISOR_MAP's Supervisor Name column
 // and updates Telegram Chat ID for every row belonging to that person
 // (their Chat ID doesn't change week to week, so all their rows get it).
-function registerSupervisorChatId_(typedName, chatId) {
-  var ss = SpreadsheetApp.openById(DASH_ID);
-  var mapSh = ss.getSheetByName('SUPERVISOR_MAP');
-  if (!mapSh || mapSh.getLastRow() < 2) {
-    return { ok: false, message: '❌ SUPERVISOR_MAP is not set up yet — contact your DME.' };
-  }
-
-  var norm = function(s) { return (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' '); };
-  var typedNorm = norm(typedName);
-
-  var data = mapSh.getRange(2, 1, mapSh.getLastRow() - 1, 7).getValues();
-  var matchedRows = [];
-  // Pass 1: exact match (case/whitespace-insensitive)
-  for (var i = 0; i < data.length; i++) {
-    if (norm(data[i][1]) === typedNorm) matchedRows.push(i);
-  }
-  // Pass 2: fallback — sheet name contains every word the person typed
-  // (handles "Subhash T" matching "Subhash Thorat", minor typos in order)
-  if (matchedRows.length === 0) {
-    var typedWords = typedNorm.split(' ').filter(function(w){ return w.length > 0; });
-    for (var j = 0; j < data.length; j++) {
-      var sheetNorm = norm(data[j][1]);
-      if (typedWords.length > 0 && typedWords.every(function(w){ return sheetNorm.indexOf(w) >= 0; })) {
-        matchedRows.push(j);
-      }
-    }
-  }
-
-  if (matchedRows.length === 0) {
-    return { ok: false, message: '❌ Couldn\'t find "' + typedName + '" in SUPERVISOR_MAP. Check the spelling matches what your DME registered, or contact them to add you first.' };
-  }
-
-  matchedRows.forEach(function(rowIdx) {
-    mapSh.getRange(rowIdx + 2, 4).setValue(chatId); // col D = Telegram Chat ID
-  });
-
-  var dept = data[matchedRows[0]][0] || '';
-  return { ok: true, message: '✅ Registered! You\'ll now receive shift-end alerts directly for ' + dept + ' (' + matchedRows.length + ' week-row(s) updated).' };
-}
-
-// Run this ONCE, by hand, from the Apps Script editor — after deploying
-// this project as a Web App and confirming TELEGRAM_BOT_TOKEN is set in
-// Script Properties. It registers this Web App's URL as the bot's
-// webhook so Telegram starts forwarding messages to doPost() above.
-// Re-running it is safe (idempotent) if the Web App URL ever changes
-// after a redeploy.
-function oneTimeSetTelegramWebhook_() {
-  var token = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
-  if (!token) { Logger.log('❌ TELEGRAM_BOT_TOKEN not set in Script Properties — set it first (same property sendTelegramAlert() uses).'); return; }
-  var webAppUrl = ScriptApp.getService().getUrl();
-  if (!webAppUrl) { Logger.log('❌ Could not resolve this project\'s Web App URL — deploy as a Web App first (Deploy > New deployment).'); return; }
-
-  var url = 'https://api.telegram.org/bot' + token + '/setWebhook?url=' + encodeURIComponent(webAppUrl);
-  var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  Logger.log('setWebhook response: ' + response.getContentText());
-}
 
 // ── SCRIPT-CACHE LAYER IN FRONT OF getMergedCache_() ──────────
 // The dashboard frontend polls doGet?json=1 every 60s, and every open
@@ -459,7 +370,7 @@ var DASH_SEC_NAMES_ = [
   'f4','debit_notes','manpower_summary','oil_summary','transport_summary',
   'planner','vendor_rej_summary','data_gaps_summary','fy_monthly',
   'shift_status','dept_score','today','dropout_trend','machine_registry',
-  'downtime_summary','machine_util'
+  'downtime_summary'
 ];
 
 // ── INCREMENTAL PULL GUARD ────────────────────────────────────────
@@ -646,11 +557,24 @@ function restoreLastGoodCache_() {
   invalidateDashJsonCache_();
   Logger.log('✅ DASHBOARD_CACHE restored from CACHE_BACKUP_1. Next poll will serve the restored snapshot.');
 }
-
 function runDashboardPull() {
+  // Hourly trigger — gate to scheduled pull hours (8, 12, 16, 18, 19, 23 IST)
+  var istHour = Number(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'H'));
+  var ALLOWED_HOURS = [8, 12, 16, 18, 19, 23];
+  if (ALLOWED_HOURS.indexOf(istHour) === -1) {
+    Logger.log('⏭️ Skipping pull — hour ' + istHour + ' not in schedule.');
+    return;
+  }
+  var props = PropertiesService.getScriptProperties();
+  var thisHourKey = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd-H');
+  if (props.getProperty('PULL_LAST_RUN_HOUR') === thisHourKey) {
+    Logger.log('⏭️ Skipping pull — already ran this hour');
+    return;
+  }
+  props.setProperty('PULL_LAST_RUN_HOUR', thisHourKey);
+
   var start = new Date();
   Logger.log('=== runDashboardPull started: ' + FY_LABEL + ' ===');
-
   // New Pull added to top
   try { pullDashJWK(); Logger.log('OK JWK'); } catch(e) { Logger.log('FAIL JWK: ' + e); }
 
@@ -688,44 +612,34 @@ function runDashboardPull() {
   if (_pullFresh_('RM_CONS',  55)) try { calcRMConsumption();  Logger.log('OK RM Consumption'); } catch(e) { Logger.log('FAIL RM Consumption: '+e); }
   if (_pullFresh_('STEEL',   120)) try { buildSteelStock();    Logger.log('OK Steel Stock');    } catch(e) { Logger.log('FAIL Steel Stock: '+e); }
 
-  // Analytics Chain — buildMasterMachine_ MUST run first; it rebuilds MCODE_/SECTIONS_/DEPT_DEFS_
-  // that every subsequent analytics function reads.
+  // ── Runtime map rebuild (needed by every analytics function) ────────────
+  // buildMasterMachine_ MUST run here — it rebuilds MCODE_ / SECTIONS_ /
+  // DEPT_DEFS_ that runAnalyticsDaily reads. If it moves to the analytics
+  // phase, the first analytics run after a restart will fail.
   try { buildMasterMachine_(); Logger.log('OK MASTER_MACHINE'); } catch(e) { Logger.log('FAIL MASTER_MACHINE: '+e); }
-  try { refreshDailyOverview(); Logger.log('OK Daily Overview'); } catch(e) { Logger.log('FAIL Daily Overview: '+e); }
-  try { buildShiftOutputKG();   Logger.log('OK Shift Output KG'); } catch(e) { Logger.log('FAIL Shift Output KG: '+e); }
-  try { colorForgeDailyCells_(); Logger.log('OK Color Forge Daily'); } catch(e) { Logger.log('FAIL Color Forge Daily: '+e); }
-  try { buildProductionMonthly(); Logger.log('OK Production Monthly'); } catch(e) { Logger.log('FAIL Production Monthly: '+e); }
-  try { buildWIPSummary(); Logger.log('OK WIP Summary'); } catch(e) { Logger.log('FAIL WIP Summary: '+e); }
-  try { buildTxnWip_(); Logger.log('OK TXN_WIP (native ledger, replaces loadOpeningWIP patch)'); } catch(e) { Logger.log('FAIL TXN_WIP: '+e); }
-  try { buildScheduleIntelligence(); Logger.log('OK Schedule Intelligence'); } catch(e) { Logger.log('FAIL Schedule Intelligence: '+e); }
-  try { buildFYMonthly(); Logger.log('OK FY Monthly'); } catch(e) { Logger.log('FAIL FY Monthly: '+e); }
-  try { patchElectricityIntoFYMonthly(); Logger.log('OK Electricity Patch'); } catch(e) { Logger.log('FAIL Electricity Patch: '+e); }
-  try { buildDieLife(); Logger.log('OK Die Life'); } catch(e) { Logger.log('FAIL Die Life: '+e); }
-  try { buildDebitNoteTracker(); Logger.log('OK Debit Notes'); } catch(e) { Logger.log('FAIL Debit Notes: '+e); }
-  try { buildDailyManpower(); Logger.log('OK Daily Manpower'); } catch(e) { Logger.log('FAIL Daily Manpower: '+e); }
-  try { buildManpowerTrend(); Logger.log('OK Manpower Trend'); } catch(e) { Logger.log('FAIL Manpower Trend: '+e); }
-  try { buildProductionPlanner(); Logger.log('OK Production Planner'); } catch(e) { Logger.log('FAIL Production Planner: '+e); }
-  try { highlightMissingPartData(); Logger.log('OK Part Highlighter'); } catch(e) { Logger.log('FAIL Part Highlighter: '+e); }
-  try { buildMasterDataGaps(); Logger.log('OK Data Gap 8'); } catch(e) { Logger.log('FAIL Data Gap 8: '+e); }
-  try { buildCollectionEngine(); Logger.log('OK Collection Engine'); } catch(e) { Logger.log('FAIL Collection Engine: '+e); }
-  try { buildAlertsActive(); Logger.log('OK Alerts Active'); } catch(e) { Logger.log('FAIL Alerts Active: '+e); }
-  try { buildDashboardCache(); Logger.log('OK Dashboard Cache'); } catch(e) { Logger.log('FAIL Dashboard Cache: '+e); }
-  try { auditRawTabsForBadData_(); Logger.log('OK Submission audit'); } catch(e) { Logger.log('FAIL Submission audit: '+e); }
-  try { flagLateSubmissions_(); Logger.log('OK Late submission audit'); } catch(e) { Logger.log('FAIL Late submission audit: '+e); }
 
   try { hideRAWTabs(); Logger.log('OK RAW hidden'); } catch(e) { Logger.log('FAIL hideRAWTabs: '+e); }
 
   var dur = Math.round((new Date()-start)/1000);
-  Logger.log('=== Pull complete in '+dur+'s ===');
+  Logger.log('=== Pull complete in '+dur+'s — analytics chain runs separately via runAnalyticsDaily ===');
 }
 
-// ============================================================
-// PULL FUNCTIONS 1-23
-// ============================================================
+  // ── FORMULA TABS (sheet calculates live — script does NOT write these) ──
+  // STEEL_STOCK: SUMIF from RAW_RM_INWARD + RM_CONSUMPTION
+  // ELEC_SUMMARY: SUMPRODUCT by meter name
+  // OIL_SUMMARY: SUM(RAW_OIL)
+  // MANPOWER_SUMMARY: SUMIF by dept
+  // TRANSPORT_SUMMARY: SUMPRODUCT month+FY
+  // F4_RECONCILIATION: SUMIF vendor from RAW_57F4_OUT + IN
+  // VENDOR_REJECTION: SUMIF from RAW_VENDOR_REJECTION
+  // MARGINS_SUMMARY: VLOOKUP COSTING_BANDS + SUMIF RAW_DISPATCH
+  // OUTSTANDING: Formula from RAW_OUTSTANDING
+  // DEPT_SCORE: COUNTUNIQUE dates per RAW tab
+  // ALERTS_ACTIVE: IF scans from STEEL_STOCK + OUTSTANDING + DEBIT_NOTE_TRACKER
+  // DATA_GAPS: Cross-tab gap detection formulas
+  // SALARY_SUMMARY: Linked to _RAW_SALARY + hardcoded Feb 2026
+  // COSTING_BANDS: VLOOKUP from RAW_PARTS for weights+price
 
-// ════════════════════════════════════════════════════════════
-// REPLACEMENT: pullDashDispatch (Gap 1 Invoice Inheritance)
-// ════════════════════════════════════════════════════════════
 function pullDashDispatch() {
   var srcSS = SpreadsheetApp.openById(SRC_DISPATCH);
   var ss    = SpreadsheetApp.openById(DASH_ID);
@@ -930,6 +844,13 @@ function pullDash57F4In() {
 }
 
 function pullDashVendorRejection() {
+  // Source sheet was deleted; new one pending. Skip until ID replaced.
+  // When the new sheet is ready, update SRC_VENDOR_REJ at the top of
+  // Code.gs — this guard auto-disables once the ID differs.
+  if (!SRC_VENDOR_REJ || SRC_VENDOR_REJ === '1QVX6chu4mR6gkWvYBQS1WsUvVBvTknfCzlPuj-TB59w') {
+    Logger.log('pullDashVendorRejection: source sheet unavailable — skipping.');
+    return;
+  }
   var srcSS=SpreadsheetApp.openById(SRC_VENDOR_REJ),ss=SpreadsheetApp.openById(DASH_ID);
   var SEC1=[{vfCol:3,rejQtyCol:5,invNoCol:7,rejReasonCol:39,rejMonthCol:8},{vfCol:10,rejQtyCol:15,invNoCol:12,rejReasonCol:40,rejMonthCol:13},{vfCol:17,rejQtyCol:22,invNoCol:19,rejReasonCol:41,rejMonthCol:20},{vfCol:24,rejQtyCol:29,invNoCol:26,rejReasonCol:42,rejMonthCol:27},{vfCol:31,rejQtyCol:36,invNoCol:33,rejReasonCol:43,rejMonthCol:34}];
   var SEC2=[{vfCol:50,rejQtyCol:54,invNoCol:52,rejReasonCol:55,rejMonthCol:53},{vfCol:57,rejQtyCol:61,invNoCol:59,rejReasonCol:62,rejMonthCol:60},{vfCol:64,rejQtyCol:68,invNoCol:66,rejReasonCol:69,rejMonthCol:67},{vfCol:71,rejQtyCol:75,invNoCol:73,rejReasonCol:76,rejMonthCol:74},{vfCol:78,rejQtyCol:82,invNoCol:80,rejReasonCol:83,rejMonthCol:81}];
@@ -1053,7 +974,7 @@ function pullDashMachine() {
   var srcSS=SpreadsheetApp.openById(SRC_MACHINE),ss=SpreadsheetApp.openById(DASH_ID);
   // CORRECTED column mapping (0-indexed) — verified against actual xlsx structure
   // Each machine has 2 VF slots per 2-hour entry period
-  // Shift col[2] format: "1) 07:00AM-09:00AM 1ST" → normaliseShift_ handles 1ST/2ND/3RD suffix
+  // Shift col[2] format: "1) 07:00AM-09:00AM 1ST" -> normaliseDashboardShift_ handles 1ST/2ND/3RD suffix
   var MACHINES=[
     {machine:'Facing & Centering 1', slots:[{vf:5, qty:6},{vf:7, qty:8}],   process:null},
     {machine:'Facing & Centering 2', slots:[{vf:12,qty:13},{vf:14,qty:15}],  process:null},
@@ -1082,7 +1003,7 @@ function pullDashMachine() {
     if(isNaN(dateObj.getTime())||!inFY_(dateObj))continue;
     // Normalise shift here so RAW_MACHINE stores clean shift names
     var shiftRaw=(row[2]||'').toString().trim();
-    var shift=normaliseShift_(shiftRaw);
+    var shift=normaliseDashboardShift_(shiftRaw);
     MACHINES.forEach(function(m){
       m.slots.forEach(function(sl){
         var vfRaw=(row[sl.vf]||'').toString().trim();
@@ -1434,7 +1355,20 @@ function pullDashSchedule() {
   
   // 1. Load the Master Parts Brain right away
   var partsMap = loadPartsMap_(ss);
-  
+    // 16-Sep-2026: load COSTING_BANDS for Grade + Band (priority)
+  var cbMap = {};
+  var cbSh = ss.getSheetByName('COSTING_BANDS');
+  if (cbSh && cbSh.getLastRow() >= 3) {
+    cbSh.getDataRange().getValues().slice(2).forEach(function(r) {
+      var vf = (r[0] || '').toString().trim();
+      if (!vf) return;
+      cbMap[vf] = {
+        grade: (r[2] || '').toString().trim(),
+        band:  (r[12] || '').toString().trim() || '—'
+      };
+    });
+  }
+  Logger.log('COSTING_BANDS loaded: ' + Object.keys(cbMap).length + ' VFs.');
   var data = sheet.getDataRange().getValues();
   var output = [];
   
@@ -1573,7 +1507,11 @@ function pullDashOilInward() {
 //   1. Open FY 2026-27 Dashboard Sheet → Extensions → Apps Script
 //   2. Open your "DailyOverview_Monthly" file → Select All → Replace with this
 //   3. Save.
-//   4. Verify by running runDashboardPull() from the Apps Script dropdown.
+//   4. In runDashboardPull() ensure these 3 lines exist at the end:
+//      try { refreshDailyOverview();   Logger.log('✅ Daily Overview done');      } catch(e) { Logger.log('❌ Daily Overview FAILED: '      + e); }
+//      try { buildProductionMonthly(); Logger.log('✅ Production Monthly done');  } catch(e) { Logger.log('❌ Production Monthly FAILED: '  + e); }
+//      try { buildWIPSummary();        Logger.log('✅ WIP Summary done');         } catch(e) { Logger.log('❌ WIP Summary FAILED: '         + e); }
+//   5. Run testAllThree_() once manually to verify.
 //
 // TABS WRITTEN:
 //   Daily Overview      — Today (shift-wise) + Yesterday (shift-wise), all depts
@@ -2205,7 +2143,7 @@ function getMachineRegistryForCache_() {
 // Shift label normaliser — maps raw form text to short label
 var SHIFT_LABELS_ = ['First Shift', 'Second Shift', 'Third Shift'];
 
-// normaliseShift_ — now in doGet v4
+// Dashboard-specific shift normalization. Kept private to avoid colliding with Alert.gs.
 
 
 // ════════════════════════════════════════════════════════════════
@@ -2408,7 +2346,7 @@ function readByDateShiftwise_(ss, tabName, filterDate) {
     var machine = (row[1] || '').toString().trim();
     var code    = MCODE_[machine];
     if (!code) continue;
-    var shift = normaliseShift_(row[sc.shift]);
+    var shift = normaliseDashboardShift_(row[sc.shift]);
     var vf    = (row[sc.vf]  || '').toString().trim();
     var qty   = Number(row[sc.qty]) || 0;
     if (!vf || vf.toUpperCase() === 'VF0' || qty === 0) continue;
@@ -2645,7 +2583,7 @@ function buildShiftOutputKG() {
       if (!rawMachine || !rawShift || !vf || qty === 0) continue;
  
       var mcode = (typeof MCODE_ !== 'undefined' && MCODE_[rawMachine]) ? MCODE_[rawMachine] : rawMachine;
-      var shift = normaliseShift_(rawShift);
+      var shift = normaliseDashboardShift_(rawShift);
       var wt = partsMap[vf] || 0;
       var kg = qty * wt;
       if (kg <= 0) continue;
@@ -3094,8 +3032,10 @@ function buildWIPSummary() {
   });
 
   // Sort by VF number
-  var vfList = Object.keys(allVFs).sort(function(a,b){
-    return (parseInt(a.replace(/\D/g,''),10)||0)-(parseInt(b.replace(/\D/g,''),10)||0);
+  // Sort by band priority (A+ first), then VF number
+  var bandOrder_ = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6,'—':7,'':8};
+  var vfList = Object.keys(allVFs).sort(function(a, b) {
+    return (parseInt(a.replace(/\D/g,''),10)||0) - (parseInt(b.replace(/\D/g,''),10)||0);
   });
 
   var headers = [
@@ -3260,11 +3200,26 @@ function buildScheduleIntelligence() {
 
   var partsMap = loadPartsMap_(ss);
 
+  // Load COSTING_BANDS for Grade + Band (priority)
+  var cbMap = {};
+  var cbSh = ss.getSheetByName('COSTING_BANDS');
+  if (cbSh && cbSh.getLastRow() >= 3) {
+    cbSh.getDataRange().getValues().slice(2).forEach(function(r) {
+      var vf = (r[0] || '').toString().trim();
+      if (!vf) return;
+      cbMap[vf] = {
+        grade: (r[2] || '').toString().trim(),
+        band:  (r[12] || '').toString().trim() || '—'
+      };
+    });
+  }
+  Logger.log('COSTING_BANDS loaded: ' + Object.keys(cbMap).length + ' VFs.');
+
   var schedSh = ss.getSheetByName('RAW_SCHEDULE');
   if (!schedSh) { Logger.log('ERROR: RAW_SCHEDULE not found'); return; }
   var schedVals = schedSh.getDataRange().getValues();
 
-  var schedMap = {}; 
+  var schedMap = {};
   for (var r = 2; r < schedVals.length; r++) {
     var row = schedVals[r];
     var vf  = (row[0] || '').toString().trim();
@@ -3284,22 +3239,37 @@ function buildScheduleIntelligence() {
     Object.keys(m).forEach(function(vf){ allVFs[vf] = true; });
   });
 
-  var vfList = Object.keys(allVFs).sort(function(a,b){
-    return (parseInt(a.replace(/\D/g,''),10)||0)-(parseInt(b.replace(/\D/g,''),10)||0);
+  // Sort by band priority (A+ first), then VF number
+  var bandOrder_ = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6,'—':7,'':8};
+  var vfList = Object.keys(allVFs).sort(function(a, b) {
+    var ab = (cbMap[a] || {}).band || '—';
+    var bb = (cbMap[b] || {}).band || '—';
+    var ao = bandOrder_[ab] !== undefined ? bandOrder_[ab] : 9;
+    var bo = bandOrder_[bb] !== undefined ? bandOrder_[bb] : 9;
+    if (ao !== bo) return ao - bo;
+    return (parseInt(a.replace(/\D/g,''),10)||0) - (parseInt(b.replace(/\D/g,''),10)||0);
   });
 
-  // NEW HEADERS: Separating Unplanned Prod from Unplanned Disp
+  // ── 19 columns ──────────────────────────────────────────────
+  // A=0 Band, B=1 Grade, C=2 VF_No,
+  // D=3 Sched Qty, E=4 Unplanned Prod, F=5 Unplanned Disp, G=6 Target,
+  // H=7 Cut MTD, I=8 Produced MTD, J=9 Dispatched MTD,
+  // K=10 Bal to Cut, L=11 Bal to Produce, M=12 Bal to Dispatch,
+  // N=13 RM Required, O=14 Prod %, P=15 Disp %,
+  // Q=16 Unit Price, R=17 Exp Turnover, S=18 Actual Turnover
   var headers = [
-    'VF_No', 'Schedule Qty', 'Unplanned Prod Qty', 'Unplanned Disp Qty', 'Target Qty', 
-    'Cut MTD', 'Produced MTD', 'Dispatched MTD', 'Balance to Produce', 'Balance to Dispatch', 
-    'RM Required (kg)', 'Production %', 'Dispatch %', 'Unit Price', 
-    'Expected Turnover', 'Actual Turnover'
+    'Band', 'Grade', 'VF_No',
+    'Schedule Qty', 'Unplanned Prod Qty', 'Unplanned Disp Qty', 'Target Qty',
+    'Cut MTD', 'Produced MTD', 'Dispatched MTD',
+    'Balance to Cut', 'Balance to Produce', 'Balance to Dispatch',
+    'RM Required (kg)', 'Production %', 'Dispatch %',
+    'Unit Price', 'Expected Turnover', 'Actual Turnover'
   ];
 
   var dataRows  = [];
   var flagRows  = [];
   var colTotals = new Array(headers.length).fill(0);
-  var colTons   = new Array(headers.length).fill(0); 
+  var colTons   = new Array(headers.length).fill(0);
 
   vfList.forEach(function(vf) {
     var sched        = schedMap[vf] || {};
@@ -3313,55 +3283,71 @@ function buildScheduleIntelligence() {
     var part        = partsMap[vf] || {};
     var inputWt     = part.inputWt || 0;
     var finWt       = part.finWt   || 0;
-    var unitPrice   = part.unitPrice || 0; 
+    var unitPrice   = part.unitPrice || 0;
 
-    // --- NEW SPLIT LOGIC ---
-    // 1. Unplanned Production (Forged more than scheduled)
+    // Unplanned splits
     var unplannedProd = produced > schedFormQty ? produced - schedFormQty : 0;
-    
-    // 2. Unplanned Dispatch (Shipped more than was produced + scheduled this month -> Inventory)
     var currentPotential = Math.max(schedFormQty, produced);
     var unplannedDisp = disp > currentPotential ? disp - currentPotential : 0;
+    var targetQty = schedFormQty + unplannedProd + unplannedDisp;
 
-    // 3. Final Target (Total activity)
-    var targetQty    = schedFormQty + unplannedProd + unplannedDisp;
-
-    // Balances
+    // Balances — RM feeds CUTTING, not forging
+    var balCut      = schedFormQty > cutQty  ? schedFormQty - cutQty  : 0;
     var balProduce  = schedFormQty > produced ? schedFormQty - produced : 0;
-    var balDispatch = targetQty > disp ? targetQty - disp : 0; 
+    var balDispatch = targetQty > disp ? targetQty - disp : 0;
 
-    var rmRequired  = balProduce > 0 ? Math.round(balProduce * inputWt) : 0;
-    
-    // Production %: How much of the forged target did we hit?
+    var rmRequired = balCut > 0 ? Math.round(balCut * inputWt) : 0;
+
     var prodPct = targetQty > 0 ? Math.round((produced / (schedFormQty + unplannedProd)) * 100) : '';
-    if (schedFormQty === 0 && produced === 0 && unplannedDisp > 0) prodPct = 0; // It's just an inventory move
+    if (schedFormQty === 0 && produced === 0 && unplannedDisp > 0) prodPct = 0;
 
-    // Dispatch %: How much of the total activity target did we ship?
     var dispPct = targetQty > 0 ? Math.round((disp / targetQty) * 100) : '';
 
-    var expTov      = targetQty * unitPrice;
-    var actualTov   = Math.round(disp * unitPrice);
+    var expTov    = targetQty * unitPrice;
+    var actualTov = Math.round(disp * unitPrice);
 
-    // Totals Mapping
-    colTotals[1]+=schedFormQty; colTotals[2]+=unplannedProd; colTotals[3]+=unplannedDisp; colTotals[4]+=targetQty;
-    colTotals[5]+=cutQty; colTotals[6]+=produced; colTotals[7]+=disp;
-    colTotals[8]+=balProduce; colTotals[9]+=balDispatch; colTotals[10]+=rmRequired;
-    colTotals[14]+=expTov; colTotals[15]+=actualTov;
+    var cbRow   = cbMap[vf] || {};
+    var vfBand  = cbRow.band  || '—';
+    var vfGrade = cbRow.grade || '';
+
+    // Accumulate totals at CORRECT indices (matches headers)
+    colTotals[3]  += schedFormQty;
+    colTotals[4]  += unplannedProd;
+    colTotals[5]  += unplannedDisp;
+    colTotals[6]  += targetQty;
+    colTotals[7]  += cutQty;
+    colTotals[8]  += produced;
+    colTotals[9]  += disp;
+    colTotals[10] += balCut;
+    colTotals[11] += balProduce;
+    colTotals[12] += balDispatch;
+    colTotals[13] += rmRequired;
+    colTotals[17] += expTov;
+    colTotals[18] += actualTov;
 
     var tonConv = finWt / 1000;
-    colTons[1]+=schedFormQty*tonConv; colTons[2]+=unplannedProd*tonConv; colTons[3]+=unplannedDisp*tonConv;
-    colTons[4]+=targetQty*tonConv; colTons[5]+=cutQty*tonConv; colTons[6]+=produced*tonConv;
-    colTons[7]+=disp*tonConv; colTons[8]+=balProduce*tonConv; colTons[9]+=balDispatch*tonConv;
+    colTons[3]  += schedFormQty  * tonConv;
+    colTons[4]  += unplannedProd * tonConv;
+    colTons[5]  += unplannedDisp * tonConv;
+    colTons[6]  += targetQty     * tonConv;
+    colTons[7]  += cutQty        * tonConv;
+    colTons[8]  += produced      * tonConv;
+    colTons[9]  += disp          * tonConv;
+    colTons[10] += balCut        * tonConv;
+    colTons[11] += balProduce    * tonConv;
+    colTons[12] += balDispatch   * tonConv;
 
     var rowIdx = dataRows.length;
     dataRows.push([
+      vfBand, vfGrade,
       vf, schedFormQty || 0, unplannedProd || 0, unplannedDisp || 0, targetQty || 0,
-      cutQty || 0, produced || 0, disp || 0, balProduce, balDispatch, rmRequired || 0,
-      prodPct !== '' ? prodPct + '%' : '', dispPct !== '' ? dispPct + '%' : '',
+      cutQty || 0, produced || 0, disp || 0,
+      balCut, balProduce, balDispatch, rmRequired || 0,
+      prodPct !== '' ? prodPct + '%' : '',
+      dispPct !== '' ? dispPct + '%' : '',
       unitPrice || 0, expTov || 0, actualTov || 0
     ]);
 
-    // Flag Logic
     if (unplannedDisp > 0 && produced === 0) {
       flagRows.push({ rowIdx:rowIdx, color:'#F5F5F5', note:'⬜ Pure Inventory Dispatch' });
     } else if (schedFormQty > 0 && produced === 0) {
@@ -3375,8 +3361,33 @@ function buildScheduleIntelligence() {
     }
   });
 
-  dataRows.push(['GRAND TOTAL (PIECES)', colTotals[1], colTotals[2], colTotals[3], colTotals[4], colTotals[5], colTotals[6], colTotals[7], colTotals[8], colTotals[9], colTotals[10], '', '', '', colTotals[14], colTotals[15]]);
-  dataRows.push(['GRAND TOTAL (TONS)', Number(colTons[1].toFixed(2)), Number(colTons[2].toFixed(2)), Number(colTons[3].toFixed(2)), Number(colTons[4].toFixed(2)), Number(colTons[5].toFixed(2)), Number(colTons[6].toFixed(2)), Number(colTons[7].toFixed(2)), Number(colTons[8].toFixed(2)), Number(colTons[9].toFixed(2)), Number((colTotals[10]/1000).toFixed(2)), '', '', '', '', '']);
+  // GRAND TOTAL (PIECES) — 19 columns, label at index 2 (col C)
+  dataRows.push([
+    '', '', 'GRAND TOTAL (PIECES)',
+    colTotals[3], colTotals[4], colTotals[5], colTotals[6],
+    colTotals[7], colTotals[8], colTotals[9],
+    colTotals[10], colTotals[11], colTotals[12], colTotals[13],
+    '', '',
+    '', colTotals[17], colTotals[18]
+  ]);
+
+  // GRAND TOTAL (TONS) — 19 columns
+  dataRows.push([
+    '', '', 'GRAND TOTAL (TONS)',
+    Number(colTons[3].toFixed(2)),
+    Number(colTons[4].toFixed(2)),
+    Number(colTons[5].toFixed(2)),
+    Number(colTons[6].toFixed(2)),
+    Number(colTons[7].toFixed(2)),
+    Number(colTons[8].toFixed(2)),
+    Number(colTons[9].toFixed(2)),
+    Number(colTons[10].toFixed(2)),
+    Number(colTons[11].toFixed(2)),
+    Number(colTons[12].toFixed(2)),
+    Number((colTotals[13] / 1000).toFixed(2)),
+    '', '',
+    '', '', ''
+  ]);
 
   var title = 'SCHEDULE_INTELLIGENCE — ' + currentMonthName + ' ' + mStart.getFullYear() +
               '   |   LEGEND: 🟥 Missed   🟩 Done   🟧 Unplanned(Pending Disp)   🟦 Unplanned(Done)   ⬜ Inventory Only' +
@@ -3385,16 +3396,33 @@ function buildScheduleIntelligence() {
   var sh = writeTab_(ss, 'SCHEDULE_INTELLIGENCE', headers, dataRows, title);
   sh.getRange(1, 1, 1, headers.length).mergeAcross().setHorizontalAlignment('center');
   sh.setFrozenRows(2);
-  sh.setColumnWidth(1, 90);
-  sh.getRange(3, 2, dataRows.length, 10).setNumberFormat('#,##0'); 
-  sh.getRange(3, 14, dataRows.length, 3).setNumberFormat('#,##0.00');
-  sh.getRange(2,1,1,headers.length).setBackground('#1565C0').setFontColor('#FFFFFF').setFontWeight('bold');
-  sh.getRange(2,9,1,2).setBackground('#E65100').setFontColor('#FFFFFF'); // Balances
-  sh.getRange(2,12,1,2).setBackground('#1B5E20').setFontColor('#FFFFFF'); // %
-  sh.getRange(lastRow = 2 + dataRows.length - 1, 1, 2, headers.length).setFontWeight('bold').setBackground('#FFF9C4');
-  flagRows.forEach(function(f){ sh.getRange(3+f.rowIdx,1,1,headers.length).setBackground(f.color); });
-}
 
+  // Column widths
+  sh.setColumnWidth(1, 65);   // Band
+  sh.setColumnWidth(2, 95);   // Grade
+  sh.setColumnWidth(3, 90);   // VF_No
+
+  // Number formats
+  sh.getRange(3, 4,  dataRows.length, 11).setNumberFormat('#,##0');       // D through N
+  sh.getRange(3, 17, dataRows.length, 3).setNumberFormat('#,##0.00');     // Q through S
+
+  // Header banding — balances and %
+  sh.getRange(2, 1, 1, headers.length).setBackground('#1565C0').setFontColor('#FFFFFF').setFontWeight('bold');
+  sh.getRange(2, 11, 1, 3).setBackground('#E65100').setFontColor('#FFFFFF');  // Balances
+  sh.getRange(2, 14, 1, 1).setBackground('#B71C1C').setFontColor('#FFFFFF');  // RM Required
+  sh.getRange(2, 15, 1, 2).setBackground('#1B5E20').setFontColor('#FFFFFF');  // %s
+
+  // Grand total rows
+  var lastTotalRow = 2 + dataRows.length - 1;
+  sh.getRange(lastTotalRow, 1, 2, headers.length).setFontWeight('bold').setBackground('#FFF9C4');
+
+  // Flag rows
+  flagRows.forEach(function(f){
+    sh.getRange(3 + f.rowIdx, 1, 1, headers.length).setBackground(f.color);
+  });
+
+  Logger.log('buildScheduleIntelligence complete: ' + vfList.length + ' VFs');
+}
 // ════════════════════════════════════════════════════════════════
 // 9 — MANUAL TEST RUNNER
 // ════════════════════════════════════════════════════════════════
@@ -3516,9 +3544,8 @@ function buildDieLife() {
 // which is what "compliance" actually means. Also fixes the Grade column
 // formula so it uses the corrected compliance %.
 //
-// HOW: SUMPRODUCT((range<>"")*1/COUNTIF(range,range&"")) counts unique
-// non-blank values without requiring an array-formula entry — compatible
-// with all Google Sheets formula modes.
+// HOW: COUNTUNIQUE(FILTER(INT(range),range<>"")) counts unique non-blank
+// calendar dates and ignores multiple same-day submissions.
 //
 // After running, do one buildDashboardCache() so the corrected scores
 // propagate to the dashboard payload.
@@ -3527,60 +3554,144 @@ function fixDeptScoreFormulas_() {
   var dsSh = ss.getSheetByName('DEPT_SCORE');
   if (!dsSh) { Logger.log('❌ DEPT_SCORE sheet not found'); return; }
 
-  // Department → RAW tab mapping. Date is always column A (A2:A) in every
-  // RAW production tab. Non-production depts (Electricity, Oil) are excluded —
-  // their RAW tabs hold meter/litre readings, not submission events.
-  var DEPT_RAW = {
-    'Cutting':          'RAW_CUTTING',
-    'Forge':            'RAW_FORGE',
-    'Forging':          'RAW_FORGE',
-    'Press':            'RAW_PRESS',
-    'Machine':          'RAW_MACHINE',
-    'Machining':        'RAW_MACHINE',
-    'HT':               'RAW_HT',
-    'Heat Treatment':   'RAW_HT',
-    'Final':            'RAW_FINAL',
-    'Final Assembly':   'RAW_FINAL',
-    'Manpower':         'RAW_MANPOWER_STAFF',
-    'Staff Manpower':   'RAW_MANPOWER_STAFF',
-    'Contract Manpower':'RAW_MANPOWER_CONTRACT'
-  };
+  var DEPT_ROWS = [
+    ['Cutting Shop',     'RAW_CUTTING'],
+    ['Forge Shop',       'RAW_FORGE'],
+    ['Press Shop',       'RAW_PRESS'],
+    ['HT Shop',          'RAW_HT'],
+    ['Final Shop',       'RAW_FINAL'],
+    ['Machine Shop',     'RAW_MACHINE'],
+    ['Electricity',      'RAW_ELECTRICITY'],
+    ['Oil',              'RAW_OIL'],
+    ['Manpower Staff',   'RAW_MANPOWER_STAFF'],
+    ['Contract Labour',  'RAW_MANPOWER_CONTRACT']
+  ];
 
-  var data = dsSh.getDataRange().getValues();
+  dsSh.clearContents();
+  dsSh.getRange(1, 1).setValue('Source: COUNTUNIQUE of submission dates in each RAW tab. Updated by runFixDeptScoreFormulas().');
+  dsSh.getRange(2, 1, 1, 6).setValues([['Department','Source Tab','Rows with Data','Expected Days','% Compliance','Grade']]);
+
   var changed = 0;
-  for (var r = 2; r < data.length; r++) {  // rows 0-1 are headers
-    var dept = (data[r][0] || '').toString().trim();
-    if (!dept) continue;
-    var rawTab = DEPT_RAW[dept];
-    if (!rawTab) {
-      Logger.log('SKIP ' + dept + ' — no RAW tab mapped (electricity/oil excluded intentionally)');
-      continue;
-    }
-    var shRow = r + 1; // 1-based sheet row
+  for (var r = 0; r < DEPT_ROWS.length; r++) {
+    var dept = DEPT_ROWS[r][0];
+    var rawTab = DEPT_ROWS[r][1];
+    var shRow = r + 3;
 
-    // Col B: unique-date count using SUMPRODUCT division trick
-    // (avoids ARRAYFORMULA; works in normal cell formula mode)
-    var dateRange = "'" + rawTab + "'!A2:A";
-    var countF = '=IFERROR(SUMPRODUCT((' + dateRange + '<>"")*1/COUNTIF(' + dateRange + ',' + dateRange + '&"")),0)';
-    dsSh.getRange(shRow, 2).setFormula(countF);
+    dsSh.getRange(shRow, 1, 1, 2).setValues([[dept, rawTab]]);
 
-    // Col D: compliance % = B / C — recalculate in case old formula was wrong
-    dsSh.getRange(shRow, 4).setFormula('=IFERROR(ROUND(B' + shRow + '/C' + shRow + '*100,1),0)');
+    // Col C: unique submission dates, ignoring title/header rows.
+    var dateRange = "'" + rawTab + "'!A3:A";
+    var countF = '=IFERROR(COUNTUNIQUE(FILTER(INT(' + dateRange + '),' + dateRange + '<>"")),0)';
+    dsSh.getRange(shRow, 3).setFormula(countF);
 
-    // Col E: grade from compliance %
-    dsSh.getRange(shRow, 5).setFormula(
-      '=IF(D' + shRow + '>=95,"A+",' +
-        'IF(D' + shRow + '>=85,"A",' +
-          'IF(D' + shRow + '>=70,"B",' +
-            'IF(D' + shRow + '>=50,"C","D"))))'
+    // Col D: expected FY elapsed days.
+    dsSh.getRange(shRow, 4).setFormula('=MAX(1,TODAY()-DATE(2026,3,31))');
+
+    // Col E: compliance % = C / D, capped so duplicate rows never show >100%.
+    dsSh.getRange(shRow, 5).setFormula('=MIN(100,IFERROR(ROUND(C' + shRow + '/D' + shRow + '*100,1),0))');
+
+    // Col F: grade from compliance %
+    dsSh.getRange(shRow, 6).setFormula(
+      '=IF(E' + shRow + '>=95,"A+",' +
+        'IF(E' + shRow + '>=85,"A",' +
+          'IF(E' + shRow + '>=70,"B",' +
+            'IF(E' + shRow + '>=50,"C","D"))))'
     );
 
     Logger.log('✅ Row ' + shRow + ': ' + dept + ' → ' + rawTab);
     changed++;
   }
-  Logger.log('fixDeptScoreFormulas_() complete — fixed ' + changed + ' dept rows. Run buildDashboardCache() next.');
+  dsSh.autoResizeColumns(1, 6);
+  Logger.log('fixDeptScoreFormulas_() complete — rebuilt ' + changed + ' dept rows. Run buildDashboardCache() next.');
 }
 
+// Apps Script does not always show trailing-underscore helper functions in
+// the Run dropdown. Use this visible wrapper from the editor.
+function runFixDeptScoreFormulas() {
+  return fixDeptScoreFormulas_();
+}
+
+function buildAlerts() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var sh = ss.getSheetByName('ALERTS_CONFIG');
+  if (sh && sh.getLastRow() >= 3) {
+    Logger.log('ALERTS_CONFIG already exists — not overwriting');
+    return;
+  }
+  if (!sh) sh = ss.insertSheet('ALERTS_CONFIG');
+  sh.clearContents();
+  sh.getRange(1, 1).setValue('VFPL ALERTS CONFIGURATION — Edit thresholds here. Add new rows to add alerts.');
+  var headers = ['Alert_Type', 'Metric', 'Threshold', 'Operator', 'Message', 'Active'];
+  sh.getRange(2, 1, 1, 6).setValues([headers]).setFontWeight('bold').setBackground('#1565C0').setFontColor('#FFFFFF');
+  var defaults = [
+    ['OVERDUE', 'Customer Overdue Rs', 1500000, '>', 'High overdue: {customer} — {value}', 'YES'],
+    ['OVERDUE', 'Total Overdue Rs', 2000000, '>', 'Total overdue > Rs 20L — review with Deepak', 'YES'],
+    ['ELECTRICITY', 'Dept kWh vs 30d avg pct', 120, '>', '{dept} electricity {pct}% above 30-day avg', 'YES'],
+    ['ELECTRICITY', 'Total kWh today', 6000, '>', 'Total electricity high today: {value} kWh', 'YES'],
+    ['MISSING_DATA', 'Cutting hours since entry', 12, '>', 'Cutting: no entry for {hours} hours', 'YES'],
+    ['MISSING_DATA', 'Forge hours since entry', 12, '>', 'Forge: no entry for {hours} hours', 'YES'],
+    ['MISSING_DATA', 'Electricity hours since entry', 24, '>', 'Electricity: no entry for {hours} hours', 'YES'],
+    ['STEEL', 'Grade balance kg', 1000, '<', 'Low stock: {grade} — {value} kg remaining', 'YES'],
+    ['SCHEDULE', 'Balance pending pct', 80, '>', 'Schedule {pct}% still pending — risk of miss', 'YES']
+  ];
+  sh.getRange(3, 1, defaults.length, 6).setValues(defaults);
+  sh.autoResizeColumns(1, 6);
+  Logger.log('ALERTS_CONFIG created with ' + defaults.length + ' default rules');
+}
+
+function loadOpeningWIP() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var openSh = ss.getSheetByName('OPENING_WIP_2627');
+  var wipSh = ss.getSheetByName('WIP_SUMMARY');
+  if (!openSh || !wipSh) {
+    Logger.log('loadOpeningWIP: OPENING_WIP_2627 or WIP_SUMMARY missing');
+    return;
+  }
+
+  // Read opening WIP: Row3=headers, Row4+=data
+  // Cols: VF_No[0] Customer[1] Grade[2] InHouse_Pcs[3] Vendor_Pcs[4] Grand_Total[5]
+  var openData = openSh.getDataRange().getValues();
+  var openMap = {};
+  for (var i = 3; i < openData.length; i++) {
+    var vf = (openData[i][0] || '').toString().trim();
+    if (!vf) continue;
+    var inhouse = Number(openData[i][3]) || 0;
+    var vendor = Number(openData[i][4]) || 0;
+    openMap[vf] = inhouse + vendor; // Total opening WIP pcs
+  }
+
+  // Read WIP_SUMMARY: Row1=title, Row2=header, Row3+=data
+  // Col B (index 1) = Opening WIP
+  var wipData = wipSh.getDataRange().getValues();
+  var updatedCount = 0;
+  for (var r = 2; r < wipData.length; r++) {
+    var vf = (wipData[r][0] || '').toString().trim();
+    if (!vf || vf === 'GRAND TOTAL') continue;
+    if (openMap[vf] !== undefined && openMap[vf] > 0) {
+      wipSh.getRange(r + 1, 2).setValue(openMap[vf]); // Col B = Opening WIP
+      updatedCount++;
+    }
+  }
+
+  // Also add VFs that are in opening but not in WIP_SUMMARY
+  var wipVFs = {};
+  for (var r = 2; r < wipData.length; r++) {
+    var vf = (wipData[r][0] || '').toString().trim();
+    if (vf) wipVFs[vf] = true;
+  }
+  var newRows = [];
+  Object.keys(openMap).forEach(function(vf) {
+    if (!wipVFs[vf] && openMap[vf] > 0) {
+      newRows.push([vf, openMap[vf], 0, 0, 0, 0, 0, 0, openMap[vf]]);
+    }
+  });
+  if (newRows.length > 0) {
+    var lastRow = wipSh.getLastRow();
+    wipSh.getRange(lastRow + 1, 1, newRows.length, 9).setValues(newRows);
+  }
+
+  Logger.log('loadOpeningWIP: Updated ' + updatedCount + ' VFs, added ' + newRows.length + ' new VFs from opening');
+}
 
 // ════════════════════════════════════════════════════════════════
 // auditRawTabsForBadData_() — catches negative quantities that reach
@@ -3960,7 +4071,7 @@ function buildDebitNoteTracker() {
 // Previously inside old doGet block — now standalone so all functions can use them
 // ════════════════════════════════════════════════════════════
 
-function normaliseShift_(raw) {
+function normaliseDashboardShift_(raw) {
   var s = (raw||'').toString().trim();
   if (/1st\s*$/i.test(s)) return 'First Shift';
   if (/2nd\s*$/i.test(s)) return 'Second Shift';
@@ -4110,10 +4221,13 @@ function buildSteelStock() {
     var avgDailyCons = avgDailyCons30d > 0 ? avgDailyCons30d : avgDailyConsFY;
     var daysStock = avgDailyCons > 0 ? Math.round(balKg / avgDailyCons) : '—';
 
+       // Negative balance = bad opening stock or missing inward data.
+    // Flag separately so it doesn't spam ALERTS_ACTIVE with false CRITICALs.
     var status = '⚪ No data';
-    if (balKg < 0 || (typeof daysStock === 'number' && daysStock < 7)) status = '🔴 CRITICAL';
+    if (balKg < 0) status = '⚠️ NEGATIVE — VERIFY OPENING';
+    else if (typeof daysStock === 'number' && daysStock < 7) status = '🔴 CRITICAL';
     else if (typeof daysStock === 'number' && daysStock >= 7 && daysStock <= 21) status = '🟡 ORDER SOON';
-    else if (balKg >= 0) status = '🟢 OK';
+    else status = '🟢 OK';
 
     sumOp += item.opKg;
     sumIn += item.inKg;
@@ -4273,7 +4387,184 @@ function buildDropoutTrend_() {
   });
   return result;
 }
+function buildMachineUtil() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var tz = 'Asia/Kolkata';
 
+  _rebuildRuntimeMaps_();
+  var today = getToday_();
+  var fyYear = today.getMonth() >= 3
+    ? today.getFullYear()
+    : today.getFullYear() - 1;
+  var fyStart = new Date(fyYear, 3, 1);
+  var fyEnd   = today;
+
+  var d30Start = new Date(today);
+  d30Start.setDate(d30Start.getDate() - 29);
+  d30Start.setHours(0, 0, 0, 0);
+
+  var mtdStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  var weekDefs = [];
+  var wkStart = new Date(d30Start);
+  while (wkStart <= today) {
+    var wkEnd = new Date(wkStart);
+    wkEnd.setDate(wkEnd.getDate() + 6);
+    if (wkEnd > today) wkEnd = new Date(today);
+    weekDefs.push({
+      start: new Date(wkStart),
+      end: new Date(wkEnd),
+      label: Utilities.formatDate(wkStart, tz, 'dd-MMM') + '–' + Utilities.formatDate(wkEnd, tz, 'dd-MMM')
+    });
+    wkStart = new Date(wkEnd);
+    wkStart.setDate(wkStart.getDate() + 1);
+  }
+  var weekLabels = weekDefs.map(function(w) { return w.label; });
+
+  var monthDefs = [];
+  var mc = new Date(fyStart);
+  while (mc <= today) {
+    var ms = new Date(mc.getFullYear(), mc.getMonth(), 1);
+    var me = new Date(mc.getFullYear(), mc.getMonth() + 1, 0);
+    if (me > today) me = new Date(today);
+    monthDefs.push({
+      start: ms,
+      end: me,
+      key: Utilities.formatDate(ms, tz, 'yyyy-MM'),
+      label: Utilities.formatDate(ms, tz, 'MMM')
+    });
+    mc = new Date(mc.getFullYear(), mc.getMonth() + 1, 1);
+  }
+  var monthLabels = monthDefs.map(function(m) { return m.label; });
+
+  var machineMap = {};
+  var machineOrder = [];
+
+  MASTER_MACHINE_DATA_.forEach(function(d) {
+    var frontCode   = d[0];
+    var displayName = d[1];
+    var dept        = d[2];
+    var htmlPrefix  = d[4];
+    var sortOrder   = d[7];
+
+    if (dept !== 'Forge' && dept !== 'Press' && dept !== 'Machine') return;
+
+    var serverCode = htmlPrefix === 'strip-P'
+      ? frontCode.replace(/^P/, '')
+      : frontCode;
+
+    machineMap[serverCode] = {
+      code: serverCode,
+      frontCode: frontCode,
+      name: displayName,
+      dept: dept,
+      sortOrder: sortOrder,
+      mtdDateSet: {},
+      ytdDateSet: {},
+      mtd_output: 0,
+      ytd_output: 0,
+      weeks: weekDefs.map(function() { return { dateSet: {}, output: 0 }; }),
+      months: monthDefs.map(function() { return { dateSet: {}, output: 0 }; })
+    };
+
+    machineOrder.push(serverCode);
+  });
+
+  function dateOnly(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  }
+  function dateKey(d) {
+    return Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+  }
+  function inRange_(d, start, end) {
+    return d >= start && d <= end;
+  }
+
+  function addRawTab(tabName) {
+    var sh = ss.getSheetByName(tabName);
+    if (!sh || sh.getLastRow() < 3) return;
+    var sc = schema_(tabName);
+    var vals = sh.getDataRange().getValues();
+
+    for (var r = 2; r < vals.length; r++) {
+      var row = vals[r];
+      if (!row[0]) continue;
+      var rawDate = parseDate_(row[0]);
+      if (!rawDate) continue;
+      var d = dateOnly_(rawDate);
+      if (d < fyStart || d > today) continue;
+
+      var rawMachine = (row[1] || '').toString().trim();
+      var code = MCODE_[rawMachine] || MCODE_[rawMachine.toUpperCase()];
+      if (!code || !machineMap[code]) continue;
+
+      var vf = (row[sc.vf] || '').toString().trim();
+      var qty = Number(row[sc.qty]) || 0;
+      if (!vf || vf.toUpperCase() === 'VF0' || qty === 0) continue;
+
+      var m = machineMap[code];
+      var dk = dateKey_(d);
+
+      m.ytd_output += qty;
+      m.ytdDateSet[dk] = true;
+
+      if (d >= mtdStart) {
+        m.mtd_output += qty;
+        m.mtdDateSet[dk] = true;
+      }
+
+      if (d >= d30Start) {
+        for (var w = 0; w < weekDefs.length; w++) {
+          if (inRange_(d, weekDefs[w].start, weekDefs[w].end)) {
+            m.weeks[w].output += qty;
+            m.weeks[w].dateSet[dk] = true;
+            break;
+          }
+        }
+      }
+
+      for (var mo = 0; mo < monthDefs.length; mo++) {
+        if (inRange_(d, monthDefs[mo].start, monthDefs[mo].end)) {
+          m.months[mo].output += qty;
+          m.months[mo].dateSet[dk] = true;
+          break;
+        }
+      }
+    }
+  }
+
+  addRawTab_('RAW_FORGE');
+  addRawTab_('RAW_PRESS');
+  addRawTab_('RAW_MACHINE');
+
+  machineOrder.sort(function(a, b) {
+    return machineMap[a].sortOrder - machineMap[b].sortOrder;
+  });
+
+  var machines = machineOrder.map(function(code) {
+    var m = machineMap[code];
+    return {
+      name: m.name,
+      dept: m.dept,
+      mtd_days: Object.keys(m.mtdDateSet).length,
+      mtd_output: m.mtd_output,
+      ytd_days: Object.keys(m.ytdDateSet).length,
+      ytd_output: m.ytd_output,
+      weeks: m.weeks.map(function(w) {
+        return { days: Object.keys(w.dateSet).length, output: w.output };
+      }),
+      months: m.months.map(function(mo) {
+        return { days: Object.keys(mo.dateSet).length, output: mo.output };
+      })
+    };
+  });
+
+  return {
+    week_labels: weekLabels,
+    months: monthLabels,
+    machines: machines
+  };
+}
 // ============================================================
 function buildDashboardCache() {
   var ss = SpreadsheetApp.openById(DASH_ID);
@@ -4439,23 +4730,7 @@ function buildDashboardCache() {
   if(roSh&&roSh.getLastRow()>=3){
     roSh.getDataRange().getValues().slice(2).forEach(function(r){
       var c=sS(r[0]);if(!c)return;
-      // columns: 0=Customer,1=NotDue,2=Overdue,3=GrandTotal,4=DisputedOverdue,
-      //          5=DaysOverdue,6=FirstOverdueDate,7=LastPaymentDate,8=EscalationLevel,
-      //          9=LastEmailSent,10=StagnantFlag,11=DispatchLock,12=LastPaymentAmt,13=AsOn
-      var ncols=r.length;
-      outRows.push({
-        customer:c, notDue:sN(r[1]), overdue:sN(r[2]), grandTotal:sN(r[3]),
-        disputedOverdue: ncols>4?sN(r[4]):0,
-        daysOverdue:     ncols>5?sN(r[5]):0,
-        firstOverdueDate:ncols>6?sS(r[6]):'',
-        lastPaymentDate: ncols>7?sS(r[7]):'',
-        escalationLevel: ncols>8?sN(r[8]):0,
-        lastEmailSent:   ncols>9?sS(r[9]):'',
-        stagnantFlag:    ncols>10?sS(r[10]):'',
-        dispatchLock:    ncols>11?sS(r[11]):'',
-        lastPaymentAmt:  ncols>12?sN(r[12]):0,
-        asOn:            ncols>13?sS(r[13]):sS(r[4])
-      });
+      outRows.push({customer:c,notDue:sN(r[1]),overdue:sN(r[2]),grandTotal:sN(r[3]),asOn:sS(r[4])});
     });
   }
   outRows.sort(function(a,b){return b.overdue-a.overdue;});
@@ -4493,8 +4768,13 @@ function buildDashboardCache() {
   if(dsSh&&dsSh.getLastRow()>=3){
     dsSh.getDataRange().getValues().slice(2).forEach(function(r){
       var d=sS(r[0]);if(!d)return;
-      var rawPct=sN(r[3]);
-      deptScores.push({dept:d,count:sN(r[1]),expected:sN(r[2]),pct:rawPct,pctInvalid:rawPct>100,grade:sS(r[4]),datesWithData:[]});
+      var sixColLayout=sS(r[1]).indexOf('RAW_')===0;
+      var sourceTab=sixColLayout?sS(r[1]):sS(r[5]);
+      var count=sN(r[sixColLayout?2:1]);
+      var expected=sN(r[sixColLayout?3:2]);
+      var rawPct=sN(r[sixColLayout?4:3]);
+      var grade=sS(r[sixColLayout?5:4]);
+      deptScores.push({dept:d,sourceTab:sourceTab,count:count,expected:expected,pct:rawPct,pctInvalid:rawPct>100,grade:grade,datesWithData:[]});
     });
     if(deptScores.length){
       var validScores=deptScores.filter(function(r){return !r.pctInvalid;});
@@ -4747,40 +5027,39 @@ function buildDashboardCache() {
   }
   var wipSummary={cutWIPPcs:cutWIPPcs,cutWIPVFs:cutWIPVFs,fgWIPPcs:fgWIPPcs,fgWIPVFs:fgWIPVFs,jwkWIPPcs:jwkWIPPcs,jwkWIPVFs:jwkWIPVFs,vendorWIPPcs:0};
   
-  // ── SCHEDULE ────────────────────────────────────────────
+   // ── SCHEDULE ────────────────────────────────────────────
   var schedRows=[],schedSum={totalSchedQty:0,totalProduced:0,totalBalProduce:0,totalRMRequired:0};
   var schedSh=ss.getSheetByName('SCHEDULE_INTELLIGENCE');
   if(schedSh&&schedSh.getLastRow()>=3){
     schedSh.getDataRange().getValues().slice(2).forEach(function(r){
-      var vf=sS(r[0]);
+      var vf = sS(r[2]);                     // col C = VF_No
       if(!vf||vf.indexOf('GRAND TOTAL')>=0)return;
-      var sq=sN(r[4]),prod=sN(r[6]),disp=sN(r[7]),bp=sN(r[8]),rmRq=sN(r[10]);
-      var cb=cbMap[vf]||{};
-      var grade=cb.grade||'';
-      var stockKg=steelMap[grade]||0;
-      var hasStock=rmRq>0?(stockKg>=rmRq):true;
+      var band  = sS(r[0]);                  // col A = Band
+      var grade = sS(r[1]);                  // col B = Grade
+      var sq   = sN(r[3]);                   // col D = Schedule Qty
+      var prod = sN(r[8]);                   // col I = Produced MTD
+      var disp = sN(r[9]);                   // col J = Dispatched MTD
+      var bp   = sN(r[11]);                  // col L = Balance to Produce
+      var rmRq = sN(r[13]);                  // col N = RM Required
+      var stockKg = steelMap[grade] || 0;
+      var hasStock = rmRq>0 ? (stockKg>=rmRq) : true;
       schedRows.push({
-        vfNo:vf, schedQty:sq, producedMTD:prod, dispatchedMTD:disp, balProduce:bp, rmRequired:rmRq,
-        hasStock:hasStock, band:cb.band||'—', customer:cb.customer||'', grade:grade, schedPct:sq>0?Math.round(prod/sq*100):0
+        vfNo:vf, schedQty:sq, producedMTD:prod, dispatchedMTD:disp,
+        balProduce:bp, rmRequired:rmRq, hasStock:hasStock,
+        band:band, customer:(cbMap[vf]||{}).customer||'', grade:grade,
+        schedPct:sq>0?Math.round(prod/sq*100):0
       });
-      schedSum.totalSchedQty+=sq;schedSum.totalProduced+=prod;schedSum.totalBalProduce+=bp;schedSum.totalRMRequired+=rmRq;
+      schedSum.totalSchedQty   += sq;
+      schedSum.totalProduced   += prod;
+      schedSum.totalBalProduce += bp;
+      schedSum.totalRMRequired += rmRq;
     });
+    mtd.schedPct = schedSum.totalSchedQty > 0
+      ? Math.round(schedSum.totalProduced / schedSum.totalSchedQty * 100)
+      : 0;
   }
-  mtd.schedPct=schedSum.totalSchedQty>0?Math.round(schedSum.totalProduced/schedSum.totalSchedQty*100):0;
-  
   // ── PRODUCTION_MONTHLY ───────────────────────────────────
   var pmRows=[],pmSh=ss.getSheetByName('PRODUCTION_MONTHLY');
-  if(pmSh&&pmSh.getLastRow()>=3){
-    var pmA=pmSh.getDataRange().getValues();
-    var lastC=pmA.length>1?pmA[1].length:0;
-    pmA.slice(2).forEach(function(r){
-      var dept=sS(r[0]),mach=sS(r[1]);
-      if(!dept&&!mach)return;
-      pmRows.push({dept:dept,machine:mach,type:sS(r[2]),monthTotal:sN(r[lastC-2]),monthTons:sN(r[lastC-1])});
-    });
-  }
-  
-  // ── F4_RECONCILIATION ────────────────────────────────────
   var f4VendorMap = {};
   var f4Sh = ss.getSheetByName('F4_RECONCILIATION');
   if (f4Sh && f4Sh.getLastRow() >= 3) {
@@ -4939,9 +5218,9 @@ function buildDashboardCache() {
     data_gaps_summary: dataGapsSummary,
     cost_summary_snap: costSummarySnap,
     machine_registry: getMachineRegistryForCache_(),
+    machine_util: buildMachineUtil_(),
     dropout_trend: buildDropoutTrend_(),
-    downtime_summary: buildDowntimeSummary_(),
-    machine_util: buildMachineUtilisation_()
+    downtime_summary: buildDowntimeSummary_()
   };
 
   // ─── DATA SPLICING ENGINE ───
@@ -4953,7 +5232,10 @@ function buildDashboardCache() {
   // length so getMergedCache_() can catch a truncated/corrupt cache
   // immediately, with a message that says so, instead of a generic parse
   // error the frontend can't act on.
-  backupDashboardCache_(ss); // snapshot whatever's there now, before it's overwritten below
+    // Backup moved to a nightly trigger (backupCacheDaily, 3:00 AM).
+  // Running it inline doubled the cache-build time and hit Sheets
+  // rate limits on this workbook (see 15-Sep 4:23 PM execution log).
+  // restoreLastGoodCache_() still exists for manual rollback.
 
   // Write per-section CacheService keys so doGet(?section=X) can serve
   // individual sections without parsing the full JSON. TTL = 10 min,
@@ -4993,23 +5275,68 @@ function buildDashboardCache() {
 // THE BRIDGE: DOGET + CACHE MERGER
 // ─────────────────────────────────────────────────────────────
 
-
-
-// ════════════════════════════════════════════════════════════
-// REPLACEMENT: buildAlertsActive()
-// Clear-and-rebuild on every call. No appending. No duplicates.
-// Sources:
-//   STEEL_STOCK   → CRITICAL / ORDER SOON grades
-//   RAW_OUTSTANDING → overdue customers (positive values only)
-//   DEBIT_NOTE_TRACKER → PENDING debit notes count
-//   SCHEDULE_INTELLIGENCE → if produced < 50% of schedule
-//   PRODUCTION_PLANNER → missing master data blockers
-// ════════════════════════════════════════════════════════════
+// ============================================================
+// VFPL FACTORY OS — P2 ALERTS PATCH
+// Date: 19-Apr-2026 19:30 IST
+// Fix: Stop ALERTS_ACTIVE duplicate stacking
+//
+// ══════════════════════════════════════════════════════════════
+// DEPLOY INSTRUCTIONS — READ BEFORE PASTING
+// ══════════════════════════════════════════════════════════════
+//
+// This file replaces TWO functions in your current Code.gs
+// and deletes ONE function. Three actions total.
+//
+// STEP 1 — DELETE appendAlertsToActive_
+//   In Code.gs, find this function (search for it):
+//     function appendAlertsToActive_(ss, newAlerts) {
+//   Select from that line to its closing } and DELETE IT.
+//
+// STEP 2 — REPLACE THE FIRST buildAlertsActive()
+//   Your Code.gs has TWO buildAlertsActive() definitions.
+//   The FIRST one ends just before the buildProductionPlanner section.
+//   Find and DELETE the ENTIRE first buildAlertsActive() —
+//   from its opening comment block to its closing }.
+//   (The one WITHOUT the MASTER_DATA section, comment says
+//    "Source: STEEL_STOCK + OUTSTANDING + DEBIT_NOTE_TRACKER + SCHEDULE_INTELLIGENCE")
+//
+// STEP 3 — REPLACE THE SECOND buildAlertsActive()
+//   Find the SECOND buildAlertsActive() in Code.gs
+//   (comment says "Source: STEEL_STOCK + OUTSTANDING + DEBIT_NOTE_TRACKER + SCHEDULE + PLANNER")
+//   Delete it entirely. Paste the new buildAlertsActive() below in its place.
+//
+// STEP 5 — Save and run
+//   Save Code.gs.
+//   From the function dropdown, select buildAlertsActive.
+//   Click Run.
+//   Open ALERTS_ACTIVE tab in your sheet and verify:
+//     - Row count is small (10-30 rows), not 200+
+//     - No GRAND TOTAL rows appear as subjects
+//     - Generated timestamp is today
+//   Then run buildDashboardCache() to push the clean alerts to the dashboard.
+//
+// ══════════════════════════════════════════════════════════════
+// WHAT THIS FIX DOES
+// ══════════════════════════════════════════════════════════════
+//
+// Root cause of the 1,000-row stacking:
+//   buildMasterDataGaps() called appendAlertsToActive_() which
+//   APPENDED to ALERTS_ACTIVE without clearing it first.
+//   Every pull = more rows. 18 pulls since 14-Apr = ~1,000 rows.
+//
+// Fixes applied:
+//   1. appendAlertsToActive_() deleted — nothing appends anymore
+//   2. First (duplicate) buildAlertsActive() removed — clean single definition
+//   3. Second buildAlertsActive() now reads RAW_OUTSTANDING (correct tab)
+//   4. buildMasterDataGaps() no longer calls appendAlertsToActive_
+//   5. GRAND TOTAL guard added (was creating false MASTER_DATA alerts)
+//
+// ══════════════════════════════════════════════════════════════
 function buildAlertsActive() {
   var ss = SpreadsheetApp.openById(DASH_ID);
   var alerts = [];
 
-  // 1. Steel alerts — from STEEL_STOCK (also builds steelMap for rule 6 below)
+  // 1. Steel alerts — from STEEL_STOCK (also builds steelMap for section 6)
   var steelMap = {};
   var stSh = ss.getSheetByName('STEEL_STOCK');
   if (stSh && stSh.getLastRow() >= 3) {
@@ -5018,7 +5345,6 @@ function buildAlertsActive() {
       var status = (r[8] || '').toString().trim();
       var bal    = Number(r[4]) || 0;
       var days   = r[7];
-      // Skip: blank, TOTAL row, or rows that are already just emoji labels
       if (!grade || grade === 'TOTAL' || grade.toUpperCase() === 'GRADE') return;
       steelMap[grade] = bal;
       if (status.indexOf('CRITICAL') >= 0) {
@@ -5033,15 +5359,14 @@ function buildAlertsActive() {
     });
   }
 
-  // 2. Overdue alerts — from RAW_OUTSTANDING (positive values only, no credits)
-  // Col[0]=Customer, Col[1]=Not_Due_Rs, Col[2]=Overdue_Rs, Col[3]=Grand_Total_Rs
+  // 2. Overdue alerts — from RAW_OUTSTANDING
   var outSh = ss.getSheetByName('RAW_OUTSTANDING');
   if (outSh && outSh.getLastRow() >= 3) {
     outSh.getDataRange().getValues().slice(2).forEach(function(r) {
       var cust = (r[0] || '').toString().trim();
       var od   = Number(r[2]) || 0;
       if (!cust || cust.toUpperCase().indexOf('GRAND TOTAL') >= 0) return;
-      if (od <= 0) return; // skip credits (negative values) — not a collection problem
+      if (od <= 0) return;
       if (od > 2000000) {
         alerts.push(['OVERDUE', 'RED', 'HIGH', cust,
           cust + ' \u2014 \u20b9' + (Math.round(od / 100000) / 10) + 'L overdue',
@@ -5068,16 +5393,15 @@ function buildAlertsActive() {
       new Date()]);
   }
 
-  // 4. Schedule gap — from SCHEDULE_INTELLIGENCE
-  // Col[0]=VF, Col[1]=SchedQty, Col[6]=ProducedMTD
+  // 4. Schedule gap — from SCHEDULE_INTELLIGENCE (new 19-col layout)
   var scSh = ss.getSheetByName('SCHEDULE_INTELLIGENCE');
   if (scSh && scSh.getLastRow() >= 3) {
     var totalSched = 0, totalProd = 0;
     scSh.getDataRange().getValues().slice(2).forEach(function(r) {
-      var vf = (r[0] || '').toString().trim();
+      var vf = (r[2] || '').toString().trim();          // col C = VF_No
       if (!vf || vf.indexOf('GRAND TOTAL') >= 0) return;
-      totalSched += Number(r[1]) || 0;
-      totalProd  += Number(r[6]) || 0;
+      totalSched += Number(r[3]) || 0;                  // col D = Schedule Qty
+      totalProd  += Number(r[8]) || 0;                  // col I = Produced MTD
     });
     if (totalSched > 0) {
       var pct = Math.round(totalProd / totalSched * 100);
@@ -5090,12 +5414,11 @@ function buildAlertsActive() {
   }
 
   // 5. Missing master data — from PRODUCTION_PLANNER
-  // Look for rows where Action column contains 'GAP' or 'Data Missing'
   var ppSh = ss.getSheetByName('PRODUCTION_PLANNER');
   var missingMasterCount = 0;
   if (ppSh && ppSh.getLastRow() >= 3) {
     ppSh.getDataRange().getValues().slice(2).forEach(function(r) {
-      if (!r[0]) return; // skip spacer rows
+      if (!r[0]) return;
       var action = (r[8] || '').toString();
       if (action.indexOf('GAP') >= 0 || action.indexOf('Data Missing') >= 0) {
         missingMasterCount++;
@@ -5108,36 +5431,23 @@ function buildAlertsActive() {
       new Date()]);
   }
 
-  // 6. VF-level RM shortage on priority parts — from SCHEDULE_INTELLIGENCE
-  // + COSTING_BANDS + steelMap (built in section 1 above). A/A+ band VFs
-  // are the customer's top-priority parts; if one still has balance to
-  // produce this month and the required grade doesn't have enough stock,
-  // that's a concrete, actionable shortage — not just a grade-level "order
-  // soon" note. This did not previously exist as its own alert type.
-  var cbMapAl = {};
-  var cbShAl = ss.getSheetByName('COSTING_BANDS');
-  if (cbShAl && cbShAl.getLastRow() >= 3) {
-    cbShAl.getDataRange().getValues().slice(2).forEach(function(r) {
-      var vf = (r[0] || '').toString().trim();
-      if (!vf) return;
-      cbMapAl[vf] = { grade: (r[2] || '').toString().trim(), band: (r[12] || '').toString().trim() || '—' };
-    });
-  }
+  // 6. VF-level RM shortage on priority parts
   var scShAl = ss.getSheetByName('SCHEDULE_INTELLIGENCE');
   if (scShAl && scShAl.getLastRow() >= 3) {
     scShAl.getDataRange().getValues().slice(2).forEach(function(r) {
-      var vf = (r[0] || '').toString().trim();
+      var vf = (r[2] || '').toString().trim();
       if (!vf || vf.indexOf('GRAND TOTAL') >= 0) return;
-      var balProduce = Number(r[8]) || 0;
-      var rmRequired = Number(r[10]) || 0;
+      var band       = (r[0] || '').toString().trim();
+      var grade      = (r[1] || '').toString().trim();
+      var balProduce = Number(r[11]) || 0;
+      var rmRequired = Number(r[13]) || 0;
       if (balProduce <= 0 || rmRequired <= 0) return;
-      var cb = cbMapAl[vf];
-      if (!cb || (cb.band !== 'A+' && cb.band !== 'A')) return;
-      var stockKg = steelMap[cb.grade] || 0;
+      if (band !== 'A+' && band !== 'A') return;
+      var stockKg = steelMap[grade] || 0;
       if (stockKg < rmRequired) {
         alerts.push(['RM_SHORTAGE', 'RED', 'HIGH', vf,
-          vf + ' (' + cb.band + ') — ' + Math.round(balProduce) + ' pcs to produce needs ' +
-          Math.round(rmRequired) + ' kg ' + cb.grade + ', only ' + Math.round(stockKg) + ' kg in stock',
+          vf + ' (' + band + ') \u2014 ' + Math.round(balProduce) + ' pcs to produce needs ' +
+          Math.round(rmRequired) + ' kg ' + grade + ', only ' + Math.round(stockKg) + ' kg in stock',
           new Date()]);
       }
     });
@@ -5174,8 +5484,6 @@ function buildAlertsActive() {
     alerts.filter(function(a) { return a[1] === 'RED'; }).length + ' RED, ' +
     alerts.filter(function(a) { return a[1] === 'AMBER'; }).length + ' AMBER)');
 }
-
-
 // ════════════════════════════════════════════════════════════
 // REPLACEMENT: buildMasterDataGaps()
 // Removed: appendAlertsToActive_ call (caused stacking)
@@ -5224,9 +5532,8 @@ function buildMasterDataGaps() {
   }
   var scData = scSh.getDataRange().getValues();
 
-  for (var i = 2; i < scData.length; i++) {
-    var vf = (scData[i][0] || '').toString().trim();
-    // Skip blank rows and both GRAND TOTAL summary rows
+for (var i = 2; i < scData.length; i++) {
+    var vf = (scData[i][2] || '').toString().trim();
     if (!vf || vf.indexOf('GRAND TOTAL') >= 0) continue;
 
     var part   = partsMap[vf];
@@ -5242,9 +5549,9 @@ function buildMasterDataGaps() {
     }
 
     if (issues.length > 0) {
-      gaps.push([
+         gaps.push([
         vf,
-        scData[i][1] || 0,
+        scData[i][3] || 0,   // col D = Schedule Qty
         issues.join(' | '),
         'High \u2014 Blocks Production Planning',
         'RAW_PARTS Master'
@@ -5361,7 +5668,8 @@ function normalizeGrade_(rawGrade) {
   if (g === 'EN8' || g === 'CK45' || g === 'C45' || g === '45C8' || g === 'S45C' || g === 'SAE1049' || g === 'C20') return 'EN8D';
   if (g.indexOf('18CRNIMO') === 0 || g === '17CRNIMO6') return '18CRNIMO6-7';
   if (g.indexOf('41CR4') === 0) return '41CR4';
-  if (g.indexOf('S355') === 0) return 'S355 J2';
+  if (g.indexOf('S355') === 0 || g === 'ST52') return 'S355 J2';      // NEW: ST52 ≡ S355 J2
+  if (g.indexOf('SCM420') === 0) return 'SCM420H';                     // NEW: SCM420 ≡ SCM420H
   return g;
 }
 
@@ -5585,8 +5893,9 @@ function buildProductionPlanner() {
   var machineQueues = {};
   var scSh = ss.getSheetByName('SCHEDULE_INTELLIGENCE');
   if (!scSh) return;
-  scSh.getDataRange().getValues().slice(2).forEach(function(r) {
-    var vf = (r[0]||'').toString().trim(), bal = Number(r[5]) || 0;
+   scSh.getDataRange().getValues().slice(2).forEach(function(r) {
+    var vf = (r[2]||'').toString().trim();
+    var bal = Number(r[11]) || 0;               // col L = Balance to Produce
     if (!vf || vf === 'GRAND TOTAL' || bal <= 0) return;
     
     var cb = cbMap[vf] || {band:'—', iw:1, fw:0, grade:'UNKNOWN'}, unitRaw = (partsMap[vf] || '').toString().trim(), cutWip = cutWipMap[vf] || 0;
@@ -5657,24 +5966,10 @@ function buildCollectionEngine() {
   var actions = [];
   rawSh.getDataRange().getValues().slice(2).forEach(function(r) {
     var customer = r[0], overdue = Number(r[2])||0, total = Number(r[3])||0;
-    if (overdue < 10000 || !customer || customer === 'GRAND TOTAL') return;
-    // New columns (14-col RAW_OUTSTANDING): r[5]=Days_Overdue, r[8]=Escalation_Level, r[11]=Dispatch_Lock, r[12]=Last_Payment_Amt
-    var ncols=r.length;
-    var escalation = ncols>8  ? Number(r[8])||0  : 0;
-    var dispLock   = ncols>11 ? (r[11]||'').toString().trim().toUpperCase() : '';
-    var daysOD     = ncols>5  ? Number(r[5])||0  : 0;
-    var lastPayAmt = ncols>12 ? Number(r[12])||0 : 0;
-    var lastPayDt  = ncols>7  ? (r[7]||'').toString().trim() : '';
-    var locked = dispLock === 'LOCKED';
-    var status, priority;
-    if(locked && escalation>=5){ status='🔴 ESCALATE/LEGAL'; priority=1; }
-    else if(locked)             { status='🔴 CRITICAL';       priority=1; }
-    else if(escalation>=5||overdue>500000){ status='🔴 CRITICAL'; priority=1; }
-    else if(escalation>=3||overdue>100000){ status='🟠 WARNING';  priority=2; }
-    else                                  { status='🟡 FOLLOW-UP';priority=3; }
-    var emailSubj = 'Payment reminder — overdue ₹'+Math.round(overdue).toLocaleString('en-IN');
-    var emailBody = 'Dear '+customer+' team,\n\nOur records show an overdue balance of ₹'+Math.round(overdue).toLocaleString('en-IN')+(daysOD?' ('+daysOD+' days overdue)':'')+' against your account.'+(lastPayDt?'\nLast payment received: '+lastPayDt+(lastPayAmt?' — ₹'+Math.round(lastPayAmt).toLocaleString('en-IN'):'')+'.':(locked?'\n⚠️ Dispatch is currently LOCKED pending clearance.':''))+'\n\nKindly arrange payment at the earliest.\n\nRegards,\nVarsha Forgings Accounts';
-    actions.push([priority, customer, overdue, total, status, 'Subject: '+emailSubj+'\n\n'+emailBody, "⏳ PENDING", ""]);
+    if (overdue < 10000 || !customer || customer === 'GRAND TOTAL') return; 
+    var status = overdue > 500000 ? "🔴 CRITICAL" : (overdue > 100000 ? "🟠 WARNING" : "🟡 FOLLOW-UP");
+    var priority = overdue > 500000 ? 1 : 2;
+    actions.push([priority, customer, overdue, total, status, "Email Template", "⏳ PENDING", ""]);
   });
   var destSh = ss.getSheetByName('COLLECTION_ACTION') || ss.insertSheet('COLLECTION_ACTION');
   destSh.clearContents();
@@ -5800,13 +6095,71 @@ function refreshCache15min() {
     Logger.log('Cache refresh failed: ' + e);
   }
 }
-
 function setCacheTriggers() {
+  // Cache is now rebuilt at the end of every runAnalyticsDaily() call.
+  // The old 15-minute independent timer was firing 96 times/day and
+  // hitting the same 6-min timeout as the old dashboard pull.
   ScriptApp.getProjectTriggers().forEach(function(t) {
     if (t.getHandlerFunction() === 'refreshCache15min') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('refreshCache15min').timeBased().everyMinutes(15).create();
-  Logger.log('Cache refresh trigger set (every 15 min).');
+  Logger.log('ℹ️ Cache trigger removed — cache rebuilds after every analytics run.');
+}
+function diagElecSum() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var sh = ss.getSheetByName('RAW_ELECTRICITY');
+  if (!sh) { Logger.log('RAW_ELECTRICITY missing'); return; }
+  
+  var data = sh.getDataRange().getValues();
+  var totalKwh = 0;
+  var found = false;
+  
+  Logger.log('--- Scanning RAW_ELECTRICITY for MSEB meter ---');
+  
+  for (var i = 1; i < data.length; i++) { // start at row 2 (index 1) to skip header
+    var row = data[i];
+    var meter = (row[2] || '').toString().trim();
+    var rawVal = row[3];
+    var kwh = Number(rawVal);
+    
+    if (meter.indexOf('MSEB') >= 0) {
+      found = true;
+      Logger.log('Row ' + i + ' | Meter: "' + meter + '" | Raw reading: "' + rawVal + '" | Parsed KWH: ' + kwh + ' | Date: ' + row[0]);
+      if (!isNaN(kwh) && kwh > 0) {
+        totalKwh += kwh;
+      }
+    }
+  }
+  
+  Logger.log('--- Total KWH for MSEB meter: ' + totalKwh + ' ---');
+  if (!found) Logger.log('❌ No meter containing "MSEB" found in column C!');
+}
+function checkFyMonthlyElec() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var sh = ss.getSheetByName('FY_MONTHLY');
+  if (!sh) { Logger.log('FY_MONTHLY tab missing'); return; }
+  
+  // Headers are in row 2. Find the column index for "Electricity (kWh)"
+  var headers = sh.getRange(2, 1, 1, sh.getLastColumn()).getValues()[0];
+  var elecCol = -1;
+  for (var c = 0; c < headers.length; c++) {
+    if (headers[c].toString().trim() === 'Electricity (kWh)') {
+      elecCol = c + 1; // 1-based column number
+      break;
+    }
+  }
+  if (elecCol === -1) { Logger.log('Electricity column not found'); return; }
+  
+  // Read data from row 3 onward
+  var data = sh.getRange(3, elecCol, sh.getLastRow() - 2, 1).getValues();
+  var total = 0;
+  for (var i = 0; i < data.length; i++) {
+    var val = data[i][0];
+    if (typeof val === 'number' && val > 0) {
+      total += val;
+      Logger.log('Row ' + (i+3) + ': ' + val);
+    }
+  }
+  Logger.log('Total electricity in FY_MONTHLY: ' + total);
 }
 function patchElectricityIntoFYMonthly() {
   var ss = SpreadsheetApp.openById(DASH_ID);
@@ -5872,6 +6225,21 @@ function patchElectricityIntoFYMonthly() {
   Logger.log('patchElectricityIntoFYMonthly complete. ' + totalUpdated + ' months with positive electricity.');
 }
 function runAnalyticsDaily() {
+  var istHour = Number(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'H'));
+  var istMin  = Number(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'm'));
+  var ALLOWED_HOURS = [8, 12, 16, 18, 19, 23];
+  if (ALLOWED_HOURS.indexOf(istHour) === -1 || istMin < 30 || istMin > 44) {
+    Logger.log('⏭️ Skipping analytics — ' + istHour + ':' + istMin + ' not in window.');
+    return;
+  }
+  var props = PropertiesService.getScriptProperties();
+  var thisHourKey = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd-H');
+  if (props.getProperty('ANALYTICS_LAST_RUN_HOUR') === thisHourKey) {
+    Logger.log('⏭️ Skipping analytics — already ran this hour');
+    return;
+  }
+  props.setProperty('ANALYTICS_LAST_RUN_HOUR', thisHourKey);
+
   Logger.log('=== Daily Analytics started ===');
   try { refreshDailyOverview();        Logger.log('OK Daily Overview'); } catch(e) { Logger.log('FAIL Daily Overview: '+e); }
   try { buildProductionMonthly();      Logger.log('OK Production Monthly'); } catch(e) { Logger.log('FAIL Production Monthly: '+e); }
@@ -5881,201 +6249,160 @@ function runAnalyticsDaily() {
   try { patchElectricityIntoFYMonthly(); Logger.log('OK Electricity Patch'); } catch(e) { Logger.log('FAIL Electricity Patch: '+e); }
   try { buildDieLife();                Logger.log('OK Die Life'); } catch(e) { Logger.log('FAIL Die Life: '+e); }
   try { buildDebitNoteTracker();       Logger.log('OK Debit Notes'); } catch(e) { Logger.log('FAIL Debit Notes: '+e); }
-  try { buildAlertsActive();           Logger.log('OK Alerts Active'); } catch(e) { Logger.log('FAIL Alerts Active: '+e); }
-  try { buildDashboardCache();         Logger.log('OK Dashboard Cache'); } catch(e) { Logger.log('FAIL Dashboard Cache: '+e); }
-  Logger.log('=== Daily Analytics complete ===');
+    try { buildElecSummary_();           Logger.log('OK Elec Summary'); } catch(e) { Logger.log('FAIL Elec Summary: '+e); }
+    try { buildAlertsActive();           Logger.log('OK Alerts Active'); } catch(e) { Logger.log('FAIL Alerts Active: '+e); }
+    try { buildRmPlan();                 Logger.log('OK RM Plan'); } catch(e) { Logger.log('FAIL RM Plan: '+e); }
+  Logger.log('=== Daily Analytics complete — cache builds on the next trigger ===');
 }
+
+
 // ============================================================
-// TELEGRAM ALERT ENGINE (Consolidated Messages)
+// PHASE 3: YIELD SENTINEL (Self-contained – No external dependencies)
 // ============================================================
-// ============================================================
-// ════════════════════════════════════════════════════════════════
-// MACHINE UTILISATION — weekly & monthly per-machine breakdown
-// Called by buildDashboardCache after MCODE_ is rebuilt.
-//
-// Payload: { machines: [...], week_labels: [...], months: [...] }
-//   machines[i]: { code, name, dept, section, sort,
-//                  weeks:  [{label, days, output}, ...8 entries],
-//                  months: [{label, days, output}, ...12 entries],
-//                  mtd_days, mtd_output, ytd_days, ytd_output }
-//
-// "days" = distinct calendar dates in that period where the machine
-//          had at least one row with qty > 0.
-// "output" = sum of Qty across all rows for that machine+period.
-// ════════════════════════════════════════════════════════════════
-function buildMachineUtilisation_() {
-  var ss  = SpreadsheetApp.openById(DASH_ID);
-  var tz  = 'Asia/Kolkata';
-  var now = new Date();
 
-  // Build MCODE_-based server code for each MASTER_MACHINE_DATA_ entry
-  // (same logic as _rebuildRuntimeMaps_)
-  function serverCode(d) { return (d[4] === 'strip-P') ? d[0].replace(/^P/, '') : d[0]; }
-
-  // Reverse map: serverCode → MASTER_MACHINE_DATA_ entry
-  var machineInfo = {};
-  MASTER_MACHINE_DATA_.forEach(function(d) {
-    machineInfo[serverCode(d)] = d;
-  });
-
-  // RAW tabs: [tabName, dateCol, machineNameCol, qtyCol]
-  var RAW_DEFS = [
-    ['RAW_CUTTING', 0, 1, 4],
-    ['RAW_FORGE',   0, 1, 5],
-    ['RAW_PRESS',   0, 1, 5],
-    ['RAW_MACHINE', 0, 1, 5]
-  ];
-
-  // Accumulator per server code
-  var acc = {};
-  Object.keys(machineInfo).forEach(function(sc) {
-    acc[sc] = { dates: {}, byMonth: {}, byWeek: {} };
-  });
-
-  RAW_DEFS.forEach(function(rd) {
-    var sh = ss.getSheetByName(rd[0]);
-    if (!sh || sh.getLastRow() < 2) return;
+function evaluateDailyYieldSentinel() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  
+  // Helper: Load parts map (Finish Weight)
+  function loadPartsMap() {
+    var map = {};
+    var sh = ss.getSheetByName('RAW_PARTS');
+    if (!sh) return map;
     var data = sh.getDataRange().getValues();
-    for (var r = 1; r < data.length; r++) {
-      var row = data[r];
-      var rawDate = row[rd[1]];
-      if (!rawDate) continue;
-      var d = (rawDate instanceof Date) ? rawDate : new Date(rawDate);
-      if (isNaN(d.getTime()) || !inFY_(d)) continue;
-      var qty = Number(row[rd[3]]) || 0;
-      if (qty <= 0) continue;
-      var machName = (row[rd[2]] || '').toString().trim();
-      var sc = MCODE_[machName] || MCODE_[machName.toUpperCase()];
-      if (!sc || !acc[sc]) continue;
-
-      var ds  = Utilities.formatDate(d, tz, 'yyyy-MM-dd');
-      var mth = (d.getMonth() >= 3) ? d.getMonth() - 3 : d.getMonth() + 9; // 0=Apr … 11=Mar
-      var wk  = isoWeekKey_(d);
-
-      if (!acc[sc].dates[ds]) acc[sc].dates[ds] = 0;
-      acc[sc].dates[ds] += qty;
-
-      if (!acc[sc].byMonth[mth]) acc[sc].byMonth[mth] = { qty: 0, days: {} };
-      acc[sc].byMonth[mth].qty += qty;
-      acc[sc].byMonth[mth].days[ds] = true;
-
-      if (!acc[sc].byWeek[wk]) acc[sc].byWeek[wk] = { qty: 0, days: {} };
-      acc[sc].byWeek[wk].qty += qty;
-      acc[sc].byWeek[wk].days[ds] = true;
+    for (var i = 2; i < data.length; i++) {
+      var vf = (data[i][1] || '').toString().trim();
+      if (vf) map[vf] = Number(data[i][8]) || 0; // Finish Weight
     }
-  });
-
-  // Last 8 ISO weeks (oldest → newest)
-  var weekKeys = lastNWeekKeys_(8, now);
-  var weekLabels = weekKeys.map(weekKeyLabel_);
-
-  // FY months
-  var FY_MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
-  var curMth = (now.getMonth() >= 3) ? now.getMonth() - 3 : now.getMonth() + 9;
-
-  // Build result array in MASTER_MACHINE_DATA_ order
-  var machines = [];
-  MASTER_MACHINE_DATA_.forEach(function(d) {
-    var sc = serverCode(d);
-    var a  = acc[sc];
-    if (!a) return;
-
-    var weeks = weekKeys.map(function(wk, i) {
-      var w = a.byWeek[wk] || { qty: 0, days: {} };
-      return { label: weekLabels[i], days: Object.keys(w.days).length, output: w.qty };
-    });
-
-    var months = FY_MONTHS.map(function(mn, i) {
-      var m = a.byMonth[i] || { qty: 0, days: {} };
-      return { label: mn, days: Object.keys(m.days).length, output: m.qty };
-    });
-
-    var mtdM    = a.byMonth[curMth] || { qty: 0, days: {} };
-    var ytdDays = Object.keys(a.dates).length;
-    var ytdOut  = Object.keys(a.dates).reduce(function(s, k) { return s + a.dates[k]; }, 0);
-
-    machines.push({
-      code: d[0], name: d[1], dept: d[2], section: d[5], sort: d[7],
-      weeks:  weeks,
-      months: months,
-      mtd_days:   Object.keys(mtdM.days).length,
-      mtd_output: mtdM.qty,
-      ytd_days:   ytdDays,
-      ytd_output: ytdOut
-    });
-  });
-
-  return { machines: machines, week_labels: weekLabels, months: FY_MONTHS };
-}
-
-function isoWeekKey_(d) {
-  var dt  = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  var day = dt.getDay() || 7; // Mon=1, Sun=7
-  dt.setDate(dt.getDate() - day + 1); // Monday of the week
-  var y   = dt.getFullYear();
-  var jan4 = new Date(y, 0, 4); // Jan 4 is always in week 1
-  var j4day = jan4.getDay() || 7;
-  var week = Math.round(((dt - new Date(y, 0, 1)) / 86400000 + j4day - 1) / 7) + 1;
-  // Edge case: week 0 means it belongs to last year's last week
-  if (week < 1) { y--; jan4 = new Date(y, 0, 4); j4day = jan4.getDay()||7; week = Math.round(((new Date(y+1,0,1)-new Date(y,0,1))/86400000+j4day-1)/7); }
-  return y + '-W' + (week < 10 ? '0' : '') + week;
-}
-
-function weekKeyLabel_(wk) {
-  var p = wk.split('-W'); var y = parseInt(p[0]), w = parseInt(p[1]);
-  var jan4 = new Date(y, 0, 4);
-  var j4day = jan4.getDay() || 7;
-  var mon = new Date(jan4); mon.setDate(jan4.getDate() - j4day + 1 + (w-1)*7);
-  var sat = new Date(mon); sat.setDate(mon.getDate() + 5);
-  function d(dt) { return (dt.getDate()<10?'0':'')+dt.getDate()+'/'+(dt.getMonth()<9?'0':'')+(dt.getMonth()+1); }
-  return d(mon) + '–' + d(sat);
-}
-
-function lastNWeekKeys_(n, from) {
-  var keys = [];
-  var dt = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  var day = dt.getDay() || 7;
-  dt.setDate(dt.getDate() - day + 1); // Monday of current week
-  for (var i = n - 1; i >= 0; i--) {
-    var w = new Date(dt); w.setDate(dt.getDate() - i * 7);
-    keys.push(isoWeekKey_(w));
+    return map;
   }
-  return keys;
+  var partsMap = loadPartsMap();
+
+  // 1. Define date windows
+  var today = new Date();
+  var yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  var thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  // 2. Helper: Sum electricity for specific production meters
+  function getProductionKwh(dateFrom, dateTo) {
+    var sh = ss.getSheetByName('RAW_ELECTRICITY');
+    if (!sh) return 0;
+    var data = sh.getDataRange().getValues();
+    var total = 0;
+    var productionMeters = ['Forge', 'Press', '2500', '1300', '800', '1000'];
+    
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var d = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
+      if (!d || d < dateFrom || d > dateTo) continue;
+      var meter = (row[2] || '').toString().trim();
+      var kwh = Number(row[3]) || 0;
+      
+      var isProduction = productionMeters.some(function(keyword) {
+        return meter.indexOf(keyword) >= 0;
+      });
+      
+      if (isProduction && kwh > 0) total += kwh;
+    }
+    return total;
+  }
+  
+  // 3. Helper: Sum forged tonnage from a specific tab
+  function getTonnage(dateFrom, dateTo, tabName) {
+    var sh = ss.getSheetByName(tabName);
+    if (!sh) return 0;
+    var data = sh.getDataRange().getValues();
+    var totalKg = 0;
+    
+    for (var i = 2; i < data.length; i++) {
+      var row = data[i];
+      var d = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
+      if (!d || d < dateFrom || d > dateTo) continue;
+      var vf = (row[4] || '').toString().trim();
+      var qty = Number(row[5]) || 0;
+      if (!vf || qty === 0) continue;
+      var fw = partsMap[vf] || 0;
+      totalKg += qty * fw;
+    }
+    return totalKg / 1000; // convert to tons
+  }
+  
+  // 4. Build 30-day baseline
+  var totalKwh30 = getProductionKwh(thirtyDaysAgo, today);
+  var totalTons30 = getTonnage(thirtyDaysAgo, today, 'RAW_FORGE') + 
+                    getTonnage(thirtyDaysAgo, today, 'RAW_PRESS');
+  
+  if (totalTons30 < 0.5) {
+    Logger.log('⚠️ Insufficient tonnage data in last 30 days. Skipping yield check.');
+    return;
+  }
+  
+  var baselineKwhPerTon = totalKwh30 / totalTons30;
+  Logger.log('📊 Dynamic Baseline: ' + baselineKwhPerTon.toFixed(1) + ' kWh/ton (based on last 30 days)');
+  
+  // 5. Check yesterday's performance
+  var yesterdayKwh = getProductionKwh(yesterday, today);
+  var yesterdayTons = getTonnage(yesterday, today, 'RAW_FORGE') + 
+                      getTonnage(yesterday, today, 'RAW_PRESS');
+  
+  if (yesterdayTons < 0.1) {
+    Logger.log('⚠️ No production recorded yesterday. Skipping yield check.');
+    return;
+  }
+  
+  var expectedTons = yesterdayKwh / baselineKwhPerTon;
+  var efficiency = (yesterdayTons / expectedTons) * 100;
+  
+  Logger.log('📉 Yesterday: ' + yesterdayKwh + ' kWh | Actual: ' + yesterdayTons.toFixed(2) + ' tons | Expected: ' + expectedTons.toFixed(2) + ' tons | Efficiency: ' + efficiency.toFixed(1) + '%');
+  
+  // 6. Alert if efficiency < 85%
+  if (efficiency < 85 && yesterdayKwh > 500) {
+    var msg = '🚨 <b>VFPL Yield & Energy Anomaly</b>\n';
+    msg += '📅 ' + Utilities.formatDate(yesterday, 'Asia/Kolkata', 'dd-MMM-yyyy') + '\n';
+    msg += '⚡ <b>Power Consumed:</b> ' + Math.round(yesterdayKwh).toLocaleString() + ' kWh\n';
+    msg += '🏋️ <b>Actual Forged Output:</b> ' + yesterdayTons.toFixed(2) + ' Tons\n';
+    msg += '🎯 <b>Expected Output:</b> ' + expectedTons.toFixed(2) + ' Tons\n';
+    msg += '⚠️ <b>Yield Efficiency:</b> ' + efficiency.toFixed(1) + '% <i>(Baseline: ' + baselineKwhPerTon.toFixed(0) + ' kWh/ton)</i>\n';
+    msg += '💬 <i>Input cost per ton increased. Check downtime/furnace logs.</i>';
+    
+    // sendTelegramAlert is defined in Alert.gs — same Apps Script project,
+    // so it's callable from here. Code.gs no longer contains any Telegram
+    // implementation of its own.
+    sendTelegramAlert(msg);
+    Logger.log('📨 Yield anomaly alert sent.');
+  } else {
+    Logger.log('✅ Yield is healthy (' + efficiency.toFixed(1) + '% >= 85%). No alert.');
+  }
 }
 
-// ============================================================
-// SEND TELEGRAM ALERT
-// ============================================================
-
-function sendTelegramAlert(message) {
-  var token = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
-  var chatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
-  
-  if (!token) { Logger.log('❌ TELEGRAM_BOT_TOKEN not set'); return; }
-  if (!chatId) { Logger.log('❌ TELEGRAM_CHAT_ID not set'); return; }
-  
-  var url = 'https://api.telegram.org/bot' + token + '/sendMessage';
-  var payload = {
-    chat_id: chatId,
-    text: message,
-    parse_mode: 'HTML'
-  };
-  
-  var options = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-  
+// Wrapper for daily trigger (08:30 AM)
+function runYieldSentinel() {
   try {
-    var response = UrlFetchApp.fetch(url, options);
-    Logger.log('✅ Telegram alert sent. Response: ' + response.getResponseCode());
+    evaluateDailyYieldSentinel();
   } catch(e) {
-    Logger.log('❌ Telegram send failed: ' + e);
+    Logger.log('❌ Yield sentinel failed: ' + e);
   }
 }
-
+function checkOutstandingData() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var raw = ss.getSheetByName('RAW_OUTSTANDING');
+  if (!raw) {
+    Logger.log('RAW_OUTSTANDING tab not found');
+    return;
+  }
+  
+  var data = raw.getDataRange().getValues();
+  Logger.log('RAW_OUTSTANDING has ' + (data.length - 2) + ' rows of data');
+  
+  // Look for FORCE MOTORS
+  for (var i = 0; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toString().indexOf('FORCE MOTORS') >= 0) {
+      Logger.log('FORCE MOTORS found: Overdue = ' + data[i][2]);
+    }
+  }
+}
 // ============================================================
 // DEPLOY ALL TRIGGERS
 // ============================================================
@@ -6153,4 +6480,689 @@ function listAllTriggers() {
   Logger.log('📊 Data Pulls: ' + pullCount);
   Logger.log('⏰ Alerts: ' + alertCount);
   Logger.log('🔄 Cache: 1 (every 15 min)');
+}
+function addMissing19Pull() {
+  ScriptApp.newTrigger('runDashboardPull')
+    .timeBased()
+    .atHour(19)
+    .nearMinute(0)
+    .everyDays(1)
+    .create();
+  
+  Logger.log('✅ 19:00 pull added successfully!');
+  
+  // Now show updated list
+  listAllTriggers();
+}
+function redeployAllTriggers() {
+  // Clear all triggers
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    ScriptApp.deleteTrigger(t);
+  });
+  
+  // Redeploy everything
+  setDashboardTriggers();          // 08:15, 12:00, 16:00, 18:00, 19:00, 23:00
+  deployShiftTrackingTriggers();   // Alert.gs — gentle reminder, DME alert, follow-up, daily/weekly summary
+  setCacheTriggers();              // 15-min cache refresh
+
+  Logger.log('✅ All triggers redeployed!');
+}
+// ── ANALYTICS TRIGGER (fires 30 min after each pull) ──────────
+// The analytics chain (WIP, FY_Monthly, Dashboard Cache, Alerts, etc.)
+// previously ran inside runDashboardPull and pushed the total execution
+// past the ~6-minute Apps Script ceiling. Moving it to a separate
+// function on a delayed trigger keeps each run under 3 minutes.
+function setAnalyticsTriggers() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'runAnalyticsDaily') ScriptApp.deleteTrigger(t);
+    if (t.getHandlerFunction() === 'runCacheBuilder')   ScriptApp.deleteTrigger(t);
+    if (t.getHandlerFunction() === 'backupCacheDaily')  ScriptApp.deleteTrigger(t);
+  });
+
+  // ONE hourly trigger each — the functions gate themselves internally.
+  ScriptApp.newTrigger('runAnalyticsDaily').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('runCacheBuilder').timeBased().everyHours(1).create();
+
+  // ONE daily backup at 3 AM.
+  ScriptApp.newTrigger('backupCacheDaily').timeBased().atHour(3).nearMinute(0).everyDays(1).create();
+
+  Logger.log('✅ Analytics triggers set: hourly (gated), cache hourly (gated), backup 3 AM');
+
+}
+
+// ── CACHE BUILDER (fires 5 min after analytics) ────────────────
+// buildDashboardCache does ~20 sheet reads to assemble the payload.
+// Running it right after the analytics chain (which just did ~22
+// sheet writes) hits Sheets' rate limits. Splitting into a delayed
+// trigger gives the sheet service time to cool down before the
+// read-heavy cache build.
+function runCacheBuilder() {
+  var istHour = Number(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'H'));
+  var istMin  = Number(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'm'));
+  var ALLOWED_HOURS = [8, 12, 16, 18, 19, 23];
+  if (ALLOWED_HOURS.indexOf(istHour) === -1 || istMin < 35 || istMin > 49) {
+    Logger.log('⏭️ Skipping cache — ' + istHour + ':' + istMin + ' not in window.');
+    return;
+  }
+  var props = PropertiesService.getScriptProperties();
+  var thisHourKey = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd-H');
+  if (props.getProperty('CACHE_LAST_RUN_HOUR') === thisHourKey) {
+    Logger.log('⏭️ Skipping cache — already ran this hour');
+    return;
+  }
+  props.setProperty('CACHE_LAST_RUN_HOUR', thisHourKey);
+
+  try {
+    buildDashboardCache();
+    Logger.log('OK Dashboard Cache');
+  } catch(e) {
+    Logger.log('FAIL Dashboard Cache: ' + e);
+  }
+}
+// ── NIGHTLY CACHE BACKUP (3:00 AM) ────────────────────────────
+// Rotates CACHE_BACKUP_1/2/3 with the current DASHBOARD_CACHE.
+// Runs once a day, off-hours, so it never competes with the
+// :35 cache build for Sheets write bandwidth.
+function backupCacheDaily() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  try {
+    backupDashboardCache_(ss);
+    Logger.log('OK Daily cache backup');
+  } catch(e) {
+    Logger.log('FAIL Daily cache backup: ' + e);
+  }
+}
+function clearOldScheduleTriggers() {
+  var killed = {};
+  var toKill = ['runDashboardPull', 'runAnalyticsDaily', 'runCacheBuilder', 'backupCacheDaily'];
+
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    var f = t.getHandlerFunction();
+    if (toKill.indexOf(f) === -1) return;
+    ScriptApp.deleteTrigger(t);
+    killed[f] = (killed[f] || 0) + 1;
+  });
+
+  Logger.log('🗑️ Deleted:');
+  Object.keys(killed).forEach(function(k) {
+    Logger.log('   • ' + k + ' — ' + killed[k] + ' trigger(s)');
+  });
+  Logger.log('✅ Cleanup complete. Re-run setDashboardTriggers() and setAnalyticsTriggers() next.');
+}
+function clearAnalyticsAndCacheTriggers() {
+  var killed = 0;
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    var f = t.getHandlerFunction();
+    if (f === 'runAnalyticsDaily' || f === 'runCacheBuilder' || f === 'backupCacheDaily') {
+      ScriptApp.deleteTrigger(t);
+      killed++;
+    }
+  });
+  Logger.log('🗑️ Deleted ' + killed + ' analytics/cache/backup trigger(s). Total remaining will drop to 3.');
+}
+function deleteTelegramWebhook() {
+  var token = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN')
+           || '8516658886:AAGHGLt94IQd8v5QzJYsyaZqVuM8Ek7CFaM';
+  var resp = UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + token + '/deleteWebhook?drop_pending_updates=false',
+    { muteHttpExceptions: true }
+  );
+  Logger.log('deleteWebhook: ' + resp.getContentText());
+}
+function checkGraphScriptPresence() {
+  // 1. Are the graph functions defined IN THIS project?
+  var graphFuncs = ['runMasterAuditEngine', 'runGraph2ProductionETL',
+                    'runGraph3ReconciliationETL', 'deployFactoryOSTriggers'];
+  graphFuncs.forEach(function(f) {
+    try {
+      var fn = this[f];
+      Logger.log((fn ? '⚠️ DEFINED' : '✅ Not defined') + ' in this project: ' + f);
+    } catch(e) {
+      Logger.log('✅ Not defined in this project: ' + f);
+    }
+  }.bind(this));
+
+  // 2. Are there triggers firing them from this project?
+  var found = [];
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (graphFuncs.indexOf(t.getHandlerFunction()) !== -1) {
+      found.push(t.getHandlerFunction());
+    }
+  });
+  Logger.log('---');
+  if (found.length === 0) {
+    Logger.log('✅ No graph triggers in THIS project.');
+  } else {
+    Logger.log('⚠️ Graph triggers firing from THIS project: ' + found.join(', '));
+  }
+}
+// ============================================================
+// RM_PLAN — grade-wise RM requirement + shortfall + cost
+// Run once daily after buildScheduleIntelligence.
+// ============================================================
+function buildRmPlan() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+
+  // ── 1. Read SCHEDULE_INTELLIGENCE ───────────────────────
+  var schSh = ss.getSheetByName('SCHEDULE_INTELLIGENCE');
+  if (!schSh || schSh.getLastRow() < 3) {
+    Logger.log('SCHEDULE_INTELLIGENCE missing or empty');
+    return;
+  }
+  var schData = schSh.getDataRange().getValues();
+  // Columns (after Edits 1a-1d):
+  //  A=0 Band, B=1 Grade, C=2 VF_No, D=3 Sched, ..., L=11 Balance to Cut, M=12 Bal to Produce, N=13 Bal to Dispatch, O=14 RM Required
+  // Wait — indices: A=0,B=1,C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9,K=10,L=11,M=12,N=13,O=14,P=15,Q=16,R=17,S=18
+
+  // ── 2. Read STEEL_STOCK for balance + rate ──────────────
+   // ── 2. Read STEEL_STOCK for balance + rate map for purchase cost ──
+  var steelMap = {};
+  var stSh = ss.getSheetByName('STEEL_STOCK');
+  if (stSh && stSh.getLastRow() >= 3) {
+    var stA = stSh.getDataRange().getValues();
+    for (var s = 2; s < stA.length; s++) {
+      var g = (stA[s][0] || '').toString().trim();
+      if (!g || g === 'TOTAL') continue;
+      steelMap[g.toUpperCase()] = { balKg: Number(stA[s][4]) || 0 };
+    }
+  }
+
+  // Rate map from authoritative sources (opening stock + inward entries)
+  var rateMap = buildRmRateMap();
+
+  // ── 3. Group schedule by grade ───────────────────────────
+  var byGrade = {};
+  for (var r = 2; r < schData.length; r++) {
+    var row = schData[r];
+    var band = (row[0] || '').toString().trim();
+    var grade = (row[1] || '').toString().trim();
+    if (!grade) continue;
+    if ((row[2] || '').toString().indexOf('GRAND') >= 0) continue;
+
+    var vf = (row[2] || '').toString().trim();
+    var rmReq = Number(row[13]) || 0;   // col N = RM Required (kg)
+
+    if (rmReq <= 0) continue;
+
+    var key = grade.toUpperCase();
+    if (!byGrade[key]) {
+      byGrade[key] = {
+        grade: grade, rmRequired: 0, vfCount: 0,
+        highestBand: band, vfList: []
+      };
+    }
+    byGrade[key].rmRequired += rmReq;
+    byGrade[key].vfCount++;
+    byGrade[key].vfList.push(vf);
+    // Track highest priority band needing this grade
+    var bandOrder = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6,'—':7};
+    var curOrd = bandOrder[byGrade[key].highestBand] !== undefined ? bandOrder[byGrade[key].highestBand] : 9;
+    var newOrd = bandOrder[band] !== undefined ? bandOrder[band] : 9;
+    if (newOrd < curOrd) byGrade[key].highestBand = band;
+  }
+
+  // ── 4. Build output rows ─────────────────────────────────
+  var bandOrder = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'B-':5,'C':6,'—':7};
+  var rows = [];
+  Object.keys(byGrade).forEach(function(k) {
+    var g = byGrade[k];
+
+    // Normalize grade name (COSTING_BANDS raw → STEEL_STOCK canonical)
+    var normGrade = normalizeGrade_(g.grade);
+    var st = steelMap[normGrade] || { balKg: 0 };
+
+    // Use weighted-average rate from buildRmRateMap_() — survives negative balance
+    var rate = rateMap[normGrade] || 0;
+
+   var stockBal = st.balKg;
+   var ledgerError = stockBal < 0;
+
+   var shortfallKg;
+    if (ledgerError) {
+    // Cannot compute true shortfall — ledger says negative, source data wrong.
+    // Show required as the "buy" number as a placeholder — the DME email
+    // flags this as needing verification.
+   shortfallKg = g.rmRequired;
+} else {
+  shortfallKg = Math.max(0, g.rmRequired - stockBal);
+}
+var costRs = rate > 0 ? shortfallKg * rate : 0;
+
+    rows.push({
+      band: g.highestBand,
+      grade: g.grade,                 // display raw name
+      required: g.rmRequired,
+      stock: st.balKg,
+      shortfall: shortfallKg,
+      rate: rate,                     // weighted average from source
+      costRs: costRs,
+      vfCount: g.vfCount,
+      vfList: g.vfList
+    });
+  });
+
+  // Sort: band priority, then shortfall descending
+  rows.sort(function(a, b) {
+    var ao = bandOrder[a.band] !== undefined ? bandOrder[a.band] : 9;
+    var bo = bandOrder[b.band] !== undefined ? bandOrder[b.band] : 9;
+    if (ao !== bo) return ao - bo;
+    return b.shortfall - a.shortfall;
+  });
+
+  // ── 5. Write tab ─────────────────────────────────────────
+  var headers = [
+    'Priority', 'Grade', 'Required (kg)', 'Stock (kg)', 'Shortfall (kg)',
+    'Avg Rate ₹/kg', 'Est Cost ₹L', 'VFs Needing', 'Action'
+  ];
+  var out = rows.map(function(r) {
+  var action;
+if (r.stock < 0) {
+  action = '⚠️ VERIFY LEDGER (stock negative)';
+} else if (r.shortfall > 0) {
+  action = '🔴 BUY ' + Math.round(r.shortfall).toLocaleString('en-IN') + ' kg';
+} else {
+  action = '✅ Covered';
+}
+    return [
+      r.band, r.grade, Math.round(r.required), Math.round(r.stock),
+      Math.round(r.shortfall),
+      r.rate > 0 ? Number(r.rate.toFixed(2)) : 0,
+      r.costRs > 0 ? Number((r.costRs / 100000).toFixed(2)) : 0,
+      r.vfCount,
+      action
+    ];
+  });
+
+  var sh = ss.getSheetByName('RM_PLAN') || ss.insertSheet('RM_PLAN');
+  sh.clearContents();
+  sh.getRange(1, 1).setValue(
+    'RM PLAN — Grade-wise requirement (A+ first) | Updated: ' +
+    Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
+  ).setFontWeight('bold');
+
+  sh.getRange(2, 1, 1, headers.length).setValues([headers])
+    .setFontWeight('bold').setBackground('#1565C0').setFontColor('#FFFFFF');
+
+  if (out.length > 0) {
+    sh.getRange(3, 1, out.length, headers.length).setValues(out);
+    // Colour by priority
+    for (var i = 0; i < out.length; i++) {
+      var band = out[i][0];
+      var hasShort = out[i][4] > 0;
+      var bg = hasShort ? '#FEE2E2' : '#DCFCE7';
+      if (band === 'A+' || band === 'A') bg = hasShort ? '#FFCDD2' : '#C8E6C9';
+      sh.getRange(3 + i, 1, 1, headers.length).setBackground(bg);
+    }
+  }
+
+  sh.autoResizeColumns(1, headers.length);
+  sh.setFrozenRows(2);
+
+  Logger.log('✅ RM_PLAN built: ' + rows.length + ' grades, ' +
+    rows.filter(function(r){ return r.shortfall > 0; }).length + ' with shortfall.');
+}
+// ============================================================
+// RM RATE MAP — weighted average rate per grade
+// Sources: OPENING_RM_2627 (opening) + RAW_RM_INWARD (all inward)
+// ============================================================
+function buildRmRateMap() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var rateMap = {};   // normalizedGrade → { totalKg, totalRs }
+
+  // Opening stock
+  var opSh = ss.getSheetByName('OPENING_RM_2627');
+  if (opSh && opSh.getLastRow() >= 4) {
+    var opData = opSh.getDataRange().getValues();
+    for (var i = 3; i < opData.length; i++) {
+      var g = (opData[i][0] || '').toString().trim();
+      if (!g) continue;
+      var gU = g.toUpperCase();
+      if (gU === 'GRADE' || gU.indexOf('TOTAL') >= 0) continue;
+
+      var norm = normalizeGrade_(g);
+      var kg   = Number(opData[i][1]) || 0;
+      var rate = Number(opData[i][2]) || 0;
+      if (kg <= 0 || rate <= 0) continue;
+
+      if (!rateMap[norm]) rateMap[norm] = { totalKg: 0, totalRs: 0 };
+      rateMap[norm].totalKg += kg;
+      rateMap[norm].totalRs += kg * rate;
+    }
+  }
+
+  // All inward entries (weighted by quantity)
+  var inSh = ss.getSheetByName('RAW_RM_INWARD');
+  if (inSh && inSh.getLastRow() >= 2) {
+    var inData = inSh.getDataRange().getValues();
+    for (var j = 1; j < inData.length; j++) {
+      var g = (inData[j][3] || '').toString().trim();   // col D = Grade
+      if (!g) continue;
+
+      var norm = normalizeGrade_(g);
+      var kg   = Number(inData[j][5]) || 0;              // col F = Qty_kg
+      var rate = Number(inData[j][6]) || 0;              // col G = Rate_Per_kg
+      if (kg <= 0 || rate <= 0) continue;
+
+      if (!rateMap[norm]) rateMap[norm] = { totalKg: 0, totalRs: 0 };
+      rateMap[norm].totalKg += kg;
+      rateMap[norm].totalRs += kg * rate;
+    }
+  }
+
+  // Compute weighted average
+  var out = {};
+  Object.keys(rateMap).forEach(function(g) {
+    if (rateMap[g].totalKg > 0) {
+      out[g] = rateMap[g].totalRs / rateMap[g].totalKg;
+    }
+  });
+  Logger.log('RM rate map: ' + Object.keys(out).length + ' grades');
+  return out;
+}
+// Normalize grade names so COSTING_BANDS ↔ STEEL_STOCK ↔ RM_INWARD all match
+function normalizeGrade(raw) {
+  var g = (raw || '').toString().trim().toUpperCase();
+  if (!g) return '';
+  // Strip trailing single letters (M, L, H) that are often aliases
+  g = g.replace(/[MLH]$/, '');
+  // Strip spaces
+  g = g.replace(/\s+/g, '');
+  // Alias map for known discrepancies
+  var aliases = {
+    '16MNCR5LSI': '16MNCR5',
+    '16MNCR5':    '16MNCR5',
+    '20MNCR5M':   '20MNCR5',
+    '20MNCR5':    '20MNCR5',
+    '41CR4M':     '41CR4',
+    '41CR4':      '41CR4',
+    '42CRMO4':    '42CRMO4',
+    'SAE8620':    'SAE8620',
+    'SAE1010':    'SAE1010',
+    'SAE4140':    'SAE4140',
+    'EN8D':       'EN8D',
+    'EN353':      'EN353',
+    'SCM420H':    'SCM420H',
+    'SCM420':     'SCM420H',
+    'S20C':       'S20C',
+    'S355J2':     'S355J2',
+    '20C8':       '20C8'
+  };
+  return aliases[g] || g;
+}
+// ============================================================
+// REBUILD RM_CONSUMPTION WITH FAMILY SUBSTITUTION
+// Walk April 1 → today, interleave inward + cutting events.
+// When cutting a VF whose master grade has 0 stock, draw from
+// the next family member with stock. Rewrites RM_CONSUMPTION
+// with the actual grade consumed.
+// ============================================================
+function rebuildConsumptionWithSubstitution() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+
+  // ── 1. Opening stock (per normalized grade) ──────────────
+  var stock = {};
+  var opSh = ss.getSheetByName('OPENING_RM_2627');
+  var opData = opSh.getDataRange().getValues();
+  for (var i = 3; i < opData.length; i++) {
+    var g = (opData[i][0] || '').toString().trim();
+    if (!g) continue;
+    var gU = g.toUpperCase();
+    if (gU === 'GRADE' || gU.indexOf('TOTAL') >= 0) continue;
+    var norm = normalizeGrade_(g);
+    if (!norm) continue;
+    stock[norm] = (stock[norm] || 0) + (Number(opData[i][1]) || 0);
+  }
+  Logger.log('Opening: ' + Object.keys(stock).length + ' grades');
+
+  // ── 2. Inward events (sorted by date) ────────────────────
+  var inSh = ss.getSheetByName('RAW_RM_INWARD');
+  var inData = inSh.getDataRange().getValues();
+  var inwardEvents = [];
+  for (var j = 1; j < inData.length; j++) {
+    var grade = (inData[j][3] || '').toString().trim();
+    if (!grade || grade.toUpperCase() === 'GRADE') continue;
+    var kg = Number(inData[j][5]) || 0;
+    if (kg <= 0) continue;
+    var d = inData[j][0];
+    var dt = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(dt.getTime())) continue;
+    inwardEvents.push({ date: dt, norm: normalizeGrade_(grade), kg: kg });
+  }
+  inwardEvents.sort(function(a, b) { return a.date - b.date; });
+  Logger.log('Inward events: ' + inwardEvents.length);
+
+  // ── 3. Load COSTING_BANDS → master grade per VF ──────────
+  var cbSh = ss.getSheetByName('COSTING_BANDS');
+  var cbData = cbSh.getDataRange().getValues();
+  var vfMasterGrade = {};
+  for (var k = 2; k < cbData.length; k++) {
+    var vf = (cbData[k][0] || '').toString().trim();
+    if (!vf) continue;
+    vfMasterGrade[vf] = (cbData[k][2] || '').toString().trim();
+  }
+  Logger.log('COSTING_BANDS: ' + Object.keys(vfMasterGrade).length + ' VFs');
+
+  // ── 4. Read existing RM_CONSUMPTION (source: vf, qty, kg, date, month, supervisor)
+  var rcSh = ss.getSheetByName('RM_CONSUMPTION');
+  var rcData = rcSh.getDataRange().getValues();
+  var headerRow = rcData[0];
+  var consEvents = [];
+  for (var m = 1; m < rcData.length; m++) {
+    var row = rcData[m];
+    if (!row[0]) continue;
+    var dt = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
+    if (isNaN(dt.getTime())) continue;
+    var vf2 = (row[2] || '').toString().trim();
+    if (!vf2) continue;
+    consEvents.push({
+      date: dt,
+      vf: vf2,
+      kg: Number(row[7]) || 0,
+      original: row
+    });
+  }
+  consEvents.sort(function(a, b) { return a.date - b.date; });
+  Logger.log('Consumption events: ' + consEvents.length);
+
+  // ── 5. Walk timeline ─────────────────────────────────────
+  var inPtr = 0;
+  var newRows = [];
+  var substituted = {};  // displayName → total kg
+
+  consEvents.forEach(function(ev) {
+    // Absorb inward events up to this cutting date
+    while (inPtr < inwardEvents.length && inwardEvents[inPtr].date <= ev.date) {
+      var iEv = inwardEvents[inPtr];
+      stock[iEv.norm] = (stock[iEv.norm] || 0) + iEv.kg;
+      inPtr++;
+    }
+
+    var masterRaw = vfMasterGrade[ev.vf];
+    if (!masterRaw) return;  // unknown VF — skip silently
+
+    var masterNorm = normalizeGrade_(masterRaw);
+    var family = GRADE_FAMILIES[masterNorm] || [masterNorm];
+
+    var remaining = ev.kg;
+    var allocs = [];
+
+    // Pass 1: use family members in order, drawing what's available
+    for (var x = 0; x < family.length && remaining > 0; x++) {
+      var g = family[x];
+      var avail = stock[g] || 0;
+      if (avail <= 0) continue;
+      var take = Math.min(avail, remaining);
+      stock[g] -= take;
+      allocs.push({ grade: g, kg: take });
+      remaining -= take;
+    }
+
+    // Pass 2: still short? Deduct from master anyway (goes negative)
+    if (remaining > 0) {
+      stock[masterNorm] = (stock[masterNorm] || 0) - remaining;
+      allocs.push({ grade: masterNorm, kg: remaining });
+    }
+
+    // Write one RM_CONSUMPTION row per allocation
+    var monthName = Utilities.formatDate(ev.date, 'Asia/Kolkata', 'MMMM');
+    allocs.forEach(function(a) {
+      if (a.kg <= 0) return;
+      var out = ev.original.slice();
+      out[4] = a.grade;       // column E = grade
+      out[5] = monthName;     // column F = month
+      out[7] = Math.round(a.kg * 100) / 100;  // column H = kg
+      newRows.push(out);
+      substituted[a.grade] = (substituted[a.grade] || 0) + a.kg;
+    });
+  });
+
+  // ── 6. Write back ────────────────────────────────────────
+  rcSh.clearContents();
+  rcSh.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
+  if (newRows.length > 0) {
+    rcSh.getRange(2, 1, newRows.length, newRows[0].length).setValues(newRows);
+  }
+
+  // ── 7. Summary ───────────────────────────────────────────
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('Rebuilt RM_CONSUMPTION: ' + newRows.length + ' rows');
+  Logger.log('');
+  Logger.log('Actual consumption by grade:');
+  Object.keys(substituted).sort().forEach(function(g) {
+    Logger.log('  ' + g + ' → ' + Math.round(substituted[g]).toLocaleString('en-IN') + ' kg');
+  });
+  Logger.log('═══════════════════════════════════════════');
+}
+function verifySubstitution() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+  var st = ss.getSheetByName('STEEL_STOCK');
+  var data = st.getDataRange().getValues();
+  Logger.log('Grade               Balance (kg)');
+  Logger.log('─────────────────────────────────────');
+  for (var i = 2; i < data.length; i++) {
+    var g = (data[i][0] || '').toString().trim();
+    if (!g || g === 'TOTAL') continue;
+    var bal = Number(data[i][4]) || 0;
+    Logger.log('  ' + g.padEnd(18) + ' ' + Math.round(bal).toLocaleString('en-IN'));
+  }
+}
+// ============================================================
+// buildElecSummary_() — auto-rebuild ELEC_SUMMARY from RAW_ELECTRICITY + CONFIG_METERS
+// Called from runAnalyticsDaily(). Depts get sub-meter sums; main meter shown separately.
+// ============================================================
+function buildElecSummary() {
+  var ss = SpreadsheetApp.openById(DASH_ID);
+
+  // 1. Load CONFIG_METERS → { meterName: dept }
+  var cmSh = ss.getSheetByName('CONFIG_METERS');
+  if (!cmSh || cmSh.getLastRow() < 2) {
+    Logger.log('buildElecSummary_: CONFIG_METERS missing');
+    return;
+  }
+  var cmData = cmSh.getDataRange().getValues();
+  var meterToDept = {};
+  for (var i = 1; i < cmData.length; i++) {
+    var mName = (cmData[i][0] || '').toString().trim();
+    var dName = (cmData[i][1] || '').toString().trim();
+    if (mName) meterToDept[mName] = dName;
+  }
+
+  // 2. Read RAW_ELECTRICITY for current month
+  var rawSh = ss.getSheetByName('RAW_ELECTRICITY');
+  if (!rawSh || rawSh.getLastRow() < 3) {
+    Logger.log('buildElecSummary_: RAW_ELECTRICITY empty');
+    return;
+  }
+  var rawData = rawSh.getDataRange().getValues();
+  // cols: [0]Date [1]Shift [2]Meter [3]Reading [4]Source
+
+  var now = new Date();
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+  var deptMap = {};         // dept → kWh
+  var mainMeterKwh = 0;
+  var unmappedKwh = 0;
+
+  for (var r = 1; r < rawData.length; r++) {
+    var row = rawData[r];
+    var d = row[0];
+    var dt = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(dt.getTime()) || dt < monthStart || dt > monthEnd) continue;
+
+    var meter = (row[2] || '').toString().trim();
+    var kwh   = Number(row[3]) || 0;
+    if (!meter || kwh <= 0) continue;
+
+    var dept = meterToDept[meter];
+    if (!dept) {
+      unmappedKwh += kwh;
+      continue;
+    }
+
+    if (dept === 'MAIN') {
+      // Prefer 'Main MSEB Metter' as the canonical factory total; skip the others
+      if (meter.indexOf('Main') >= 0 && meter.indexOf('MSEB') >= 0) {
+        mainMeterKwh += kwh;
+      }
+      // Other MAIN meters ('1000 KVA', '3200 ACB') are not shown separately
+    } else {
+      if (!deptMap[dept]) deptMap[dept] = 0;
+      deptMap[dept] += kwh;
+    }
+  }
+
+  // 3. Build output rows — sorted desc by kWh
+  var deptKeys = Object.keys(deptMap).sort(function(a, b) {
+    return deptMap[b] - deptMap[a];
+  });
+
+  var totalKwh = deptKeys.reduce(function(s, k) { return s + deptMap[k]; }, 0);
+
+  var rows = [];
+  deptKeys.forEach(function(dept) {
+    var pct = totalKwh > 0 ? Math.round(deptMap[dept] / totalKwh * 100) : 0;
+    rows.push([dept, Math.round(deptMap[dept]), pct]);
+  });
+
+  // Unmapped row if anything didn't match
+  if (unmappedKwh > 0) {
+    var pctU = totalKwh > 0 ? Math.round(unmappedKwh / (totalKwh + unmappedKwh) * 100) : 0;
+    rows.push(['Unmapped (Check CONFIG_METERS)', Math.round(unmappedKwh), pctU]);
+  }
+
+  // TOTAL row (sum of dept sub-meters)
+  rows.push(['TOTAL (Sum of Sub-meters)', Math.round(totalKwh + unmappedKwh), 100]);
+
+  // Main meter row (not part of dept breakdown)
+  rows.push(['Main MSEB Meter (Factory Total)', Math.round(mainMeterKwh), '—']);
+
+  // 4. Write to ELEC_SUMMARY
+  var sh = ss.getSheetByName('ELEC_SUMMARY') || ss.insertSheet('ELEC_SUMMARY');
+  sh.clearContents();
+
+  sh.getRange(1, 1).setValue(
+    'ELECTRICITY SUMMARY — MTD | Configure meters in CONFIG_METERS tab | ' +
+    'Updated: ' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
+  ).setFontWeight('bold');
+
+  sh.getRange(2, 1, 1, 3).setValues([['Department', 'kWh_MTD', 'Pct_of_Total']])
+    .setFontWeight('bold').setBackground('#1565C0').setFontColor('#FFFFFF');
+
+  if (rows.length > 0) {
+    sh.getRange(3, 1, rows.length, 3).setValues(rows);
+
+    // Bold TOTAL + Main meter rows
+    sh.getRange(3 + rows.length - 2, 1, 2, 3).setFontWeight('bold');
+    sh.getRange(3 + rows.length - 2, 1, 1, 3).setBackground('#E8F5E9');
+    sh.getRange(3 + rows.length - 1, 1, 1, 3).setBackground('#E3F2FD');
+  }
+
+  sh.autoResizeColumns(1, 3);
+  sh.setFrozenRows(2);
+
+  Logger.log('buildElecSummary_: ' + deptKeys.length + ' depts, ' +
+    'Total sub-meters ' + Math.round(totalKwh + unmappedKwh).toLocaleString() + ' kWh, ' +
+    'Main MSEB ' + Math.round(mainMeterKwh).toLocaleString() + ' kWh, ' +
+    (unmappedKwh > 0 ? '⚠️ Unmapped ' + Math.round(unmappedKwh).toLocaleString() + ' kWh' : 'all mapped ✅'));
 }
