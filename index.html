@@ -382,6 +382,22 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx)
   .clk,.upd{display:none;}
   .main{padding:8px 10px;}
 }
+/* ═══ SESSION 19 — RESPONSIVE & POLISH PATCH ═══ */
+:root{
+  --rad:10px;
+  --sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.10);
+  --sh-lg:0 8px 24px rgba(16,24,40,.14);
+}
+.kgrid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr)) !important;}
+.kc{border-radius:var(--rad);box-shadow:var(--sh);transition:box-shadow .18s;}
+.kc:hover{box-shadow:var(--sh-lg);}
+.kv{font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.card{border-radius:var(--rad);box-shadow:var(--sh);}
+.badge{border-radius:999px;}
+button:focus-visible,.tab:focus-visible,input:focus-visible{outline:2px solid var(--br);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+@keyframes sk{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.skel{color:transparent !important;border-radius:4px;background:linear-gradient(90deg,#eef0f3 25%,#f8f9fb 50%,#eef0f3 75%);background-size:400px 100%;animation:sk 1.2s infinite;}
 </style>
 </head>
 <body>
@@ -1869,7 +1885,9 @@ function render(data){
     usingLive=true;
   }
   var mpRows='';
-  Object.keys(mpDept).sort().forEach(function(d){
+  Object.keys(mpDept || {}).sort(function(a,b){
+    return N((mpDept[b]||{}).contractCost||0) - N((mpDept[a]||{}).contractCost||0);
+  }).forEach(function(d){
     var r=mpDept[d]||{};
     var staff=N(r.staffAvg), contract=N(r.contractAvg), cost=N(r.contractCost);
     if(staff===0&&contract===0&&cost===0)return;
@@ -1896,7 +1914,7 @@ function render(data){
   document.getElementById('w-jwk').textContent=fmtN(ws.jwkWIPPcs||0);
   document.getElementById('w-tot').textContent=fmtN(totalWip);
   var wRows='';
-  (wip.rows||[]).forEach(function(r){
+  (wip.rows||[]).slice().sort(function(a,b){ return N(b.closingWIP) - N(a.closingWIP); }).forEach(function(r){
     wRows+='<tr><td class="lf" style="font-weight:600;color:var(--br);">'+safeText(r.vfNo)+'</td>'+
       '<td class="lf">'+safeText(r.customer)+'</td>'+
       '<td>'+(r.cutWIP?fmtN(r.cutWIP):'—')+'</td>'+
@@ -1958,7 +1976,7 @@ function render(data){
   document.getElementById('o-tot').textContent=fmtCr(out.totalOutstanding||0);
   document.getElementById('o-asn').textContent=(out.asOn||'—')+(creditBal>0?' · ₹'+(creditBal/100000).toFixed(1)+'L customer credits':'');
   var oRows='';
-  (out.customers||[]).forEach(function(c){
+  (out.customers||[]).slice().sort(function(a,b){ return N(b.overdue) - N(a.overdue); }).forEach(function(c){
     var ndVal=N(c.notDue), odVal=N(c.overdue);
     oRows+='<tr>'+
       '<td class="nc lf">'+safeText(c.customer)+'</td>'+
@@ -1985,7 +2003,9 @@ function render(data){
   document.getElementById('st-con').textContent=fmtN(steel.totalConsumedKg||0);
   document.getElementById('st-rate-badge').textContent='Avg ₹'+(data.rm_rate||0).toFixed(2)+'/kg';
   var stRows='';
-  (steel.grades||[]).forEach(function(g){
+  (steel.grades||[]).slice().sort(function(a,b){
+    return N(b['Value (₹L)'] || b.valueL || 0) - N(a['Value (₹L)'] || a.valueL || 0);
+  }).forEach(function(g){
     var grade=g['Grade']||g.grade||'';
     var status=g['Status']||g.status||'';
     var statusClass='';
@@ -2017,7 +2037,7 @@ function render(data){
   }
   var maxKwh=deptBars.length?Math.max.apply(null,deptBars.map(function(b){return N(b.kwh);})):1;
   var eHtml='';
-  deptBars.forEach(function(b){
+  deptBars.slice().sort(function(a,b){ return N(b.kwh) - N(a.kwh); }).forEach(function(b){
     var pct=Math.round(N(b.kwh)/maxKwh*100);
     eHtml+='<div class="bar-row"><div class="bar-lbl">'+safeText(b.dept)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div><div class="bar-val">'+fmtN(b.kwh)+' ('+fmtPct(b.pct||0)+')</div></div>';
   });
@@ -2074,7 +2094,9 @@ function renderF4(vendors){
     return;
   }
   document.getElementById('f4-count').textContent=vendors.length+' vendors';
-  vendors.forEach(function(v,idx){
+  vendors.slice().sort(function(a,b){
+    return Math.abs(N(b.pendingPcs)) - Math.abs(N(a.pendingPcs));
+  }).forEach(function(v,idx){
     var pendingClass=N(v.pendingPcs)>0?'b-rd':'b-gn';
     var pendingLbl=N(v.pendingPcs)>0?'PENDING':'CLEAR';
     html+='<div style="border-bottom:1px solid var(--bd);">'+
@@ -2302,7 +2324,7 @@ function renderVMC(v){
   }
   var okCount=0, issueCount=0, reportCount=0;
   var machineRows='';
-  v.machines.forEach(function(m){
+  v.machines.slice().sort(function(a,b){ return (N(b.mtd_issues) - N(a.mtd_issues)) || (N(b.mtd_reports) - N(a.mtd_reports)); }).forEach(function(m){
     var statusBadge;
     if(m.status==='GREEN') statusBadge='<span class="badge b-gn">&#128994; OK</span>';
     else if(m.status==='AMBER') statusBadge='<span class="badge b-am">&#128993; Minor</span>';
@@ -2362,7 +2384,7 @@ function renderDieLife(dl){
   function fmtDate(s){if(!s||s==='1970-01-01')return '—';return s;}
 
   var rRows='';
-  run.forEach(function(r){
+  run.slice().sort(function(a,b){ return N(b.totalPcs) - N(a.totalPcs); }).forEach(function(r){
     rRows+='<tr><td class="lf">'+safeText(r.machine)+'</td>'+
       '<td class="lf" style="font-weight:600;color:var(--br);">'+safeText(r.vf)+'</td>'+
       '<td class="lf">'+safeText(r.customer)+'</td>'+
@@ -2374,7 +2396,7 @@ function renderDieLife(dl){
   document.getElementById('dl-run-body').innerHTML=rRows||'<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:14px;">No running dies</td></tr>';
 
   var cRows='';
-  cmp.forEach(function(r){
+  cmp.slice().sort(function(a,b){ return String(b.runEnd||'').localeCompare(String(a.runEnd||'')); }).forEach(function(r){
     cRows+='<tr><td class="lf">'+safeText(r.machine)+'</td>'+
       '<td class="lf" style="font-weight:600;color:var(--br);">'+safeText(r.vf)+'</td>'+
       '<td class="lf">'+safeText(r.customer)+'</td>'+
@@ -2551,35 +2573,54 @@ function renderDowntimeSummary(ds) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FETCH + AUTO-REFRESH
-// ═══════════════════════════════════════════════════════════════
+// ═══ SESSION 19 — FETCH LAYER ═══
+var _fetchCtrl = null, _pollTimer = null, _openDrills = [];
+
 function fetchData(silent){
+  if (_fetchCtrl) _fetchCtrl.abort();
+  _fetchCtrl = new AbortController();
+  var to = setTimeout(function(){ _fetchCtrl.abort(); }, 25000);
   if(!silent){
     document.getElementById('lov-msg').textContent='Fetching live data…';
     var rb=document.getElementById('refresh-btn');
     if(rb){rb.disabled=true; rb.textContent='Loading…';}
   }
-  fetch(WEB_APP+'?json=1&v='+Date.now())
-    .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.json();
-    })
+
+  var _savedScroll = {};
+  document.querySelectorAll('.scroll-x, .prod-scroll').forEach(function(el, i){
+    _savedScroll[i] = el.scrollLeft;
+  });
+
+  fetch(WEB_APP+'?json=1&v='+Date.now(), {signal:_fetchCtrl.signal})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(function(d){
       if(d.error) throw new Error(d.error);
+      _openDrills = Array.prototype.map.call(
+        document.querySelectorAll('.drill.open'), function(el){ return el.id; });
+      var pinOpen = document.getElementById('margin-content').style.display === 'block';
+      var csOpen  = document.getElementById('cs-content').style.display === 'block';
       document.getElementById('err-banner').style.display='none';
       render(d);
+      _openDrills.forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.add('open'); });
+      if(pinOpen) document.getElementById('margin-content').style.display='block';
+      if(csOpen)  document.getElementById('cs-content').style.display='block';
+      document.querySelectorAll('.scroll-x, .prod-scroll').forEach(function(el, i){
+        if (_savedScroll[i] !== undefined) el.scrollLeft = _savedScroll[i];
+      });
       var rb=document.getElementById('refresh-btn');
       if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Refresh';}
     })
     .catch(function(err){
-      console.error('Fetch failed:',err);
+      if (err.name === 'AbortError') return;
+      console.error('Fetch failed:', err);
       var eb=document.getElementById('err-banner');
       eb.style.display='block';
-      eb.textContent='⚠ Could not load live data: '+err.message+'  —  showing last fetched data. Will retry in 60s.';
+      eb.textContent='⚠ Could not load live data: '+err.message+' — will retry in 60s.';
       document.getElementById('lov').classList.add('hide');
       var rb=document.getElementById('refresh-btn');
       if(rb){rb.disabled=false; rb.innerHTML='&#x21bb; Retry';}
-    });
+    })
+    .finally(function(){ clearTimeout(to); });
 }
 function manualRefresh(){fetchData(false);}
 
@@ -2718,7 +2759,7 @@ function renderPlanner(data){
   var units=new Set(), nostock=0, partial=0, ready=0;
   var bodyHTML='';
   var valid=0;
-  rows.forEach(function(r){
+  rows.slice().sort(function(a,b){ return N(b[3]) - N(a[3]); }).forEach(function(r){
     if(!r || !r[0]) return;
     var unit=(r[0]||'').toString().trim();
     var vf=(r[1]||'').toString().trim();
@@ -2908,7 +2949,7 @@ function renderVrej(data){
   document.getElementById('vr-vendors').textContent=distinctVendors.size;
   document.getElementById('vr-badge').textContent=rows.length+' VF rows · '+distinctVendors.size+' vendors';
   var bodyHTML='';
-  rows.forEach(function(r){
+  rows.slice().sort(function(a,b){ return N(b.rs) - N(a.rs); }).forEach(function(r){
     bodyHTML+='<tr>'+
       '<td class="nc lf">'+safeText(r.vendor)+'</td>'+
       '<td data-label="VF No" class="lf">'+safeText(r.vfNo||'—')+'</td>'+
@@ -2974,8 +3015,13 @@ function renderCostSum(data){
 // ═══════════════════════════════════════════════════════════════
 
 // Initial fetch + auto-refresh loop
+function startPolling(){
+  if(_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(function(){ if(!document.hidden) fetchData(true); }, REFRESH_MS);
+}
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) fetchData(true); });
 fetchData(false);
-setInterval(function(){fetchData(true);}, REFRESH_MS);
+startPolling();
 </script>
 </body>
 </html>
